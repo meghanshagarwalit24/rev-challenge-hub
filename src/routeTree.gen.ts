@@ -9,38 +9,201 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RetrieveRouteImport } from './routes/retrieve'
+import { Route as ResultRouteImport } from './routes/result'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as ChallengesRouteImport } from './routes/challenges'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PlayReflexRouteImport } from './routes/play.reflex'
+import { Route as PlayMemoryRouteImport } from './routes/play.memory'
+import { Route as PlayBalanceRouteImport } from './routes/play.balance'
 
+const RetrieveRoute = RetrieveRouteImport.update({
+  id: '/retrieve',
+  path: '/retrieve',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResultRoute = ResultRouteImport.update({
+  id: '/result',
+  path: '/result',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChallengesRoute = ChallengesRouteImport.update({
+  id: '/challenges',
+  path: '/challenges',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlayReflexRoute = PlayReflexRouteImport.update({
+  id: '/play/reflex',
+  path: '/play/reflex',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlayMemoryRoute = PlayMemoryRouteImport.update({
+  id: '/play/memory',
+  path: '/play/memory',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlayBalanceRoute = PlayBalanceRouteImport.update({
+  id: '/play/balance',
+  path: '/play/balance',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
+  '/challenges': typeof ChallengesRoute
+  '/profile': typeof ProfileRoute
+  '/result': typeof ResultRoute
+  '/retrieve': typeof RetrieveRoute
+  '/play/balance': typeof PlayBalanceRoute
+  '/play/memory': typeof PlayMemoryRoute
+  '/play/reflex': typeof PlayReflexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
+  '/challenges': typeof ChallengesRoute
+  '/profile': typeof ProfileRoute
+  '/result': typeof ResultRoute
+  '/retrieve': typeof RetrieveRoute
+  '/play/balance': typeof PlayBalanceRoute
+  '/play/memory': typeof PlayMemoryRoute
+  '/play/reflex': typeof PlayReflexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
+  '/challenges': typeof ChallengesRoute
+  '/profile': typeof ProfileRoute
+  '/result': typeof ResultRoute
+  '/retrieve': typeof RetrieveRoute
+  '/play/balance': typeof PlayBalanceRoute
+  '/play/memory': typeof PlayMemoryRoute
+  '/play/reflex': typeof PlayReflexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/challenges'
+    | '/profile'
+    | '/result'
+    | '/retrieve'
+    | '/play/balance'
+    | '/play/memory'
+    | '/play/reflex'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/challenges'
+    | '/profile'
+    | '/result'
+    | '/retrieve'
+    | '/play/balance'
+    | '/play/memory'
+    | '/play/reflex'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/challenges'
+    | '/profile'
+    | '/result'
+    | '/retrieve'
+    | '/play/balance'
+    | '/play/memory'
+    | '/play/reflex'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  AuthRoute: typeof AuthRoute
+  ChallengesRoute: typeof ChallengesRoute
+  ProfileRoute: typeof ProfileRoute
+  ResultRoute: typeof ResultRoute
+  RetrieveRoute: typeof RetrieveRoute
+  PlayBalanceRoute: typeof PlayBalanceRoute
+  PlayMemoryRoute: typeof PlayMemoryRoute
+  PlayReflexRoute: typeof PlayReflexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/retrieve': {
+      id: '/retrieve'
+      path: '/retrieve'
+      fullPath: '/retrieve'
+      preLoaderRoute: typeof RetrieveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/result': {
+      id: '/result'
+      path: '/result'
+      fullPath: '/result'
+      preLoaderRoute: typeof ResultRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/challenges': {
+      id: '/challenges'
+      path: '/challenges'
+      fullPath: '/challenges'
+      preLoaderRoute: typeof ChallengesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +211,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/play/reflex': {
+      id: '/play/reflex'
+      path: '/play/reflex'
+      fullPath: '/play/reflex'
+      preLoaderRoute: typeof PlayReflexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/play/memory': {
+      id: '/play/memory'
+      path: '/play/memory'
+      fullPath: '/play/memory'
+      preLoaderRoute: typeof PlayMemoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/play/balance': {
+      id: '/play/balance'
+      path: '/play/balance'
+      fullPath: '/play/balance'
+      preLoaderRoute: typeof PlayBalanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  AuthRoute: AuthRoute,
+  ChallengesRoute: ChallengesRoute,
+  ProfileRoute: ProfileRoute,
+  ResultRoute: ResultRoute,
+  RetrieveRoute: RetrieveRoute,
+  PlayBalanceRoute: PlayBalanceRoute,
+  PlayMemoryRoute: PlayMemoryRoute,
+  PlayReflexRoute: PlayReflexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

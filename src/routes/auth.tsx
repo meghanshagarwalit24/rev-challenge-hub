@@ -1,0 +1,114 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import { Header } from "@/components/Header";
+import { categorize, computeTotal, getCurrentScores, MOCK_OTP, saveUser } from "@/lib/storage";
+
+export const Route = createFileRoute("/auth")({
+  component: Auth,
+});
+
+function Auth() {
+  const nav = useNavigate();
+  const [step, setStep] = useState<"contact" | "otp">("contact");
+  const [contact, setContact] = useState("");
+  const [otp, setOtp] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const valid = (v: string) => /^\S+@\S+\.\S+$/.test(v) || /^\+?\d{8,15}$/.test(v.replace(/\s/g, ""));
+
+  const sendOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr("");
+    if (!valid(contact)) { setErr("Enter a valid email or mobile number"); return; }
+    if (!consent) { setErr("Please accept the consent to continue"); return; }
+    setLoading(true);
+    setTimeout(() => { setLoading(false); setStep("otp"); }, 600);
+  };
+
+  const verify = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr("");
+    if (otp !== MOCK_OTP) { setErr("Invalid code. Hint: 123456 (mock)"); return; }
+    const scores = getCurrentScores();
+    const total = computeTotal(scores);
+    const cat = categorize(total);
+    saveUser({
+      contact: contact.trim(),
+      scores, total, category: cat.label, consent: true,
+      createdAt: new Date().toISOString(),
+    });
+    nav({ to: "/profile" });
+  };
+
+  return (
+    <div className="min-h-screen">
+      <Header />
+      <main className="max-w-md mx-auto px-4 py-8">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+          <h1 className="text-3xl md:text-4xl font-black">Save Your <span className="text-gradient-energy">Score</span></h1>
+          <p className="text-sm text-muted-foreground mt-2">Verify to qualify for daily rewards</p>
+        </motion.div>
+
+        <div className="mt-8 bg-gradient-card border border-border rounded-3xl p-6 shadow-card">
+          <AnimatePresence mode="wait">
+            {step === "contact" ? (
+              <motion.form key="contact" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={sendOtp} className="space-y-4">
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-muted-foreground">Mobile or Email</label>
+                  <input
+                    autoFocus
+                    value={contact}
+                    onChange={(e) => setContact(e.target.value)}
+                    placeholder="+971 50 123 4567 or you@email.com"
+                    className="mt-2 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+                  />
+                </div>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 accent-[oklch(0.72_0.19_50)]" />
+                  <span className="text-xs text-muted-foreground">
+                    I agree to be contacted via email/phone about Revital campaigns and to the privacy policy (UAE compliant).
+                  </span>
+                </label>
+                {err && <p className="text-sm text-destructive">{err}</p>}
+                <button disabled={loading} className="w-full py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-60">
+                  {loading ? "Sending..." : "Send OTP"}
+                </button>
+                <button type="button" className="w-full py-3 rounded-full bg-card border border-border font-semibold hover:bg-muted/50 transition-colors">
+                  Continue with Google
+                </button>
+              </motion.form>
+            ) : (
+              <motion.form key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={verify} className="space-y-4">
+                <p className="text-sm text-muted-foreground">We sent a 6-digit code to <span className="text-foreground font-medium">{contact}</span></p>
+                <input
+                  autoFocus
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                  placeholder="• • • • • •"
+                  className="w-full text-center tracking-[0.5em] text-2xl font-black bg-background/60 border border-border rounded-2xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <p className="text-[11px] text-muted-foreground/70 text-center">Mock mode — use code <span className="font-mono text-accent">123456</span></p>
+                {err && <p className="text-sm text-destructive">{err}</p>}
+                <button className="w-full py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-[1.02] active:scale-[0.98] transition-transform">
+                  Verify & Save Score
+                </button>
+                <button type="button" onClick={() => setStep("contact")} className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  ← Change number/email
+                </button>
+              </motion.form>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <Link to="/result" className="mt-4 block text-center text-sm text-muted-foreground hover:text-foreground transition-colors">
+          ← Back to result
+        </Link>
+      </main>
+    </div>
+  );
+}

@@ -27,6 +27,8 @@ function MemoryGame() {
   const [seconds, setSeconds] = useState(0);
   const [done, setDone] = useState(false);
 
+  useEffect(() => { if (!isGameUnlocked("memory")) nav({ to: "/challenges" }); }, [nav]);
+
   useEffect(() => {
     if (done) return;
     const t = setInterval(() => setSeconds(s => s + 1), 1000);

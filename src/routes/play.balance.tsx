@@ -28,6 +28,8 @@ function BalanceGame() {
   const rafRef = useRef<number>(0);
   const startedAt = useRef(0);
 
+  useEffect(() => { if (!isGameUnlocked("balance")) nav({ to: "/challenges" }); }, [nav]);
+
   const start = () => {
     if (done) { setDone(false); setHold(0); }
     yRef.current = 50; vRef.current = 0; setY(50);

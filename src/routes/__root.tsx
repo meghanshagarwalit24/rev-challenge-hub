@@ -22,7 +22,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "theme-color", content: "#1a0f08" },
+      { name: "theme-color", content: "#F37421" },
       { title: "Revital Energy Challenge — Are You Ready?" },
       { name: "description", content: "Take the Revital Readiness Challenge. Play 3 fast games, score your energy, win prizes worth 100K AED." },
       { property: "og:title", content: "Revital Energy Challenge — Are You Ready?" },
@@ -48,7 +48,7 @@ export const Route = createRootRoute({
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head><HeadContent /></head>
       <body>
         {children}

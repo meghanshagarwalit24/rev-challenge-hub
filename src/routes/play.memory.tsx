@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { ProgressDots } from "@/components/ProgressDots";
-import { saveGameScore } from "@/lib/storage";
+import { isGameUnlocked, saveGameScore } from "@/lib/storage";
 
 export const Route = createFileRoute("/play/memory")({
   component: MemoryGame,
@@ -26,6 +26,8 @@ function MemoryGame() {
   const [moves, setMoves] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const [done, setDone] = useState(false);
+
+  useEffect(() => { if (!isGameUnlocked("memory")) nav({ to: "/challenges" }); }, [nav]);
 
   useEffect(() => {
     if (done) return;

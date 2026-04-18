@@ -29,9 +29,9 @@ function Landing() {
       <main className="relative max-w-6xl mx-auto px-4 pt-8 md:pt-14 pb-16">
         <section className="text-center">
           <motion.img
-            src={logo}
+            src={heroWordmark}
             alt="Revital Energy Challenge"
-            className="mx-auto h-44 md:h-64 w-auto drop-shadow-2xl"
+            className="mx-auto h-40 md:h-72 w-auto drop-shadow-2xl"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", damping: 12, delay: 0.1 }}
@@ -43,7 +43,7 @@ function Landing() {
             transition={{ delay: 0.3 }}
             className="mt-6 inline-block px-4 py-1.5 rounded-full bg-[var(--garnet)] text-white text-xs uppercase tracking-[0.2em] font-bold shadow-button"
           >
-            ⚡ Win prizes worth 100K AED
+            ⚡ Power Up. Play. Conquer.
           </motion.div>
 
           <motion.h1
@@ -62,8 +62,8 @@ function Landing() {
             transition={{ delay: 0.55 }}
             className="mt-5 text-base md:text-xl text-garnet/80 max-w-2xl mx-auto"
           >
-            Take the Revital <span className="font-script text-[var(--tiger)] text-xl md:text-2xl">Readiness Challenge</span>
-            <br />Play 3 quick challenges. Score your energy. Climb the leaderboard.
+            Take the Revital <span className="font-script text-[var(--tiger)] text-xl md:text-2xl">Energy Challenge</span>
+            <br />Play 3 quick games. Score your energy. Climb the leaderboard.
           </motion.p>
 
           <motion.div
@@ -96,7 +96,7 @@ function Landing() {
             {[
               { n: "3", label: "Quick games" },
               { n: "60s", label: "Per challenge" },
-              { n: "100K", label: "AED in prizes" },
+              { n: "Daily", label: "Leaderboard" },
             ].map((s) => (
               <div key={s.label} className="bg-white/90 border-2 border-[var(--garnet)]/10 rounded-2xl p-4 backdrop-blur shadow-card">
                 <div className="text-2xl md:text-4xl font-black text-gradient-energy">{s.n}</div>
@@ -151,6 +151,7 @@ function Landing() {
           </div>
         </section>
       </main>
+      <Footer />
     </div>
   );
 }

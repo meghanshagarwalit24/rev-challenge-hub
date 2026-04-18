@@ -35,6 +35,23 @@ const SAMPLE_GLOBAL: LeaderEntry[] = [
   { name: "Adel K.",       contact: "Ras Al Khaimah", total: 235, category: "Peak Performer", when: "All-time" },
 ];
 
+const mask = (c: string) => {
+  if (c.includes("@")) {
+    const [a, b] = c.split("@");
+    return a.slice(0, 2) + "•••@" + b;
+  }
+  if (c.length > 4) return c.slice(0, 3) + "•••" + c.slice(-2);
+  return c;
+};
+
+const fromUser = (u: UserRecord, when: string): LeaderEntry => ({
+  name: u.name || "Player",
+  contact: mask(u.contact),
+  total: u.total,
+  category: u.category,
+  when,
+});
+
 export const getDailyLeaderboard = (): LeaderEntry[] => {
   const users = getAllUsers().map((u) => fromUser(u, "Today"));
   return [...users, ...SAMPLE_DAILY].sort((a, b) => b.total - a.total).slice(0, 10);

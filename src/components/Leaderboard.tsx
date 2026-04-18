@@ -9,12 +9,14 @@ export function Leaderboard({
   emoji,
   entries,
   accent = "tiger",
+  highlightWinner = true,
 }: {
   title: string;
   subtitle: string;
   emoji: string;
   entries: LeaderEntry[];
   accent?: "tiger" | "marigold";
+  highlightWinner?: boolean;
 }) {
   return (
     <motion.div
@@ -47,13 +49,13 @@ export function Leaderboard({
               viewport={{ once: true }}
               transition={{ delay: 0.05 * i }}
               className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors ${
-                i === 0
+                highlightWinner && i === 0
                   ? "bg-gradient-to-r from-[var(--marigold)]/40 to-[var(--honey)]/20 border border-[var(--honey)]/40"
                   : "bg-[var(--background)]/60 hover:bg-[var(--background)]"
               }`}
             >
               <div className="w-8 text-center text-lg font-black">
-                {i < 3 ? medals[i] : <span className="text-muted-foreground">{i + 1}</span>}
+                {highlightWinner && i < 3 ? medals[i] : <span className="text-muted-foreground">{i + 1}</span>}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-garnet truncate text-sm md:text-base">{e.name}</div>

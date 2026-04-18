@@ -31,7 +31,7 @@ function Landing() {
           <motion.img
             src={logo}
             alt="Revital Energy Challenge"
-            className="mx-auto h-28 md:h-40 drop-shadow-2xl"
+            className="mx-auto h-44 md:h-64 w-auto drop-shadow-2xl"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", damping: 12, delay: 0.1 }}
@@ -132,11 +132,12 @@ function Landing() {
               accent="tiger"
             />
             <Leaderboard
-              title="Global Winners"
-              subtitle="All-Time Hall of Fame"
+              title="Global Leaderboard"
+              subtitle="All-Time Top 10"
               emoji="👑"
               entries={global}
               accent="marigold"
+              highlightWinner={false}
             />
           </div>
 

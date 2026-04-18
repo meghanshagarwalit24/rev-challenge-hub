@@ -9,9 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as RetrieveRouteImport } from './routes/retrieve'
 import { Route as ResultRouteImport } from './routes/result'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ChallengesRouteImport } from './routes/challenges'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -20,6 +22,11 @@ import { Route as PlayReflexRouteImport } from './routes/play.reflex'
 import { Route as PlayMemoryRouteImport } from './routes/play.memory'
 import { Route as PlayBalanceRouteImport } from './routes/play.balance'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RetrieveRoute = RetrieveRouteImport.update({
   id: '/retrieve',
   path: '/retrieve',
@@ -33,6 +40,11 @@ const ResultRoute = ResultRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChallengesRoute = ChallengesRouteImport.update({
@@ -76,9 +88,11 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/challenges': typeof ChallengesRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/result': typeof ResultRoute
   '/retrieve': typeof RetrieveRoute
+  '/terms': typeof TermsRoute
   '/play/balance': typeof PlayBalanceRoute
   '/play/memory': typeof PlayMemoryRoute
   '/play/reflex': typeof PlayReflexRoute
@@ -88,9 +102,11 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/challenges': typeof ChallengesRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/result': typeof ResultRoute
   '/retrieve': typeof RetrieveRoute
+  '/terms': typeof TermsRoute
   '/play/balance': typeof PlayBalanceRoute
   '/play/memory': typeof PlayMemoryRoute
   '/play/reflex': typeof PlayReflexRoute
@@ -101,9 +117,11 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/challenges': typeof ChallengesRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/result': typeof ResultRoute
   '/retrieve': typeof RetrieveRoute
+  '/terms': typeof TermsRoute
   '/play/balance': typeof PlayBalanceRoute
   '/play/memory': typeof PlayMemoryRoute
   '/play/reflex': typeof PlayReflexRoute
@@ -115,9 +133,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/challenges'
+    | '/privacy'
     | '/profile'
     | '/result'
     | '/retrieve'
+    | '/terms'
     | '/play/balance'
     | '/play/memory'
     | '/play/reflex'
@@ -127,9 +147,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/challenges'
+    | '/privacy'
     | '/profile'
     | '/result'
     | '/retrieve'
+    | '/terms'
     | '/play/balance'
     | '/play/memory'
     | '/play/reflex'
@@ -139,9 +161,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/challenges'
+    | '/privacy'
     | '/profile'
     | '/result'
     | '/retrieve'
+    | '/terms'
     | '/play/balance'
     | '/play/memory'
     | '/play/reflex'
@@ -152,9 +176,11 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   ChallengesRoute: typeof ChallengesRoute
+  PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   ResultRoute: typeof ResultRoute
   RetrieveRoute: typeof RetrieveRoute
+  TermsRoute: typeof TermsRoute
   PlayBalanceRoute: typeof PlayBalanceRoute
   PlayMemoryRoute: typeof PlayMemoryRoute
   PlayReflexRoute: typeof PlayReflexRoute
@@ -162,6 +188,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/retrieve': {
       id: '/retrieve'
       path: '/retrieve'
@@ -181,6 +214,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/challenges': {
@@ -240,9 +280,11 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   ChallengesRoute: ChallengesRoute,
+  PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   ResultRoute: ResultRoute,
   RetrieveRoute: RetrieveRoute,
+  TermsRoute: TermsRoute,
   PlayBalanceRoute: PlayBalanceRoute,
   PlayMemoryRoute: PlayMemoryRoute,
   PlayReflexRoute: PlayReflexRoute,

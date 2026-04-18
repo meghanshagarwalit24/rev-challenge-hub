@@ -32,7 +32,7 @@ function Landing() {
           <motion.img
             src={heroWordmark}
             alt="Revital Energy Challenge"
-            className="mx-auto h-40 md:h-72 w-auto drop-shadow-2xl"
+            className="mx-auto h-28 md:h-48 w-auto drop-shadow-2xl"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", damping: 12, delay: 0.1 }}

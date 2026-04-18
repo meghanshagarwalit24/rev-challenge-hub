@@ -6,7 +6,7 @@ export function Header() {
     <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 border-b border-[var(--garnet)]/10">
       <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
         <Link to="/" className="flex items-center group shrink-0">
-          <img src={logo} alt="Revital Ginseng Plus" className="h-12 md:h-16 w-auto object-contain transition-transform group-hover:scale-105" />
+          <img src={logo} alt="Revital Ginseng Plus" className="h-8 md:h-11 w-auto object-contain transition-transform group-hover:scale-105" />
         </Link>
         <nav className="flex items-center gap-1 text-sm">
           <Link to="/retrieve" className="px-3 py-2 rounded-full text-garnet/80 hover:text-garnet hover:bg-[var(--marigold)]/30 transition-colors font-medium">

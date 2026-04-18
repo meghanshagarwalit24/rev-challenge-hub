@@ -40,9 +40,9 @@
   --color-garnet: var(--garnet);
   --color-firebrick: var(--firebrick);
 
-  --font-display: "Poppins", system-ui, sans-serif;
+  --font-display: "Mulish", "Duplet Open", system-ui, sans-serif;
   --font-script: "Pacifico", cursive;
-  --font-sans: "Inter", system-ui, sans-serif;
+  --font-sans: "Mulish", "Duplet Open", system-ui, sans-serif;
 }
 
 :root {

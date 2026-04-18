@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { ProgressDots } from "@/components/ProgressDots";
-import { saveGameScore } from "@/lib/storage";
+import { isGameUnlocked, saveGameScore } from "@/lib/storage";
 
 export const Route = createFileRoute("/play/balance")({
   component: BalanceGame,

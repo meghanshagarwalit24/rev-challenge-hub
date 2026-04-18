@@ -72,3 +72,24 @@ export const setConsent = (v: boolean) => localStorage.setItem(CONSENT_KEY, v ? 
 
 // Mock OTP — accept "123456"
 export const MOCK_OTP = "123456";
+
+// Sequential challenge progression: reflex → memory → balance
+export const CHALLENGE_ORDER: GameKey[] = ["reflex", "memory", "balance"];
+
+export const isGameUnlocked = (game: GameKey): boolean => {
+  const s = getCurrentScores();
+  const idx = CHALLENGE_ORDER.indexOf(game);
+  if (idx <= 0) return true;
+  // unlocked only if every prior challenge has a score
+  return CHALLENGE_ORDER.slice(0, idx).every((k) => s[k] !== null);
+};
+
+export const getNextGame = (): GameKey | null => {
+  const s = getCurrentScores();
+  return CHALLENGE_ORDER.find((k) => s[k] === null) ?? null;
+};
+
+export const getCompletedCount = (): number => {
+  const s = getCurrentScores();
+  return CHALLENGE_ORDER.filter((k) => s[k] !== null).length;
+};

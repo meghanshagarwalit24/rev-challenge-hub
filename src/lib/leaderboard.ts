@@ -34,7 +34,7 @@ const SAMPLE_GLOBAL: LeaderEntry[] = [
   { name: "Maya R.",       contact: "Dubai",     total: 241, category: "Peak Performer", when: "All-time" },
   { name: "Adel K.",       contact: "Ras Al Khaimah", total: 235, category: "Peak Performer", when: "All-time" },
 ];
-...
+
 export const getDailyLeaderboard = (): LeaderEntry[] => {
   const users = getAllUsers().map((u) => fromUser(u, "Today"));
   return [...users, ...SAMPLE_DAILY].sort((a, b) => b.total - a.total).slice(0, 10);

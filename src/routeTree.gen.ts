@@ -11,6 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ChallengesRouteImport } from './routes/challenges'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PlayReflexRouteImport } from './routes/play.reflex'
+import { Route as PlayMemoryRouteImport } from './routes/play.memory'
+import { Route as PlayBalanceRouteImport } from './routes/play.balance'
 
 const ChallengesRoute = ChallengesRouteImport.update({
   id: '/challenges',
@@ -22,31 +25,69 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlayReflexRoute = PlayReflexRouteImport.update({
+  id: '/play/reflex',
+  path: '/play/reflex',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlayMemoryRoute = PlayMemoryRouteImport.update({
+  id: '/play/memory',
+  path: '/play/memory',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlayBalanceRoute = PlayBalanceRouteImport.update({
+  id: '/play/balance',
+  path: '/play/balance',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/challenges': typeof ChallengesRoute
+  '/play/balance': typeof PlayBalanceRoute
+  '/play/memory': typeof PlayMemoryRoute
+  '/play/reflex': typeof PlayReflexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/challenges': typeof ChallengesRoute
+  '/play/balance': typeof PlayBalanceRoute
+  '/play/memory': typeof PlayMemoryRoute
+  '/play/reflex': typeof PlayReflexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/challenges': typeof ChallengesRoute
+  '/play/balance': typeof PlayBalanceRoute
+  '/play/memory': typeof PlayMemoryRoute
+  '/play/reflex': typeof PlayReflexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/challenges'
+  fullPaths:
+    | '/'
+    | '/challenges'
+    | '/play/balance'
+    | '/play/memory'
+    | '/play/reflex'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/challenges'
-  id: '__root__' | '/' | '/challenges'
+  to: '/' | '/challenges' | '/play/balance' | '/play/memory' | '/play/reflex'
+  id:
+    | '__root__'
+    | '/'
+    | '/challenges'
+    | '/play/balance'
+    | '/play/memory'
+    | '/play/reflex'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ChallengesRoute: typeof ChallengesRoute
+  PlayBalanceRoute: typeof PlayBalanceRoute
+  PlayMemoryRoute: typeof PlayMemoryRoute
+  PlayReflexRoute: typeof PlayReflexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +106,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/play/reflex': {
+      id: '/play/reflex'
+      path: '/play/reflex'
+      fullPath: '/play/reflex'
+      preLoaderRoute: typeof PlayReflexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/play/memory': {
+      id: '/play/memory'
+      path: '/play/memory'
+      fullPath: '/play/memory'
+      preLoaderRoute: typeof PlayMemoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/play/balance': {
+      id: '/play/balance'
+      path: '/play/balance'
+      fullPath: '/play/balance'
+      preLoaderRoute: typeof PlayBalanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChallengesRoute: ChallengesRoute,
+  PlayBalanceRoute: PlayBalanceRoute,
+  PlayMemoryRoute: PlayMemoryRoute,
+  PlayReflexRoute: PlayReflexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -74,7 +74,7 @@ function Landing() {
             className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3"
           >
             <Link
-              to="/challenges"
+              to="/play/reflex"
               className="group relative inline-flex items-center justify-center px-8 py-4 rounded-full bg-gradient-energy text-white font-bold text-lg shadow-button glow-pulse hover:scale-105 active:scale-95 transition-transform"
             >
               <span className="relative z-10">Start Now! →</span>
@@ -96,7 +96,7 @@ function Landing() {
           >
             {[
               { n: "3", label: "Quick games" },
-              { n: "60s", label: "Per challenge" },
+              { n: "20s", label: "Per challenge" },
               { n: "Daily", label: "Leaderboard" },
             ].map((s) => (
               <div key={s.label} className="bg-white/90 border-2 border-[var(--garnet)]/10 rounded-2xl p-4 backdrop-blur shadow-card">
@@ -144,7 +144,7 @@ function Landing() {
 
           <div className="mt-8 text-center">
             <Link
-              to="/challenges"
+              to="/play/reflex"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--garnet)] text-white font-bold hover:scale-105 active:scale-95 transition-transform shadow-button"
             >
               Join the Leaderboard →

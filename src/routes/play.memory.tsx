@@ -3,14 +3,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { ProgressDots } from "@/components/ProgressDots";
+import { StartOverlay } from "@/components/StartOverlay";
 import { isGameUnlocked, saveGameScore } from "@/lib/storage";
+import revitalProduct from "@/assets/revital-poster.png";
 
 export const Route = createFileRoute("/play/memory")({
   component: MemoryGame,
 });
 
-const SYMBOLS = ["⚡", "🔥", "💪", "🧠", "🌟", "❤️", "🏆", "🎯"];
-const MAX_DURATION = 20; // seconds
+const SYMBOLS = ["⚡", "🔥", "💪", "🌟"]; // 4 pairs = 8 cards around center
+const MAX_DURATION = 20;
+const TOTAL_PAIRS = SYMBOLS.length;
 
 interface Card { id: number; symbol: string; matched: boolean; }
 
@@ -22,6 +25,7 @@ function buildDeck(): Card[] {
 
 function MemoryGame() {
   const nav = useNavigate();
+  const [showStart, setShowStart] = useState(true);
   const [deck, setDeck] = useState<Card[]>(buildDeck);
   const [flipped, setFlipped] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
@@ -31,16 +35,14 @@ function MemoryGame() {
   useEffect(() => { if (!isGameUnlocked("memory")) nav({ to: "/challenges" }); }, [nav]);
 
   useEffect(() => {
-    if (done) return;
+    if (done || showStart) return;
     const t = setInterval(() => setSeconds(s => {
       const next = s + 1;
-      if (next >= MAX_DURATION) {
-        setDone(true);
-      }
+      if (next >= MAX_DURATION) setDone(true);
       return next;
     }), 1000);
     return () => clearInterval(t);
-  }, [done]);
+  }, [done, showStart]);
 
   useEffect(() => {
     if (flipped.length !== 2) return;
@@ -59,68 +61,91 @@ function MemoryGame() {
   }, [flipped, deck]);
 
   useEffect(() => {
-    if (done && deck.every(c => c.matched)) {
-      // Score: ideal 8 moves, fast time. Penalize extra moves & time.
-      const moveScore = Math.max(0, 100 - Math.max(0, moves - 8) * 5);
-      const timeScore = Math.max(0, 100 - Math.max(0, seconds - 10) * 5);
-      const score = Math.round((moveScore + timeScore) / 2);
-      saveGameScore("memory", score);
-    } else if (done) {
-      // Time ran out — score from pairs matched
-      const pairs = deck.filter(c => c.matched).length / 2;
-      const score = Math.round((pairs / 8) * 100);
-      saveGameScore("memory", score);
-    }
-  }, [done, deck, moves, seconds]);
-
-  useEffect(() => {
-    if (deck.every(c => c.matched) && !done) {
-      setDone(true);
-    }
+    if (deck.every(c => c.matched) && !done) setDone(true);
   }, [deck, done]);
 
+  useEffect(() => {
+    if (!done) return;
+    const allMatched = deck.every(c => c.matched);
+    let score: number;
+    if (allMatched) {
+      const ideal = TOTAL_PAIRS;
+      const moveScore = Math.max(0, 100 - Math.max(0, moves - ideal) * 8);
+      const timeScore = Math.max(0, 100 - Math.max(0, seconds - 8) * 6);
+      score = Math.round((moveScore + timeScore) / 2);
+    } else {
+      const pairs = deck.filter(c => c.matched).length / 2;
+      score = Math.round((pairs / TOTAL_PAIRS) * 100);
+    }
+    saveGameScore("memory", score);
+    const t = setTimeout(() => nav({ to: "/play/balance" }), 1500);
+    return () => clearTimeout(t);
+  }, [done, deck, moves, seconds, nav]);
+
   const flip = (id: number) => {
+    if (showStart) return;
     if (flipped.length === 2) return;
     if (flipped.includes(id)) return;
     if (deck.find(c => c.id === id)?.matched) return;
     setFlipped([...flipped, id]);
   };
 
-  const reset = () => { setDeck(buildDeck()); setFlipped([]); setMoves(0); setSeconds(0); setDone(false); };
-
-  const finalScore = (() => {
-    const allMatched = deck.every(c => c.matched);
-    if (allMatched) {
-      const moveScore = Math.max(0, 100 - Math.max(0, moves - 8) * 5);
-      const timeScore = Math.max(0, 100 - Math.max(0, seconds - 10) * 5);
-      return Math.round((moveScore + timeScore) / 2);
-    }
-    const pairs = deck.filter(c => c.matched).length / 2;
-    return Math.round((pairs / 8) * 100);
-  })();
+  // Build 3x3 layout: 8 cards around a fixed center product image (index 4)
+  const grid: (Card | "center")[] = [
+    deck[0], deck[1], deck[2],
+    deck[3], "center", deck[4],
+    deck[5], deck[6], deck[7],
+  ];
 
   return (
     <div className="min-h-screen">
       <Header />
+      {showStart && (
+        <StartOverlay
+          emoji="🧠"
+          title="Memory Match"
+          lines={[
+            "Flip cards to find matching pairs.",
+            "The Revital product stays in the center as your guide.",
+            "Match all 4 pairs as fast as you can!",
+          ]}
+          onStart={() => setShowStart(false)}
+        />
+      )}
       <main className="max-w-2xl mx-auto px-4 py-6">
         <div className="text-center">
           <h1 className="text-2xl md:text-4xl font-black">🧠 Memory Match</h1>
-          <p className="text-sm text-muted-foreground mt-1">Match all 8 pairs · {Math.max(0, MAX_DURATION - seconds)}s left</p>
+          <p className="text-sm text-muted-foreground mt-1">Match all {TOTAL_PAIRS} pairs · {Math.max(0, MAX_DURATION - seconds)}s left</p>
           <ProgressDots current="memory" />
         </div>
 
         <div className="mt-5 flex justify-around bg-gradient-card border border-border rounded-2xl p-3">
           <Stat label="Moves" value={moves} />
           <Stat label="Time" value={`${seconds}s`} />
-          <Stat label="Pairs" value={`${deck.filter(c=>c.matched).length/2}/8`} />
+          <Stat label="Pairs" value={`${deck.filter(c=>c.matched).length/2}/${TOTAL_PAIRS}`} />
         </div>
 
-        <div className="mt-5 grid grid-cols-4 gap-2 md:gap-3">
-          {deck.map(card => {
+        <div className="mt-5 grid grid-cols-3 gap-2 md:gap-3">
+          {grid.map((cell, idx) => {
+            if (cell === "center") {
+              return (
+                <div
+                  key="center"
+                  className="aspect-square rounded-2xl bg-gradient-card border-2 border-accent/60 shadow-glow flex items-center justify-center p-2 relative overflow-hidden"
+                >
+                  <img
+                    src={revitalProduct}
+                    alt="Revital product"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              );
+            }
+            const card = cell;
             const isUp = flipped.includes(card.id) || card.matched;
             return (
               <button
-                key={card.id}
+                key={`c-${card.id}-${idx}`}
                 onClick={() => flip(card.id)}
                 className="aspect-square perspective-card group"
                 disabled={card.matched}
@@ -145,13 +170,7 @@ function MemoryGame() {
               <div className="text-5xl mb-3">🏆</div>
               <h2 className="text-2xl font-black">Complete!</h2>
               <p className="text-muted-foreground mt-1">{moves} moves · {seconds}s</p>
-              <p className="mt-4 text-3xl font-black text-gradient-energy">{finalScore}/100</p>
-              <div className="mt-5 flex gap-2">
-                <button onClick={reset} className="flex-1 py-3 rounded-full bg-muted hover:bg-muted/80 font-semibold transition-colors">Retry</button>
-                <button onClick={() => nav({ to: "/challenges" })} className="flex-1 py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform">
-                  Continue →
-                </button>
-              </div>
+              <p className="mt-3 text-sm text-muted-foreground">Loading next challenge…</p>
             </motion.div>
           )}
         </AnimatePresence>

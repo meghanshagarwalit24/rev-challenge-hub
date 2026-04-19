@@ -18,6 +18,7 @@ const TARGET_BAND = 18; // % half-width
 
 function BalanceGame() {
   const nav = useNavigate();
+  const [showStart, setShowStart] = useState(true);
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
   const [y, setY] = useState(50);

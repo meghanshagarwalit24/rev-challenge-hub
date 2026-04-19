@@ -154,7 +154,7 @@ function ReflexGame() {
 
         {phase === "done" && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 flex gap-2">
-            <button onClick={() => { setTimes([]); setRound(0); setPhase("idle"); }} className="flex-1 py-3 rounded-full bg-muted text-foreground font-semibold hover:bg-muted/80 transition-colors">
+            <button onClick={() => { setTimes([]); setRound(0); setTimeLeft(MAX_DURATION); sessionStartRef.current = 0; setPhase("idle"); }} className="flex-1 py-3 rounded-full bg-muted text-foreground font-semibold hover:bg-muted/80 transition-colors">
               Retry
             </button>
             <button onClick={() => nav({ to: "/challenges" })} className="flex-1 py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform">

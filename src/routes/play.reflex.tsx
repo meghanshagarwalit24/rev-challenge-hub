@@ -111,6 +111,18 @@ function ReflexGame() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
+      {showStart && (
+        <StartOverlay
+          emoji="⚡"
+          title="Reflex Tap"
+          lines={[
+            "Tap the screen the instant it turns green.",
+            "Beat your reaction time across quick rounds.",
+            "Don't tap too early!",
+          ]}
+          onStart={() => setShowStart(false)}
+        />
+      )}
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 flex flex-col">
         <div className="text-center">
           <h1 className="text-2xl md:text-4xl font-black">⚡ Reflex Tap</h1>
@@ -120,7 +132,7 @@ function ReflexGame() {
 
         <button
           onClick={handleTap}
-          disabled={phase === "done"}
+          disabled={phase === "done" || showStart}
           className="mt-6 flex-1 min-h-[60vh] w-full rounded-3xl border border-border overflow-hidden relative active:scale-[0.99] transition-transform select-none"
           aria-label="Reflex tap area"
         >
@@ -149,22 +161,12 @@ function ReflexGame() {
                   <p className="text-white/80">Avg reaction</p>
                   <p className="text-4xl font-black text-white">{avg} ms</p>
                   <p className="mt-3 text-2xl font-bold text-white">Score: {score}/100</p>
+                  <p className="mt-3 text-sm text-white/80">Loading next challenge…</p>
                 </div>
               )}
             </motion.div>
           </AnimatePresence>
         </button>
-
-        {phase === "done" && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 flex gap-2">
-            <button onClick={() => { setTimes([]); setRound(0); setTimeLeft(MAX_DURATION); sessionStartRef.current = 0; setPhase("idle"); }} className="flex-1 py-3 rounded-full bg-muted text-foreground font-semibold hover:bg-muted/80 transition-colors">
-              Retry
-            </button>
-            <button onClick={() => nav({ to: "/challenges" })} className="flex-1 py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform">
-              Continue →
-            </button>
-          </motion.div>
-        )}
 
         <Link to="/challenges" className="mt-3 text-center text-sm text-muted-foreground hover:text-foreground transition-colors">
           ← Back to challenges

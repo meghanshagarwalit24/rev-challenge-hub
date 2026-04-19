@@ -16,6 +16,7 @@ const MAX_DURATION = 20; // seconds total cap
 
 function ReflexGame() {
   const nav = useNavigate();
+  const [showStart, setShowStart] = useState(true);
   const [phase, setPhase] = useState<Phase>("idle");
   const [round, setRound] = useState(0);
   const [times, setTimes] = useState<number[]>([]);

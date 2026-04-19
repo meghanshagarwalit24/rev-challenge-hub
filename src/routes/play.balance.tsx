@@ -94,6 +94,18 @@ function BalanceGame() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
+      {showStart && (
+        <StartOverlay
+          emoji="🔥"
+          title="Tap Balance"
+          lines={[
+            "Tap rapidly to lift the ember.",
+            "Hold it inside the glowing sweet zone.",
+            "The longer you stay in the zone, the higher your score!",
+          ]}
+          onStart={() => setShowStart(false)}
+        />
+      )}
       <main className="flex-1 max-w-md w-full mx-auto px-4 py-6 flex flex-col">
         <div className="text-center">
           <h1 className="text-2xl md:text-4xl font-black">🔥 Tap Balance</h1>

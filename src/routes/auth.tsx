@@ -57,14 +57,15 @@ function Auth() {
             {step === "contact" ? (
               <motion.form key="contact" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={sendOtp} className="space-y-4">
                 <div>
-                  <label className="text-xs uppercase tracking-wider text-muted-foreground">Mobile or Email</label>
+                  <label className="text-xs uppercase tracking-wider text-muted-foreground">Email or Mobile Number</label>
                   <input
                     autoFocus
                     value={contact}
                     onChange={(e) => setContact(e.target.value)}
-                    placeholder="+971 50 123 4567 or you@email.com"
+                    placeholder="you@email.com  or  +971 50 123 4567"
                     className="mt-2 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
                   />
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">Enter either your email address or mobile number — we'll send a one-time code.</p>
                 </div>
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 accent-[oklch(0.72_0.19_50)]" />

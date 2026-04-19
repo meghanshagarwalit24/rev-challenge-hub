@@ -10,6 +10,7 @@ export const Route = createFileRoute("/play/memory")({
 });
 
 const SYMBOLS = ["⚡", "🔥", "💪", "🧠", "🌟", "❤️", "🏆", "🎯"];
+const MAX_DURATION = 20; // seconds
 
 interface Card { id: number; symbol: string; matched: boolean; }
 
@@ -31,7 +32,13 @@ function MemoryGame() {
 
   useEffect(() => {
     if (done) return;
-    const t = setInterval(() => setSeconds(s => s + 1), 1000);
+    const t = setInterval(() => setSeconds(s => {
+      const next = s + 1;
+      if (next >= MAX_DURATION) {
+        setDone(true);
+      }
+      return next;
+    }), 1000);
     return () => clearInterval(t);
   }, [done]);
 
@@ -52,15 +59,25 @@ function MemoryGame() {
   }, [flipped, deck]);
 
   useEffect(() => {
-    if (deck.every(c => c.matched) && !done) {
-      setDone(true);
-      // Score: ideal 8 moves, 30s. Penalize extra moves & time.
+    if (done && deck.every(c => c.matched)) {
+      // Score: ideal 8 moves, fast time. Penalize extra moves & time.
       const moveScore = Math.max(0, 100 - Math.max(0, moves - 8) * 5);
-      const timeScore = Math.max(0, 100 - Math.max(0, seconds - 25) * 2);
+      const timeScore = Math.max(0, 100 - Math.max(0, seconds - 10) * 5);
       const score = Math.round((moveScore + timeScore) / 2);
       saveGameScore("memory", score);
+    } else if (done) {
+      // Time ran out — score from pairs matched
+      const pairs = deck.filter(c => c.matched).length / 2;
+      const score = Math.round((pairs / 8) * 100);
+      saveGameScore("memory", score);
     }
-  }, [deck, done, moves, seconds]);
+  }, [done, deck, moves, seconds]);
+
+  useEffect(() => {
+    if (deck.every(c => c.matched) && !done) {
+      setDone(true);
+    }
+  }, [deck, done]);
 
   const flip = (id: number) => {
     if (flipped.length === 2) return;
@@ -71,7 +88,16 @@ function MemoryGame() {
 
   const reset = () => { setDeck(buildDeck()); setFlipped([]); setMoves(0); setSeconds(0); setDone(false); };
 
-  const finalScore = Math.round((Math.max(0, 100 - Math.max(0, moves - 8) * 5) + Math.max(0, 100 - Math.max(0, seconds - 25) * 2)) / 2);
+  const finalScore = (() => {
+    const allMatched = deck.every(c => c.matched);
+    if (allMatched) {
+      const moveScore = Math.max(0, 100 - Math.max(0, moves - 8) * 5);
+      const timeScore = Math.max(0, 100 - Math.max(0, seconds - 10) * 5);
+      return Math.round((moveScore + timeScore) / 2);
+    }
+    const pairs = deck.filter(c => c.matched).length / 2;
+    return Math.round((pairs / 8) * 100);
+  })();
 
   return (
     <div className="min-h-screen">
@@ -79,7 +105,7 @@ function MemoryGame() {
       <main className="max-w-2xl mx-auto px-4 py-6">
         <div className="text-center">
           <h1 className="text-2xl md:text-4xl font-black">🧠 Memory Match</h1>
-          <p className="text-sm text-muted-foreground mt-1">Match all 8 pairs</p>
+          <p className="text-sm text-muted-foreground mt-1">Match all 8 pairs · {Math.max(0, MAX_DURATION - seconds)}s left</p>
           <ProgressDots current="memory" />
         </div>
 

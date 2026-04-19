@@ -38,6 +38,7 @@ function ReflexGame() {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (tickRef.current) clearInterval(tickRef.current);
     setPhase("done");
+    setTimeout(() => nav({ to: "/play/memory" }), 1500);
   };
 
   // Global 20s timer

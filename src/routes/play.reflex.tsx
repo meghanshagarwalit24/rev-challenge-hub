@@ -111,7 +111,7 @@ function ReflexGame() {
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 flex flex-col">
         <div className="text-center">
           <h1 className="text-2xl md:text-4xl font-black">⚡ Reflex Tap</h1>
-          <p className="text-sm text-muted-foreground mt-1">Round {Math.min(round + 1, ROUNDS)} / {ROUNDS} · {timeLeft.toFixed(1)}s left</p>
+          <p className="text-sm text-muted-foreground mt-1">{timeLeft.toFixed(1)}s left</p>
           <ProgressDots current="reflex" />
         </div>
 

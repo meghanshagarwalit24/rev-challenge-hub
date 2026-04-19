@@ -154,12 +154,7 @@ function BalanceGame() {
               <div className="text-4xl mb-2">🔥</div>
               <p className="text-3xl font-black text-gradient-energy">{score}/100</p>
               <p className="text-sm text-muted-foreground mt-1">{(hold/1000).toFixed(1)}s in the zone</p>
-              <div className="mt-4 flex gap-2">
-                <button onClick={start} className="flex-1 py-3 rounded-full bg-muted hover:bg-muted/80 font-semibold transition-colors">Retry</button>
-                <button onClick={() => nav({ to: "/challenges" })} className="flex-1 py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform">
-                  Continue →
-                </button>
-              </div>
+              <p className="mt-3 text-sm text-muted-foreground">Loading your results…</p>
             </motion.div>
           )}
         </AnimatePresence>

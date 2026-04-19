@@ -11,20 +11,51 @@ export const Route = createFileRoute("/play/reflex")({
 
 type Phase = "idle" | "waiting" | "go" | "tooSoon" | "done";
 const ROUNDS = 5;
+const MAX_DURATION = 20; // seconds total cap
 
 function ReflexGame() {
   const nav = useNavigate();
   const [phase, setPhase] = useState<Phase>("idle");
   const [round, setRound] = useState(0);
   const [times, setTimes] = useState<number[]>([]);
+  const [timeLeft, setTimeLeft] = useState(MAX_DURATION);
   const startRef = useRef(0);
+  const sessionStartRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
+  useEffect(() => () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (tickRef.current) clearInterval(tickRef.current);
+  }, []);
+
+  const finish = (finalTimes: number[]) => {
+    const avg = finalTimes.length ? finalTimes.reduce((a, b) => a + b, 0) / finalTimes.length : 700;
+    const score = Math.max(0, Math.min(100, Math.round((700 - avg) / 5)));
+    saveGameScore("reflex", score);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (tickRef.current) clearInterval(tickRef.current);
+    setPhase("done");
+  };
+
+  // Global 20s timer
+  useEffect(() => {
+    if (phase === "idle" || phase === "done") return;
+    if (sessionStartRef.current === 0) sessionStartRef.current = performance.now();
+    tickRef.current = setInterval(() => {
+      const elapsed = (performance.now() - sessionStartRef.current) / 1000;
+      const left = Math.max(0, MAX_DURATION - elapsed);
+      setTimeLeft(left);
+      if (left <= 0) finish(times);
+    }, 100);
+    return () => { if (tickRef.current) clearInterval(tickRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, times]);
 
   const startRound = () => {
+    if (sessionStartRef.current === 0) sessionStartRef.current = performance.now();
     setPhase("waiting");
-    const delay = 900 + Math.random() * 2200;
+    const delay = 700 + Math.random() * 1600;
     timeoutRef.current = setTimeout(() => {
       startRef.current = performance.now();
       setPhase("go");
@@ -32,7 +63,8 @@ function ReflexGame() {
   };
 
   const handleTap = () => {
-    if (phase === "idle" || phase === "done") { startRound(); return; }
+    if (phase === "done") return;
+    if (phase === "idle") { startRound(); return; }
     if (phase === "tooSoon") { startRound(); return; }
     if (phase === "waiting") {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -46,14 +78,10 @@ function ReflexGame() {
       const nextRound = round + 1;
       setRound(nextRound);
       if (nextRound >= ROUNDS) {
-        const avg = next.reduce((a, b) => a + b, 0) / next.length;
-        // Score: faster = more, capped at 100. <200ms = 100, >700ms = 0
-        const score = Math.max(0, Math.min(100, Math.round((700 - avg) / 5)));
-        saveGameScore("reflex", score);
-        setPhase("done");
+        finish(next);
       } else {
         setPhase("idle");
-        setTimeout(startRound, 600);
+        setTimeout(startRound, 500);
       }
     }
   };
@@ -83,7 +111,7 @@ function ReflexGame() {
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 flex flex-col">
         <div className="text-center">
           <h1 className="text-2xl md:text-4xl font-black">⚡ Reflex Tap</h1>
-          <p className="text-sm text-muted-foreground mt-1">Round {Math.min(round + 1, ROUNDS)} / {ROUNDS}</p>
+          <p className="text-sm text-muted-foreground mt-1">Round {Math.min(round + 1, ROUNDS)} / {ROUNDS} · {timeLeft.toFixed(1)}s left</p>
           <ProgressDots current="reflex" />
         </div>
 

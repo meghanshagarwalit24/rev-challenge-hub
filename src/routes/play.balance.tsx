@@ -78,8 +78,10 @@ function BalanceGame() {
       const pct = Math.min(1, hold / (DURATION * 1000));
       const score = Math.round(pct * 100);
       saveGameScore("balance", score);
+      const t = setTimeout(() => nav({ to: "/result" }), 1500);
+      return () => clearTimeout(t);
     }
-  }, [done, hold]);
+  }, [done, hold, nav]);
 
   const tap = () => {
     if (!running) { start(); return; }

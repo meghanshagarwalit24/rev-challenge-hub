@@ -158,10 +158,7 @@ function ReflexGame() {
               </p>
               {phase === "done" && (
                 <div className="mt-6 text-center">
-                  <p className="text-white/80">Avg reaction</p>
-                  <p className="text-4xl font-black text-white">{avg} ms</p>
-                  <p className="mt-3 text-2xl font-bold text-white">Score: {score}/100</p>
-                  <p className="mt-3 text-sm text-white/80">Loading next challenge…</p>
+                  <p className="text-2xl font-bold text-white">Loading next challenge…</p>
                 </div>
               )}
             </motion.div>

@@ -166,11 +166,12 @@ function MemoryGame() {
 
         <AnimatePresence>
           {done && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-6 bg-gradient-card border border-border rounded-3xl p-6 text-center shadow-card">
-              <div className="text-5xl mb-3">🏆</div>
-              <h2 className="text-2xl font-black">Complete!</h2>
-              <p className="text-muted-foreground mt-1">{moves} moves · {seconds}s</p>
-              <p className="mt-3 text-sm text-muted-foreground">Loading next challenge…</p>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[90] flex items-center justify-center bg-background/85 backdrop-blur-md px-4">
+              <div className="bg-gradient-card border border-border rounded-3xl p-8 text-center shadow-card max-w-sm w-full">
+                <div className="text-5xl mb-3">🧠</div>
+                <h2 className="text-2xl font-black text-gradient-energy">Nice work!</h2>
+                <p className="mt-3 text-sm text-muted-foreground">Loading next challenge…</p>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

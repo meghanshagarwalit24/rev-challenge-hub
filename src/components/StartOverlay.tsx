@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useEffect } from "react";
 
 interface StartOverlayProps {
   emoji?: string;
@@ -8,11 +9,19 @@ interface StartOverlayProps {
 }
 
 export function StartOverlay({ emoji, title, lines, onStart }: StartOverlayProps) {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm px-4"
+      onClick={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 backdrop-blur-md px-4 overscroll-contain touch-none"
     >
       <motion.div
         initial={{ scale: 0.9, y: 20, opacity: 0 }}

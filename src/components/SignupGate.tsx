@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { categorize, computeTotal, getCurrentScores, saveUser } from "@/lib/storage";
 
@@ -50,11 +50,19 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
     completeSignup("google.user@revital.demo", name || "Google User");
   };
 
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-background/85 backdrop-blur-md px-4 overflow-y-auto py-8"
+      onClick={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-background/90 backdrop-blur-md px-4 overflow-y-auto py-8 overscroll-contain"
     >
       <motion.div
         initial={{ scale: 0.92, y: 20, opacity: 0 }}

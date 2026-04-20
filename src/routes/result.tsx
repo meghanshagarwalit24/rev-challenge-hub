@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { SignupGate } from "@/components/SignupGate";
-import { categorize, computeTotal, getCurrentScores, isLoggedIn, resetScores, type GameScores } from "@/lib/storage";
+import { categorize, computeTotal, getCurrentScores, getUser, isLoggedIn, resetScores, type GameScores } from "@/lib/storage";
+import { buildShareCard } from "@/lib/shareCard";
 
 export const Route = createFileRoute("/result")({
   component: Result,
@@ -44,21 +45,46 @@ function Result() {
 
   const shareText = `I scored ${total}/300 — ${cat.label} on the Revital Energy Challenge ⚡ Tag @revitalofficial on Instagram & boost your chance to win! ${typeof window !== "undefined" ? window.location.origin : ""}`;
 
-  const share = async () => {
-    if (typeof navigator !== "undefined" && (navigator as any).share) {
-      try { await (navigator as any).share({ title: "Revital Energy Challenge", text: shareText }); } catch {}
-    } else if (typeof navigator !== "undefined") {
-      await navigator.clipboard.writeText(shareText);
-      alert("Copied! Now paste in your Instagram story and tag @revitalofficial 🔥");
+  const generateAndShare = async (openInstagram = false) => {
+    try {
+      const user = getUser();
+      const blob = await buildShareCard({
+        name: user?.name,
+        total,
+        category: cat.label,
+        tier: cat.tier,
+      });
+      const file = new File([blob], "revital-energy-score.png", { type: "image/png" });
+      const navAny = navigator as any;
+      if (navAny.canShare && navAny.canShare({ files: [file] }) && navAny.share) {
+        try {
+          await navAny.share({ files: [file], title: "Revital Energy Challenge", text: shareText });
+          return;
+        } catch {}
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "revital-energy-score.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      try { await navigator.clipboard.writeText(shareText); } catch {}
+      if (openInstagram) {
+        alert("Branded score card downloaded! Upload it to your Instagram story and tag @revitalofficial 🔥");
+        window.open("https://www.instagram.com/", "_blank");
+      } else {
+        alert("Branded score card downloaded! Caption copied to clipboard 🔥");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Could not generate share card. Please try again.");
     }
   };
 
-  const shareInstagram = async () => {
-    if (typeof navigator !== "undefined") {
-      try { await navigator.clipboard.writeText(shareText); } catch {}
-    }
-    window.open("https://www.instagram.com/", "_blank");
-  };
+  const share = () => generateAndShare(false);
+  const shareInstagram = () => generateAndShare(true);
 
   const games: Array<{ key: keyof GameScores; label: string; emoji: string }> = [
     { key: "reflex", label: "Reflex", emoji: "⚡" },

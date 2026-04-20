@@ -8,6 +8,7 @@ export function Header() {
   const routerState = useRouterState();
   const [user, setUser] = useState<UserRecord | null>(null);
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   // Refresh user state on every route change

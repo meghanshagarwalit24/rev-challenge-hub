@@ -70,6 +70,8 @@ export const findUserByContact = (contact: string) =>
 export const hasConsent = () => localStorage.getItem(CONSENT_KEY) === "true";
 export const setConsent = (v: boolean) => localStorage.setItem(CONSENT_KEY, v ? "true" : "false");
 
+export const isLoggedIn = () => !!getUser();
+
 // Mock OTP — accept "123456"
 export const MOCK_OTP = "123456";
 

@@ -2,7 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
-import { categorize, computeTotal, getCurrentScores, resetScores, type GameScores } from "@/lib/storage";
+import { SignupGate } from "@/components/SignupGate";
+import { categorize, computeTotal, getCurrentScores, isLoggedIn, resetScores, type GameScores } from "@/lib/storage";
 
 export const Route = createFileRoute("/result")({
   component: Result,
@@ -12,6 +13,7 @@ function Result() {
   const nav = useNavigate();
   const [scores, setScores] = useState<GameScores>({ reflex: null, memory: null, balance: null });
   const [animatedTotal, setAnimatedTotal] = useState(0);
+  const [unlocked, setUnlocked] = useState(false);
 
   useEffect(() => {
     const s = getCurrentScores();
@@ -20,7 +22,12 @@ function Result() {
       nav({ to: "/challenges" });
       return;
     }
-    const total = computeTotal(s);
+    setUnlocked(isLoggedIn());
+  }, [nav]);
+
+  useEffect(() => {
+    if (!unlocked) return;
+    const total = computeTotal(scores);
     let cur = 0;
     const step = Math.max(1, Math.round(total / 60));
     const t = setInterval(() => {
@@ -29,20 +36,28 @@ function Result() {
       setAnimatedTotal(cur);
     }, 25);
     return () => clearInterval(t);
-  }, [nav]);
+  }, [unlocked, scores]);
 
   const total = computeTotal(scores);
   const cat = categorize(total);
   const pct = Math.min(100, Math.round((total / 300) * 100));
 
+  const shareText = `I scored ${total}/300 — ${cat.label} on the Revital Energy Challenge ⚡ Tag @revitalofficial on Instagram & boost your chance to win! ${typeof window !== "undefined" ? window.location.origin : ""}`;
+
   const share = async () => {
-    const text = `I scored ${total}/300 — ${cat.label} on the Revital Energy Challenge ⚡ Take it: ${typeof window !== "undefined" ? window.location.origin : ""}`;
     if (typeof navigator !== "undefined" && (navigator as any).share) {
-      try { await (navigator as any).share({ title: "Revital Energy Challenge", text }); } catch {}
+      try { await (navigator as any).share({ title: "Revital Energy Challenge", text: shareText }); } catch {}
     } else if (typeof navigator !== "undefined") {
-      await navigator.clipboard.writeText(text);
-      alert("Copied to clipboard!");
+      await navigator.clipboard.writeText(shareText);
+      alert("Copied! Now paste in your Instagram story and tag @revitalofficial 🔥");
     }
+  };
+
+  const shareInstagram = async () => {
+    if (typeof navigator !== "undefined") {
+      try { await navigator.clipboard.writeText(shareText); } catch {}
+    }
+    window.open("https://www.instagram.com/", "_blank");
   };
 
   const games: Array<{ key: keyof GameScores; label: string; emoji: string }> = [

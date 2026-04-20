@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { categorize, computeTotal, getCurrentScores, saveUser } from "@/lib/storage";
+import { categorize, computeTotal, findUserByContact, generateUserId, getCurrentScores, saveUser } from "@/lib/storage";
 
 interface SignupGateProps {
   onSuccess: () => void;
@@ -20,14 +20,17 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
     const scores = getCurrentScores();
     const total = computeTotal(scores);
     const cat = categorize(total);
+    const existing = findUserByContact(contactValue.trim());
     saveUser({
+      userId: existing?.userId ?? generateUserId(),
       contact: contactValue.trim(),
-      name: displayName.trim() || undefined,
+      name: displayName.trim() || existing?.name,
+      address: existing?.address,
       scores,
       total,
       category: cat.label,
       consent: true,
-      createdAt: new Date().toISOString(),
+      createdAt: existing?.createdAt ?? new Date().toISOString(),
     });
     onSuccess();
   };

@@ -41,7 +41,14 @@ function Profile() {
             <div className="text-5xl">🏆</div>
             <h1 className="mt-3 text-2xl md:text-3xl font-black">You're In!</h1>
             <p className="text-sm text-muted-foreground mt-1">Your score is saved. You're now in the prize draw.</p>
-            <div className="mt-5 grid grid-cols-3 gap-3">
+
+            <div className="mt-5 bg-background/40 rounded-2xl p-4 text-left space-y-2">
+              <Row label="User ID" value={user.userId} mono />
+              <Row label={user.contact.includes("@") ? "Email" : "Mobile"} value={user.contact} />
+              {user.name && <Row label="Name" value={user.name} />}
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-3">
               <Stat label="Total" value={`${user.total}/300`} />
               <Stat label="Tier" value={user.category.split(" ")[0]} />
               <Stat label="Eligible" value="✓" />
@@ -78,6 +85,15 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div className="bg-background/40 rounded-2xl p-3">
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="text-lg font-black text-gradient-energy">{value}</div>
+    </div>
+  );
+}
+
+function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-[11px] uppercase tracking-wider text-muted-foreground shrink-0">{label}</span>
+      <span className={`text-sm font-semibold truncate ${mono ? "font-mono" : ""}`}>{value}</span>
     </div>
   );
 }

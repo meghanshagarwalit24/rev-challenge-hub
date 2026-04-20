@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Header } from "@/components/Header";
-import { categorize, computeTotal, getCurrentScores, MOCK_OTP, saveUser } from "@/lib/storage";
+import { categorize, computeTotal, findUserByContact, generateUserId, getCurrentScores, MOCK_OTP, saveUser } from "@/lib/storage";
 
 export const Route = createFileRoute("/auth")({
   component: Auth,
@@ -35,10 +35,14 @@ function Auth() {
     const scores = getCurrentScores();
     const total = computeTotal(scores);
     const cat = categorize(total);
+    const existing = findUserByContact(contact.trim());
     saveUser({
+      userId: existing?.userId ?? generateUserId(),
       contact: contact.trim(),
+      name: existing?.name,
+      address: existing?.address,
       scores, total, category: cat.label, consent: true,
-      createdAt: new Date().toISOString(),
+      createdAt: existing?.createdAt ?? new Date().toISOString(),
     });
     nav({ to: "/profile" });
   };

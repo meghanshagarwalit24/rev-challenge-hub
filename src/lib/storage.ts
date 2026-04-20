@@ -8,6 +8,7 @@ export interface GameScores {
 }
 
 export interface UserRecord {
+  userId: string;              // generated unique id
   contact: string;             // mobile or email
   name?: string;
   address?: string;
@@ -17,6 +18,18 @@ export interface UserRecord {
   consent: boolean;
   createdAt: string;
 }
+
+export const generateUserId = (): string => {
+  const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const ts = Date.now().toString(36).slice(-4).toUpperCase();
+  return `RVT-${ts}${rand}`;
+};
+
+export const logout = () => {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(SCORES_KEY);
+};
 
 const SCORES_KEY = "revital.currentScores";
 const USER_KEY = "revital.user";

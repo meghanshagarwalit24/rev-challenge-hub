@@ -1,7 +1,37 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import logo from "@/assets/revital-logo.png";
+import { getUser, logout, type UserRecord } from "@/lib/storage";
 
 export function Header() {
+  const nav = useNavigate();
+  const routerState = useRouterState();
+  const [user, setUser] = useState<UserRecord | null>(null);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Refresh user state on every route change
+  useEffect(() => {
+    setUser(getUser());
+  }, [routerState.location.pathname]);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    setUser(null);
+    setOpen(false);
+    nav({ to: "/" });
+  };
+
+  const initial = (user?.name || user?.contact || "U").charAt(0).toUpperCase();
+
   return (
     <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 border-b border-[var(--garnet)]/10">
       <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
@@ -12,9 +42,44 @@ export function Header() {
           <Link to="/retrieve" className="px-3 py-2 rounded-full text-garnet/80 hover:text-garnet hover:bg-[var(--marigold)]/30 transition-colors font-medium">
             My Score
           </Link>
-          <Link to="/auth" className="px-4 py-2 rounded-full bg-gradient-energy text-white font-semibold shadow-button hover:scale-105 active:scale-95 transition-transform">
-            Login
-          </Link>
+          {user ? (
+            <div className="relative" ref={ref}>
+              <button
+                onClick={() => setOpen((o) => !o)}
+                aria-label="Account menu"
+                className="w-10 h-10 rounded-full bg-gradient-energy text-white font-bold shadow-button hover:scale-105 active:scale-95 transition-transform flex items-center justify-center"
+              >
+                {initial}
+              </button>
+              {open && (
+                <div className="absolute right-0 mt-2 w-60 bg-white border border-border rounded-2xl shadow-xl overflow-hidden z-50">
+                  <div className="px-4 py-3 border-b border-border">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Signed in as</div>
+                    <div className="text-sm font-semibold truncate">{user.name || user.contact}</div>
+                    <div className="text-[11px] text-muted-foreground truncate">{user.contact}</div>
+                    <div className="text-[10px] font-mono text-muted-foreground mt-1">ID: {user.userId}</div>
+                  </div>
+                  <Link
+                    to="/profile"
+                    onClick={() => setOpen(false)}
+                    className="block px-4 py-2.5 text-sm hover:bg-muted/50 transition-colors"
+                  >
+                    👤 Profile
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors border-t border-border"
+                  >
+                    ↩ Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link to="/auth" className="px-4 py-2 rounded-full bg-gradient-energy text-white font-semibold shadow-button hover:scale-105 active:scale-95 transition-transform">
+              Login
+            </Link>
+          )}
         </nav>
       </div>
     </header>

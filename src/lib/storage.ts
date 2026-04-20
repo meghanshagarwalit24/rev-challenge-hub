@@ -70,7 +70,19 @@ export const saveUser = (u: UserRecord) => {
 };
 
 export const getUser = (): UserRecord | null => {
-  try { return JSON.parse(localStorage.getItem(USER_KEY) || ""); } catch { return null; }
+  try {
+    const u = JSON.parse(localStorage.getItem(USER_KEY) || "") as UserRecord;
+    if (!u) return null;
+    // Backfill userId for older records
+    if (!u.userId) {
+      u.userId = generateUserId();
+      localStorage.setItem(USER_KEY, JSON.stringify(u));
+      const all = getAllUsers();
+      const idx = all.findIndex((x) => x.contact === u.contact);
+      if (idx >= 0) { all[idx] = u; localStorage.setItem(ALL_USERS_KEY, JSON.stringify(all)); }
+    }
+    return u;
+  } catch { return null; }
 };
 
 export const getAllUsers = (): UserRecord[] => {

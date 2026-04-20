@@ -8,6 +8,7 @@ export function Header() {
   const routerState = useRouterState();
   const [user, setUser] = useState<UserRecord | null>(null);
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   // Refresh user state on every route change
@@ -52,23 +53,37 @@ export function Header() {
                 {initial}
               </button>
               {open && (
-                <div className="absolute right-0 mt-2 w-60 bg-white border border-border rounded-2xl shadow-xl overflow-hidden z-50">
+                <div className="absolute right-0 mt-2 w-72 bg-white border border-border rounded-2xl shadow-xl overflow-hidden z-50">
                   <div className="px-4 py-3 border-b border-border">
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Signed in as</div>
                     <div className="text-sm font-semibold truncate">{user.name || user.contact}</div>
                     <div className="text-[11px] text-muted-foreground truncate">{user.contact}</div>
-                    <div className="text-[10px] font-mono text-muted-foreground mt-1">ID: {user.userId}</div>
+                    <div className="mt-2 flex items-center justify-between gap-2 bg-muted/40 rounded-lg px-2 py-1.5">
+                      <div className="min-w-0">
+                        <div className="text-[9px] uppercase tracking-wider text-muted-foreground">User ID</div>
+                        <div className="text-[11px] font-mono font-semibold truncate">{user.userId || "—"}</div>
+                      </div>
+                      {user.userId && (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try {
+                              await navigator.clipboard.writeText(user.userId);
+                              setCopied(true);
+                              setTimeout(() => setCopied(false), 1500);
+                            } catch {}
+                          }}
+                          className="shrink-0 text-[10px] font-semibold px-2 py-1 rounded-md bg-gradient-energy text-white hover:scale-105 active:scale-95 transition-transform"
+                          aria-label="Copy User ID"
+                        >
+                          {copied ? "✓ Copied" : "Copy"}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <Link
-                    to="/profile"
-                    onClick={() => setOpen(false)}
-                    className="block px-4 py-2.5 text-sm hover:bg-muted/50 transition-colors"
-                  >
-                    👤 Profile
-                  </Link>
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors border-t border-border"
+                    className="w-full text-left px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                   >
                     ↩ Logout
                   </button>

@@ -69,7 +69,8 @@ function Result() {
   return (
     <div className="min-h-screen">
       <Header />
-      <main className="max-w-2xl mx-auto px-4 py-8 text-center">
+      {!unlocked && <SignupGate onSuccess={() => setUnlocked(true)} />}
+      <main className={`max-w-2xl mx-auto px-4 py-8 text-center ${!unlocked ? "blur-sm pointer-events-none select-none" : ""}`}>
         <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="uppercase text-xs tracking-[0.3em] text-accent">Your Energy Score</motion.p>
 
         <motion.div
@@ -125,9 +126,18 @@ function Result() {
         </div>
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.4 }} className="mt-8 space-y-3">
-          <Link to="/auth" className="block w-full py-4 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button glow-pulse hover:scale-[1.02] active:scale-[0.98] transition-transform">
-            Save My Score & Win →
-          </Link>
+          <div className="bg-gradient-card border border-accent/40 rounded-3xl p-5 text-left">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">📸</span>
+              <h3 className="font-black text-lg text-gradient-energy">Boost Your Chance to Win!</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Share your score on Instagram and tag <span className="text-accent font-semibold">@revitalofficial</span> in your story to multiply your chances of winning the daily prize 🏆
+            </p>
+            <button onClick={shareInstagram} className="mt-4 w-full py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button glow-pulse hover:scale-[1.02] active:scale-[0.98] transition-transform">
+              Share on Instagram →
+            </button>
+          </div>
           <div className="flex gap-2">
             <button onClick={share} className="flex-1 py-3 rounded-full bg-card border border-border font-semibold hover:bg-muted/50 transition-colors">
               Share
@@ -136,7 +146,9 @@ function Result() {
               Play Again
             </button>
           </div>
-          <p className="text-xs text-muted-foreground pt-2">Complete all challenges & save your score to qualify for daily rewards.</p>
+          <Link to="/profile" className="block text-xs text-muted-foreground hover:text-foreground transition-colors pt-2">
+            View your profile →
+          </Link>
         </motion.div>
       </main>
     </div>

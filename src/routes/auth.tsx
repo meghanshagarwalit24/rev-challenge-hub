@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Header } from "@/components/Header";
 import { categorize, computeTotal, findUserByContact, generateUserId, getCurrentScores, MOCK_OTP, saveUserRemote } from "@/lib/storage";
+import { useGoogleSignIn } from "@/hooks/useGoogleSignIn";
 
 export const Route = createFileRoute("/auth")({
   component: Auth,
@@ -16,6 +17,33 @@ function Auth() {
   const [consent, setConsent] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const { signIn: googleSignIn } = useGoogleSignIn({
+    onSuccess: async (profile) => {
+      setErr("");
+      setLoading(true);
+      const scores = getCurrentScores();
+      const total = computeTotal(scores);
+      const cat = categorize(total);
+      const existing = findUserByContact(profile.email);
+      try {
+        await saveUserRemote({
+          userId: existing?.userId ?? generateUserId(),
+          contact: profile.email,
+          name: profile.name || existing?.name || "Google User",
+          address: existing?.address,
+          scores, total, category: cat.label, consent: true,
+          createdAt: existing?.createdAt ?? new Date().toISOString(),
+        });
+        nav({ to: "/profile" });
+      } catch {
+        setErr("Failed to save your score. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: (reason) => setErr(reason),
+  });
 
   const valid = (v: string) => /^\S+@\S+\.\S+$/.test(v) || /^\+?\d{8,15}$/.test(v.replace(/\s/g, ""));
 
@@ -88,7 +116,8 @@ function Auth() {
                 <button disabled={loading} className="w-full py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-60">
                   {loading ? "Sending..." : "Send OTP"}
                 </button>
-                <button type="button" className="w-full py-3 rounded-full bg-card border border-border font-semibold hover:bg-muted/50 transition-colors">
+                <button type="button" onClick={googleSignIn} disabled={loading} className="w-full py-3 rounded-full bg-card border border-border font-semibold hover:bg-muted/50 transition-colors flex items-center justify-center gap-2 disabled:opacity-60">
+                  <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.5 29.5 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.1l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.5 29.5 4.5 24 4.5 16.3 4.5 9.7 8.9 6.3 14.1z"/><path fill="#4CAF50" d="M24 43.5c5.4 0 10.3-2.1 14-5.5l-6.5-5.3c-2 1.4-4.6 2.3-7.5 2.3-5.3 0-9.7-3.1-11.3-7.4l-6.5 5C9.5 39 16.2 43.5 24 43.5z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.7l6.5 5.3c-.5.5 7-5.1 7-15 0-1.2-.1-2.4-.4-3.5z"/></svg>
                   Continue with Google
                 </button>
               </motion.form>

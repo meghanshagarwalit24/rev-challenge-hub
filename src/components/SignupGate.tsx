@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { categorize, computeTotal, findUserByContact, generateUserId, getCurrentScores, saveUser } from "@/lib/storage";
+import { useGoogleSignIn } from "@/hooks/useGoogleSignIn";
 
 interface SignupGateProps {
   onSuccess: () => void;
@@ -48,9 +49,16 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
     }, 500);
   };
 
+  const { signIn: googleSignIn } = useGoogleSignIn({
+    onSuccess: (profile) => {
+      completeSignup(profile.email, profile.name || name || "Google User");
+    },
+    onError: (reason) => setErr(reason),
+  });
+
   const google = () => {
     if (!consent) return setErr("Please accept the consent to continue with Google");
-    completeSignup("google.user@revital.demo", name || "Google User");
+    googleSignIn();
   };
 
   useEffect(() => {

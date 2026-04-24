@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Header } from "@/components/Header";
-import { categorize, computeTotal, findUserByContact, generateUserId, getCurrentScores, MOCK_OTP, saveUser } from "@/lib/storage";
+import { categorize, computeTotal, findUserByContact, generateUserId, getCurrentScores, MOCK_OTP, saveUserRemote } from "@/lib/storage";
 
 export const Route = createFileRoute("/auth")({
   component: Auth,
@@ -28,23 +28,30 @@ function Auth() {
     setTimeout(() => { setLoading(false); setStep("otp"); }, 600);
   };
 
-  const verify = (e: React.FormEvent) => {
+  const verify = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
     if (otp !== MOCK_OTP) { setErr("Invalid code. Hint: 123456 (mock)"); return; }
+    setLoading(true);
     const scores = getCurrentScores();
     const total = computeTotal(scores);
     const cat = categorize(total);
     const existing = findUserByContact(contact.trim());
-    saveUser({
-      userId: existing?.userId ?? generateUserId(),
-      contact: contact.trim(),
-      name: existing?.name,
-      address: existing?.address,
-      scores, total, category: cat.label, consent: true,
-      createdAt: existing?.createdAt ?? new Date().toISOString(),
-    });
-    nav({ to: "/profile" });
+    try {
+      await saveUserRemote({
+        userId: existing?.userId ?? generateUserId(),
+        contact: contact.trim(),
+        name: existing?.name,
+        address: existing?.address,
+        scores, total, category: cat.label, consent: true,
+        createdAt: existing?.createdAt ?? new Date().toISOString(),
+      });
+      nav({ to: "/profile" });
+    } catch {
+      setErr("Failed to save your score. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -15,8 +15,8 @@ function Landing() {
   const [daily, setDaily] = useState<LeaderEntry[]>([]);
   const [global, setGlobal] = useState<LeaderEntry[]>([]);
   useEffect(() => {
-    setDaily(getDailyLeaderboard());
-    setGlobal(getGlobalLeaderboard());
+    getDailyLeaderboard().then(setDaily);
+    getGlobalLeaderboard().then(setGlobal);
   }, []);
 
   return (

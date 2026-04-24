@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
-import { getUser, saveUser, type UserRecord } from "@/lib/storage";
+import { getUser, saveUserRemote, type UserRecord } from "@/lib/storage";
 
 export const Route = createFileRoute("/profile")({
   component: Profile,
@@ -25,9 +25,9 @@ function Profile() {
 
   if (!user) return null;
 
-  const save = (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    saveUser({ ...user, name: name.trim(), address: address.trim() });
+    await saveUserRemote({ ...user, name: name.trim(), address: address.trim() });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };

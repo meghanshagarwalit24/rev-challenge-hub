@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { Header } from "@/components/Header";
-import { getAllUsers, type UserRecord } from "@/lib/storage";
+import { getAllUsersRemote, type UserRecord } from "@/lib/storage";
 
 export const Route = createFileRoute("/admin")({
   component: Admin,
@@ -26,7 +26,7 @@ function Admin() {
   const [to, setTo] = useState("");
   const [search, setSearch] = useState("");
 
-  useEffect(() => { setUsers(getAllUsers()); setSettings(loadSettings()); }, []);
+  useEffect(() => { getAllUsersRemote().then(setUsers); setSettings(loadSettings()); }, []);
 
   const filtered = useMemo(() => users.filter(u => {
     if (filterCat !== "all" && u.category !== filterCat) return false;

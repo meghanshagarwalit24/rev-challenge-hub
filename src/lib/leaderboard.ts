@@ -1,5 +1,5 @@
-// Mock leaderboard data — swap with API later
-import { getAllUsers, type UserRecord } from "./storage";
+// Leaderboard — data is fetched from MongoDB via server functions.
+import { getAllUsersRemote, type UserRecord } from "./storage";
 
 export interface LeaderEntry {
   name: string;
@@ -52,12 +52,12 @@ const fromUser = (u: UserRecord, when: string): LeaderEntry => ({
   when,
 });
 
-export const getDailyLeaderboard = (): LeaderEntry[] => {
-  const users = getAllUsers().map((u) => fromUser(u, "Today"));
+export const getDailyLeaderboard = async (): Promise<LeaderEntry[]> => {
+  const users = (await getAllUsersRemote()).map((u) => fromUser(u, "Today"));
   return [...users, ...SAMPLE_DAILY].sort((a, b) => b.total - a.total).slice(0, 10);
 };
 
-export const getGlobalLeaderboard = (): LeaderEntry[] => {
-  const users = getAllUsers().map((u) => fromUser(u, "All-time"));
+export const getGlobalLeaderboard = async (): Promise<LeaderEntry[]> => {
+  const users = (await getAllUsersRemote()).map((u) => fromUser(u, "All-time"));
   return [...users, ...SAMPLE_GLOBAL].sort((a, b) => b.total - a.total).slice(0, 10);
 };

@@ -1,4 +1,4 @@
-// Mock persistence layer. Swap with API calls to your VPS/Mongo backend later.
+// Persistence layer — session state lives in localStorage; user records are stored in MongoDB via server functions.
 export type GameKey = "reflex" | "memory" | "balance";
 
 export interface GameScores {
@@ -67,6 +67,40 @@ export const saveUser = (u: UserRecord) => {
   const idx = all.findIndex((x) => x.contact === u.contact);
   if (idx >= 0) all[idx] = u; else all.push(u);
   localStorage.setItem(ALL_USERS_KEY, JSON.stringify(all));
+};
+
+/** Persist user to MongoDB (server) AND update localStorage cache. */
+export const saveUserRemote = async (u: UserRecord): Promise<void> => {
+  saveUser(u);
+  const { saveUserFn } = await import("@/server/userFns");
+  await saveUserFn({ data: u });
+};
+
+/** Look up a user by contact in MongoDB (server), with localStorage as fallback. */
+export const findUserByContactRemote = async (contact: string): Promise<UserRecord | null> => {
+  try {
+    const { getUserByContactFn } = await import("@/server/userFns");
+    const remote = await getUserByContactFn({ data: { contact } });
+    if (remote) {
+      // sync to local cache
+      saveUser(remote);
+      return remote;
+    }
+  } catch (e) {
+    console.warn("MongoDB lookup failed, falling back to localStorage", e);
+  }
+  return findUserByContact(contact);
+};
+
+/** Fetch all users from MongoDB (server), with localStorage as fallback. */
+export const getAllUsersRemote = async (): Promise<UserRecord[]> => {
+  try {
+    const { getAllUsersFn } = await import("@/server/userFns");
+    return await getAllUsersFn();
+  } catch (e) {
+    console.warn("MongoDB getAllUsers failed, falling back to localStorage", e);
+    return getAllUsers();
+  }
 };
 
 export const getUser = (): UserRecord | null => {

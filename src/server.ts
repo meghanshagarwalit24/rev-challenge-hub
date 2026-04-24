@@ -34,9 +34,14 @@ serve({
     // Serve static client-side assets before falling through to SSR
     if (pathname.startsWith("/assets/")) {
       try {
+        // Resolve the full path and guard against path traversal
         const filePath = join(clientDir, pathname);
-        const data = await readFile(filePath);
-        const ext = extname(filePath).toLowerCase();
+        const resolvedPath = filePath.startsWith(clientDir + "/") ? filePath : null;
+        if (!resolvedPath) {
+          return new Response("Forbidden", { status: 403 });
+        }
+        const data = await readFile(resolvedPath);
+        const ext = extname(resolvedPath).toLowerCase();
         return new Response(data, {
           headers: {
             "Content-Type": MIME[ext] ?? "application/octet-stream",

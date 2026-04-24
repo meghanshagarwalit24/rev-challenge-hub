@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Header } from "@/components/Header";
-import { findUserByContact, MOCK_OTP, type UserRecord } from "@/lib/storage";
+import { findUserByContactRemote, MOCK_OTP, type UserRecord } from "@/lib/storage";
 
 export const Route = createFileRoute("/retrieve")({
   component: Retrieve,
@@ -15,18 +15,18 @@ function Retrieve() {
   const [user, setUser] = useState<UserRecord | null>(null);
   const [err, setErr] = useState("");
 
-  const next = (e: React.FormEvent) => {
+  const next = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
-    const u = findUserByContact(contact.trim());
+    const u = await findUserByContactRemote(contact.trim());
     if (!u) { setErr("No score found for this contact."); return; }
     setStep("otp");
   };
 
-  const verify = (e: React.FormEvent) => {
+  const verify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otp !== MOCK_OTP) { setErr("Invalid code. Use 123456 (mock)."); return; }
-    setUser(findUserByContact(contact.trim()));
+    setUser(await findUserByContactRemote(contact.trim()));
     setStep("result");
   };
 

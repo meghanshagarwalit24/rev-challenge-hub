@@ -30,7 +30,7 @@ function Auth() {
         await saveUserRemote({
           userId: existing?.userId ?? generateUserId(),
           contact: profile.email,
-          name: profile.name || existing?.name,
+          name: profile.name || existing?.name || "Google User",
           address: existing?.address,
           scores, total, category: cat.label, consent: true,
           createdAt: existing?.createdAt ?? new Date().toISOString(),

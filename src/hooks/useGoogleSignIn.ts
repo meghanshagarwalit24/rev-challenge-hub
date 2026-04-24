@@ -84,7 +84,8 @@ export function useGoogleSignIn({ onSuccess, onError }: UseGoogleSignInOptions) 
           }
           try {
             const res = await fetch(
-              `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${tokenResponse.access_token}`
+              "https://www.googleapis.com/oauth2/v3/userinfo",
+              { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
             );
             if (!res.ok) throw new Error(`userinfo ${res.status}`);
             const data = await res.json() as { name?: string; email?: string; picture?: string };

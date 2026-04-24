@@ -6,4 +6,6 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-export default defineConfig();
+// Targeting Node.js (Hostinger VPS) — Cloudflare Workers plugin is disabled.
+// The custom server entry at src/server.ts starts a real Node.js HTTP server.
+export default defineConfig({ cloudflare: false });

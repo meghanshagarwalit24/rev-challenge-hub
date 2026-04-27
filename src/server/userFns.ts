@@ -36,6 +36,7 @@ const userRecordSchema = z.object({
 });
 
 const contactSchema = z.object({ contact: z.string().min(1) });
+const userIdSchema = z.object({ userId: z.string().min(1) });
 
 // ── save / upsert ──────────────────────────────────────────────────────────────
 export const saveUserFn = createServerFn({ method: "POST" })
@@ -102,6 +103,19 @@ export const getUserByContactFn = createServerFn({ method: "POST" })
     const user = await db
       .collection<UserRecord & { _id: unknown }>("users")
       .findOne({ contact: data.contact.toLowerCase() });
+    if (!user) return null;
+    const { _id: _unused, ...rest } = user;
+    return rest as UserRecord;
+  });
+
+// ── get by userId ─────────────────────────────────────────────────────────────
+export const getUserByIdFn = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => userIdSchema.parse(data))
+  .handler(async ({ data }) => {
+    const db = await getDb();
+    const user = await db
+      .collection<UserRecord & { _id: unknown }>("users")
+      .findOne({ userId: data.userId });
     if (!user) return null;
     const { _id: _unused, ...rest } = user;
     return rest as UserRecord;

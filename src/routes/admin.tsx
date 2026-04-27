@@ -189,7 +189,6 @@ function Admin() {
   const [logSearch, setLogSearch] = useState("");
   const [dateWiseSearch, setDateWiseSearch] = useState("");
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
-  const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
 
   const addLog = useCallback(async (action: string, details: string) => {
     try {
@@ -338,25 +337,6 @@ function Admin() {
       (l) => l.action.toLowerCase().includes(q) || l.details.toLowerCase().includes(q),
     );
   }, [logs, logSearch]);
-
-  const selectedUserAttempts = useMemo(() => {
-    if (!selectedUser) return [];
-    return [...(selectedUser.playAttempts ?? [])].sort((a, b) =>
-      b.playedAt.localeCompare(a.playedAt),
-    );
-  }, [selectedUser]);
-
-  const selectedBestAttempt = useMemo(() => {
-    if (selectedUserAttempts.length === 0) return null;
-    return selectedUserAttempts.reduce((top, cur) => (cur.total > top.total ? cur : top));
-  }, [selectedUserAttempts]);
-
-  const selectedReferredUsers = useMemo(() => {
-    if (!selectedUser) return [];
-    return users
-      .filter((u) => u.referredBy?.toUpperCase() === selectedUser.userId.toUpperCase())
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  }, [users, selectedUser]);
 
   const handleExportCsv = () => {
     const rows: (string | number)[][] = [
@@ -806,7 +786,7 @@ function Admin() {
                     {filtered.map((u, i) => (
                       <tr
                         key={i}
-                        onClick={() => setSelectedUser(u)}
+                        onClick={() => window.open(`/admin/user/${u.userId}`, "_blank")}
                         className="border-b border-border/40 hover:bg-muted/10 transition-colors cursor-pointer"
                       >
                         <Td className="font-mono text-[11px]">{u.userId}</Td>
@@ -1138,103 +1118,6 @@ function Admin() {
           )}
         </main>
       </div>
-
-      <AnimatePresence>
-        {selectedUser && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
-            onClick={() => setSelectedUser(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.98, opacity: 0 }}
-              transition={{ type: "spring", damping: 18 }}
-              className="max-w-4xl mx-auto bg-gradient-card border border-border rounded-3xl p-5 md:p-6 shadow-card"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-xl font-black">User Details</h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {selectedUser.name || "Unnamed"} · {selectedUser.contact}
-                  </p>
-                  <p className="text-xs text-muted-foreground font-mono">
-                    {selectedUser.userId}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setSelectedUser(null)}
-                  className="px-3 py-1.5 rounded-full border border-border text-xs hover:bg-muted/20"
-                >
-                  Close
-                </button>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-3 mt-4">
-                <KpiCard title="Best Score Selected" value={selectedBestAttempt?.total ?? 0} />
-                <KpiCard
-                  title="Completed Attempts"
-                  value={selectedUserAttempts.length}
-                />
-                <KpiCard
-                  title="Users Referred"
-                  value={selectedReferredUsers.length}
-                />
-              </div>
-
-              <div className="mt-5 grid md:grid-cols-2 gap-4">
-                <div className="bg-background/30 border border-border rounded-2xl p-4">
-                  <h4 className="font-bold text-sm mb-2">Referred Users (Date-wise)</h4>
-                  {selectedReferredUsers.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No referrals yet.</p>
-                  ) : (
-                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                      {selectedReferredUsers.map((u) => (
-                        <div key={u.userId} className="rounded-xl border border-border/70 p-2.5">
-                          <div className="text-sm font-semibold">{u.name || "—"}</div>
-                          <div className="text-[11px] text-muted-foreground font-mono">{u.contact}</div>
-                          <div className="text-[11px] text-muted-foreground">
-                            Joined: {new Date(u.createdAt).toLocaleString()}
-                          </div>
-                          <div className="text-[11px] font-semibold text-gradient-energy">
-                            Best: {u.total}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-background/30 border border-border rounded-2xl p-4">
-                  <h4 className="font-bold text-sm mb-2">All Completed Attempts</h4>
-                  {selectedUserAttempts.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No completed 3-game runs found.</p>
-                  ) : (
-                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                      {selectedUserAttempts.map((a, idx) => (
-                        <div key={`${a.playedAt}-${idx}`} className="rounded-xl border border-border/70 p-2.5">
-                          <div className="flex items-center justify-between">
-                            <div className="text-[11px] text-muted-foreground">{new Date(a.playedAt).toLocaleString()}</div>
-                            <div className="font-bold text-gradient-energy">{a.total}</div>
-                          </div>
-                          <div className="text-[11px] mt-1">
-                            R:{a.scores.reflex ?? 0} · M:{a.scores.memory ?? 0} · B:{a.scores.balance ?? 0}
-                          </div>
-                          <div className="text-[11px] text-muted-foreground">{a.category}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

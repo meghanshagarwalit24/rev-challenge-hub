@@ -220,8 +220,7 @@ function AdminUserDetail() {
                       <div className="font-bold text-gradient-energy">{a.total}</div>
                     </div>
                     <div className="text-[11px] mt-1">
-                      R:{a.scores.reflex ?? 0} · M:{a.scores.memory ?? 0} · B:
-                      {a.scores.balance ?? 0}
+                      R:{a.scores.reflex ?? 0} · M:{a.scores.memory ?? 0} · B:{a.scores.balance ?? 0}
                     </div>
                     <div className="text-[11px] text-muted-foreground">{a.category}</div>
                   </div>

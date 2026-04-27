@@ -24,7 +24,18 @@ export interface UserRecord {
 }
 
 export const generateUserId = (): string => {
-  const rand = crypto.randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase();
+  const randomPart = (() => {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID().replace(/-/g, "");
+    }
+    if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    }
+    return `${Math.random().toString(16).slice(2)}${Date.now().toString(16)}`;
+  })();
+  const rand = randomPart.slice(0, 6).toUpperCase();
   const ts = Date.now().toString(36).slice(-4).toUpperCase();
   return `RVT-${ts}${rand}`;
 };

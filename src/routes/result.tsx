@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { SignupGate } from "@/components/SignupGate";
-import { categorize, computeTotal, getCurrentScores, getUser, isLoggedIn, resetScores, type GameScores } from "@/lib/storage";
+import { categorize, computeTotal, getCurrentScores, getUser, isLoggedIn, resetScores, saveUserRemote, type GameScores } from "@/lib/storage";
 import { buildShareCard } from "@/lib/shareCard";
 
 export const Route = createFileRoute("/result")({
@@ -86,11 +86,22 @@ function Result() {
   const share = () => generateAndShare(false);
   const shareInstagram = () => generateAndShare(true);
 
-  const games: Array<{ key: keyof GameScores; label: string; emoji: string }> = [
-    { key: "reflex", label: "Reflex", emoji: "⚡" },
-    { key: "memory", label: "Memory", emoji: "🧠" },
-    { key: "balance", label: "Balance", emoji: "🔥" },
-  ];
+
+  useEffect(() => {
+    if (!unlocked) return;
+    const user = getUser();
+    if (!user) return;
+    const nextTotal = computeTotal(scores);
+    const nextCategory = categorize(nextTotal).label;
+    void saveUserRemote({
+      ...user,
+      scores,
+      total: nextTotal,
+      category: nextCategory,
+      consent: true,
+    });
+  }, [unlocked, scores]);
+
 
   return (
     <div className="min-h-screen">
@@ -134,22 +145,6 @@ function Result() {
             <span className="text-lg">★</span> {cat.label} <span className="opacity-70">· Tier {cat.tier}</span>
           </div>
         </motion.div>
-
-        <div className="mt-8 grid grid-cols-3 gap-3">
-          {games.map((g, i) => (
-            <motion.div
-              key={g.key}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 + i * 0.1 }}
-              className="bg-gradient-card border border-border rounded-2xl p-4"
-            >
-              <div className="text-2xl">{g.emoji}</div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground mt-1">{g.label}</div>
-              <div className="text-2xl font-black text-gradient-energy mt-1">{scores[g.key]}</div>
-            </motion.div>
-          ))}
-        </div>
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.4 }} className="mt-8 space-y-3">
           <div className="bg-gradient-card border border-accent/40 rounded-3xl p-5 text-left">

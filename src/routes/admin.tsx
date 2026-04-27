@@ -287,7 +287,6 @@ function Admin() {
     const rows: (string | number)[][] = [
       [
         "User ID",
-        "Username",
         "Contact",
         "Name",
         "Reflex",
@@ -296,12 +295,11 @@ function Admin() {
         "Total",
         "Category",
         "Refer Count",
-        "Referred By",
+        "Referred By (User ID)",
         "Created",
       ],
       ...filtered.map((u) => [
         u.userId,
-        u.username || "",
         u.contact,
         u.name || "",
         u.scores.reflex ?? "",
@@ -322,7 +320,6 @@ function Admin() {
     const rows: (string | number)[][] = [
       [
         "User ID",
-        "Username",
         "Contact",
         "Name",
         "Reflex",
@@ -331,12 +328,11 @@ function Admin() {
         "Total",
         "Category",
         "Refer Count",
-        "Referred By",
+        "Referred By (User ID)",
         "Created",
       ],
       ...filtered.map((u) => [
         u.userId,
-        u.username || "",
         u.contact,
         u.name || "",
         u.scores.reflex ?? "",
@@ -709,7 +705,6 @@ function Admin() {
                   <thead>
                     <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10">
                       <Th>User ID</Th>
-                      <Th>Username</Th>
                       <Th>Contact</Th>
                       <Th>Name</Th>
                       <Th>Reflex</Th>
@@ -718,7 +713,7 @@ function Admin() {
                       <Th>Total</Th>
                       <Th>Category</Th>
                       <Th>Refer Count</Th>
-                      <Th>Referred By</Th>
+                      <Th>Referred By (User ID)</Th>
                       <Th>Timestamp</Th>
                     </tr>
                   </thead>
@@ -726,7 +721,7 @@ function Admin() {
                     {filtered.length === 0 && (
                       <tr>
                         <td
-                          colSpan={12}
+                          colSpan={11}
                           className="py-10 text-center text-muted-foreground text-sm"
                         >
                           No users match filters.
@@ -739,9 +734,6 @@ function Admin() {
                         className="border-b border-border/40 hover:bg-muted/10 transition-colors"
                       >
                         <Td className="font-mono text-[11px]">{u.userId}</Td>
-                        <Td className="font-mono text-[11px]">
-                          {u.username ? `@${u.username}` : "—"}
-                        </Td>
                         <Td className="font-mono text-[11px]">{u.contact}</Td>
                         <Td>{u.name || "—"}</Td>
                         <Td>{u.scores.reflex ?? "—"}</Td>
@@ -752,7 +744,7 @@ function Admin() {
                           <CategoryBadge cat={u.category} />
                         </Td>
                         <Td className="font-bold text-center">{u.referCount ?? 0}</Td>
-                        <Td className="font-mono text-[11px] text-muted-foreground">
+                        <Td className="font-mono text-[11px] text-muted-foreground uppercase">
                           {u.referredBy || "—"}
                         </Td>
                         <Td className="text-muted-foreground text-[11px]">

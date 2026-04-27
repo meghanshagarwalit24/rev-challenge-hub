@@ -10,7 +10,6 @@ export interface GameScores {
 export interface UserRecord {
   userId: string; // generated unique id
   contact: string; // mobile or email
-  username?: string; // unique username for referrals
   name?: string;
   address?: string;
   scores: GameScores;
@@ -19,7 +18,7 @@ export interface UserRecord {
   consent: boolean;
   createdAt: string;
   playDates?: string[]; // YYYY-MM-DD dates the user played (for streak tracking)
-  referredBy?: string; // contact of the user who referred this person
+  referredBy?: string; // userId of the user who referred this person
   referCount?: number; // number of people this user has referred
 }
 
@@ -106,17 +105,15 @@ export const saveUser = (u: UserRecord) => {
   const all = getAllUsers();
   const idx = all.findIndex((x) => x.contact === u.contact);
   const existing = idx >= 0 ? all[idx] : null;
-  const normalizedReferral = normalizeUsername(u.referredBy || "");
-  const firstTimeReferral = !!normalizedReferral && !existing?.referredBy;
+  const referralUserId = (u.referredBy || "").trim().toUpperCase();
+  const firstTimeReferral = !!referralUserId && !existing?.referredBy;
 
   if (idx >= 0) all[idx] = u;
   else all.push(u);
 
   if (firstTimeReferral) {
     const referredIdx = all.findIndex(
-      (candidate) =>
-        candidate.contact.toLowerCase() === normalizedReferral ||
-        normalizeUsername(candidate.username || "") === normalizedReferral,
+      (candidate) => candidate.userId.toUpperCase() === referralUserId,
     );
     const selfContact = u.contact.toLowerCase();
     if (referredIdx >= 0 && all[referredIdx].contact.toLowerCase() !== selfContact) {
@@ -212,13 +209,6 @@ export const getAllUsers = (): UserRecord[] => {
 
 export const findUserByContact = (contact: string) =>
   getAllUsers().find((u) => u.contact.toLowerCase() === contact.toLowerCase()) || null;
-
-export const normalizeUsername = (value: string): string =>
-  value.trim().toLowerCase().replace(/^@+/, "");
-
-export const findUserByUsername = (username: string) =>
-  getAllUsers().find((u) => normalizeUsername(u.username || "") === normalizeUsername(username)) ||
-  null;
 
 export const hasConsent = () => localStorage.getItem(CONSENT_KEY) === "true";
 export const setConsent = (v: boolean) => localStorage.setItem(CONSENT_KEY, v ? "true" : "false");

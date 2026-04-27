@@ -12,7 +12,6 @@ const gameScoresSchema = z.object({
 const userRecordSchema = z.object({
   userId: z.string(),
   contact: z.string().min(1),
-  username: z.string().optional(),
   name: z.string().optional(),
   address: z.string().optional(),
   scores: gameScoresSchema,
@@ -26,7 +25,6 @@ const userRecordSchema = z.object({
 });
 
 const contactSchema = z.object({ contact: z.string().min(1) });
-const usernameSchema = z.object({ username: z.string().min(1) });
 
 // ── save / upsert ──────────────────────────────────────────────────────────────
 export const saveUserFn = createServerFn({ method: "POST" })
@@ -36,8 +34,7 @@ export const saveUserFn = createServerFn({ method: "POST" })
     const normalized = {
       ...data,
       contact: data.contact.toLowerCase(),
-      username: data.username?.trim().toLowerCase().replace(/^@+/, ""),
-      referredBy: data.referredBy?.trim().toLowerCase().replace(/^@+/, ""),
+      referredBy: data.referredBy?.trim().toUpperCase(),
     };
 
     // Check if this is a brand-new referral for this user (to avoid double-counting)
@@ -66,9 +63,7 @@ export const saveUserFn = createServerFn({ method: "POST" })
     // Increment referrer's referCount on first referral only
     if (firstTimeReferral) {
       await db.collection<UserRecord>("users").updateOne(
-        {
-          $or: [{ username: normalized.referredBy! }, { contact: normalized.referredBy! }],
-        },
+        { userId: normalized.referredBy! },
         { $inc: { referCount: 1 } },
       );
     }
@@ -84,17 +79,6 @@ export const getUserByContactFn = createServerFn({ method: "POST" })
     const user = await db
       .collection<UserRecord & { _id: unknown }>("users")
       .findOne({ contact: data.contact.toLowerCase() });
-    if (!user) return null;
-    const { _id: _unused, ...rest } = user;
-    return rest as UserRecord;
-  });
-
-export const getUserByUsernameFn = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => usernameSchema.parse(data))
-  .handler(async ({ data }) => {
-    const db = await getDb();
-    const username = data.username.trim().toLowerCase().replace(/^@+/, "");
-    const user = await db.collection<UserRecord & { _id: unknown }>("users").findOne({ username });
     if (!user) return null;
     const { _id: _unused, ...rest } = user;
     return rest as UserRecord;

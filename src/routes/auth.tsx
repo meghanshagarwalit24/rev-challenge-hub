@@ -9,7 +9,6 @@ import {
   generateUserId,
   getCurrentScores,
   MOCK_OTP,
-  normalizeUsername,
   saveUser,
   saveUserRemote,
 } from "@/lib/storage";
@@ -38,16 +37,6 @@ function Auth() {
     }
   };
 
-  const buildAutoUsername = (value: string, existingUsername?: string): string => {
-    if (existingUsername) return normalizeUsername(existingUsername);
-    const normalizedContact = value.trim().toLowerCase();
-    const localPart = normalizedContact.includes("@")
-      ? normalizedContact.split("@")[0]
-      : normalizedContact.replace(/\D/g, "").slice(-8);
-    const base = normalizeUsername(localPart || "player");
-    return `${base}-${Math.random().toString(36).slice(2, 6)}`;
-  };
-
   const { signIn: googleSignIn } = useGoogleSignIn({
     onSuccess: async (profile) => {
       setErr("");
@@ -56,11 +45,9 @@ function Auth() {
       const total = computeTotal(scores);
       const cat = categorize(total);
       const existing = findUserByContact(profile.email);
-      const normalizedUsername = buildAutoUsername(profile.email, existing?.username);
       const payload = {
         userId: existing?.userId ?? generateUserId(),
         contact: profile.email,
-        username: normalizedUsername || existing?.username,
         name: profile.name || existing?.name || "Google User",
         address: existing?.address,
         scores,
@@ -68,7 +55,7 @@ function Auth() {
         category: cat.label,
         consent: true,
         createdAt: existing?.createdAt ?? new Date().toISOString(),
-        referredBy: referredBy.trim() || existing?.referredBy,
+        referredBy: referredBy.trim().toUpperCase() || existing?.referredBy,
         referCount: existing?.referCount ?? 0,
       };
       // Persist local login state immediately so `/profile` always opens after auth.
@@ -118,11 +105,9 @@ function Auth() {
     const total = computeTotal(scores);
     const cat = categorize(total);
     const existing = findUserByContact(contact.trim());
-    const normalizedUsername = buildAutoUsername(contact.trim(), existing?.username);
     const payload = {
       userId: existing?.userId ?? generateUserId(),
       contact: contact.trim(),
-      username: normalizedUsername || existing?.username,
       name: existing?.name,
       address: existing?.address,
       scores,
@@ -130,7 +115,7 @@ function Auth() {
       category: cat.label,
       consent: true,
       createdAt: existing?.createdAt ?? new Date().toISOString(),
-      referredBy: referredBy.trim() || existing?.referredBy,
+      referredBy: referredBy.trim().toUpperCase() || existing?.referredBy,
       referCount: existing?.referCount ?? 0,
     };
     // Persist local login state immediately so `/profile` always opens after OTP verification.
@@ -196,11 +181,12 @@ function Auth() {
                   <input
                     value={referredBy}
                     onChange={(e) => setReferredBy(e.target.value)}
-                    placeholder="@friend_username"
+                    placeholder="RVT-AB12CD34"
                     className="mt-2 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
                   />
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
-                    Enter your friend's username who referred you — they'll get more chances to win!
+                    Enter your friend's User ID who referred you — they'll get more chances to
+                    win!
                     🏆
                   </p>
                 </div>

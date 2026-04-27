@@ -4,7 +4,6 @@ import {
   categorize,
   computeTotal,
   findUserByContact,
-  findUserByUsername,
   generateUserId,
   getCurrentScores,
   MOCK_OTP,
@@ -31,36 +30,15 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
   const valid = (v: string) =>
     /^\S+@\S+\.\S+$/.test(v) || /^\+?\d{8,15}$/.test(v.replace(/\s/g, ""));
 
-  const generateAutoUsername = (displayName: string, contactValue: string): string => {
-    const baseFromName = displayName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
-    const baseFromContact = contactValue
-      .trim()
-      .toLowerCase()
-      .split("@")[0]
-      .replace(/[^a-z0-9]+/g, "");
-    const base = (baseFromName || baseFromContact || "player").slice(0, 14);
-    let attempt = 0;
-    while (attempt < 1000) {
-      const suffix = Math.floor(100 + Math.random() * 900).toString();
-      const candidate = `${base}${suffix}`;
-      if (!findUserByUsername(candidate)) return candidate;
-      attempt += 1;
-    }
-    return `${base}${Date.now().toString(36).slice(-4)}`;
-  };
-
   const completeSignup = async (contactValue: string, displayName: string, referrer?: string) => {
     const scores = getCurrentScores();
     const total = computeTotal(scores);
     const cat = categorize(total);
     const existing = findUserByContact(contactValue.trim());
-    const normalizedUsername =
-      existing?.username || generateAutoUsername(displayName, contactValue.trim());
     try {
       await saveUserRemote({
         userId: existing?.userId ?? generateUserId(),
         contact: contactValue.trim(),
-        username: normalizedUsername || existing?.username,
         name: displayName.trim() || existing?.name,
         address: existing?.address,
         scores,
@@ -68,7 +46,7 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
         category: cat.label,
         consent: true,
         createdAt: existing?.createdAt ?? new Date().toISOString(),
-        referredBy: referrer?.trim() || existing?.referredBy,
+        referredBy: referrer?.trim().toUpperCase() || existing?.referredBy,
         referCount: existing?.referCount ?? 0,
       });
       onSuccess();
@@ -202,11 +180,11 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
                 <input
                   value={referredBy}
                   onChange={(e) => setReferredBy(e.target.value)}
-                  placeholder="@friend_username"
+                  placeholder="RVT-AB12CD34"
                   className="mt-1.5 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
                 />
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  Enter your friend's username who referred you — they'll get more chances to win!
+                  Enter your friend's User ID who referred you — they'll get more chances to win!
                   🏆
                 </p>
               </div>

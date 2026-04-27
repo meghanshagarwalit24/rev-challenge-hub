@@ -19,6 +19,7 @@ const userRecordSchema = z.object({
   category: z.string(),
   consent: z.boolean(),
   createdAt: z.string(),
+  playDates: z.array(z.string()).optional(),
 });
 
 const contactSchema = z.object({ contact: z.string().min(1) });
@@ -29,11 +30,23 @@ export const saveUserFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const db = await getDb();
     const normalized = { ...data, contact: data.contact.toLowerCase() };
-    await db.collection<UserRecord>("users").updateOne(
-      { contact: normalized.contact },
-      { $set: normalized },
-      { upsert: true },
-    );
+    // Merge playDates instead of replacing so we never lose history
+    if (normalized.playDates && normalized.playDates.length > 0) {
+      await db.collection<UserRecord>("users").updateOne(
+        { contact: normalized.contact },
+        {
+          $set: { ...normalized, playDates: undefined },
+          $addToSet: { playDates: { $each: normalized.playDates } },
+        },
+        { upsert: true },
+      );
+    } else {
+      await db.collection<UserRecord>("users").updateOne(
+        { contact: normalized.contact },
+        { $set: normalized },
+        { upsert: true },
+      );
+    }
     return { ok: true };
   });
 

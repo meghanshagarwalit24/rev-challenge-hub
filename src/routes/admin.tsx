@@ -1,196 +1,1072 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
-import { Header } from "@/components/Header";
-import { getAllUsersRemote, type UserRecord } from "@/lib/storage";
+import { createFileRoute } from "@tanstack/react-router";
+import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
+import {
+  LayoutDashboard,
+  Users,
+  CalendarDays,
+  Flame,
+  ScrollText,
+  Settings,
+  Download,
+  RefreshCw,
+  Search,
+  ChevronDown,
+  Shield,
+  LogOut,
+} from "lucide-react";
+import { getAllUsersRemote, calcStreak, type UserRecord } from "@/lib/storage";
+import type { AdminLog, PlatformSettings } from "@/server/adminFns";
 
 export const Route = createFileRoute("/admin")({
   component: Admin,
 });
 
-const SETTINGS_KEY = "revital.adminSettings";
-interface Settings { ga4: string; metaPixel: string; clarity: string; recaptchaSite: string; recaptchaSecret: string; }
-const defaultSettings: Settings = { ga4: "", metaPixel: "", clarity: "", recaptchaSite: "", recaptchaSecret: "" };
+// ── Types ──────────────────────────────────────────────────────────────────────
+type Tab = "overview" | "users" | "datewise" | "streaks" | "logs" | "settings";
+type GameFilter = "all" | "reflex" | "memory" | "balance";
 
-function loadSettings(): Settings {
-  try { return { ...defaultSettings, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}") }; }
-  catch { return defaultSettings; }
+interface DateWiseEntry {
+  date: string;
+  users: {
+    userId: string;
+    contact: string;
+    name?: string;
+    scores: UserRecord["scores"];
+    total: number;
+    category: string;
+  }[];
 }
 
+// ── Helpers ────────────────────────────────────────────────────────────────────
+const CATEGORIES = ["Peak Performer", "High Energy", "Charged Up", "Warming Up", "Recharge Needed"];
+const CHART_COLORS = ["#F37421", "#FAAD14", "#52C41A", "#1890FF", "#9B59B6"];
+
+function groupByDate(users: UserRecord[]): DateWiseEntry[] {
+  const map = new Map<string, DateWiseEntry["users"]>();
+  for (const u of users) {
+    const dates =
+      u.playDates && u.playDates.length > 0
+        ? u.playDates
+        : [new Date(u.createdAt).toISOString().slice(0, 10)];
+    for (const d of dates) {
+      if (!map.has(d)) map.set(d, []);
+      map.get(d)!.push({
+        userId: u.userId,
+        contact: u.contact,
+        name: u.name,
+        scores: u.scores,
+        total: u.total,
+        category: u.category,
+      });
+    }
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([date, userList]) => ({ date, users: userList }));
+}
+
+function exportCsv(rows: (string | number)[][], filename: string) {
+  const csv = rows
+    .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  // Prepend UTF-8 BOM so Excel auto-detects the encoding for international characters
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportExcel(rows: (string | number)[][], filename: string) {
+  // Uses SpreadsheetML (XML) format — no external library needed; Excel opens it natively
+  const header = `<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Data"><Table>`;
+  const footer = `</Table></Worksheet></Workbook>`;
+  const xmlRows = rows
+    .map(
+      (r) =>
+        `<Row>${r
+          .map(
+            (c) =>
+              `<Cell><Data ss:Type="${typeof c === "number" ? "Number" : "String"}">${String(c)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")}</Data></Cell>`,
+          )
+          .join("")}</Row>`,
+    )
+    .join("");
+  const blob = new Blob([header + xmlRows + footer], { type: "application/vnd.ms-excel" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Main Admin Component ───────────────────────────────────────────────────────
 function Admin() {
+  const [authenticated, setAuthenticated] = useState(false);
+  const [passInput, setPassInput] = useState("");
+  const [passError, setPassError] = useState(false);
+  const [tab, setTab] = useState<Tab>("overview");
   const [users, setUsers] = useState<UserRecord[]>([]);
-  const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const [logs, setLogs] = useState<AdminLog[]>([]);
+  const [settings, setSettings] = useState<PlatformSettings>({
+    ga4: "",
+    metaPixel: "",
+    clarity: "",
+    recaptchaSite: "",
+    recaptchaSecret: "",
+  });
   const [savedFlash, setSavedFlash] = useState(false);
-  const [filterCat, setFilterCat] = useState<string>("all");
+  const [loading, setLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Filters
+  const [filterCat, setFilterCat] = useState("all");
+  const [filterGame, setFilterGame] = useState<GameFilter>("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [search, setSearch] = useState("");
+  const [logSearch, setLogSearch] = useState("");
+  const [dateWiseSearch, setDateWiseSearch] = useState("");
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
 
-  useEffect(() => { getAllUsersRemote().then(setUsers); setSettings(loadSettings()); }, []);
+  const addLog = useCallback(async (action: string, details: string) => {
+    try {
+      const { addAdminLogFn } = await import("@/server/adminFns");
+      await addAdminLogFn({ data: { action, details } });
+    } catch (e) {
+      if (import.meta.env.DEV) console.warn("Failed to add admin log:", e);
+    }
+  }, []);
 
-  const filtered = useMemo(() => users.filter(u => {
-    if (filterCat !== "all" && u.category !== filterCat) return false;
-    if (from && new Date(u.createdAt) < new Date(from)) return false;
-    if (to && new Date(u.createdAt) > new Date(to + "T23:59:59")) return false;
-    if (search && !u.contact.toLowerCase().includes(search.toLowerCase()) && !(u.name || "").toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  }), [users, filterCat, from, to, search]);
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [u, adminMod] = await Promise.all([getAllUsersRemote(), import("@/server/adminFns")]);
+      setUsers(u);
+      const [l, s] = await Promise.all([
+        adminMod.getAdminLogsFn(),
+        adminMod.getPlatformSettingsFn(),
+      ]);
+      setLogs(l);
+      setSettings(s);
+    } catch (e) {
+      console.error("Admin load error", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
+  useEffect(() => {
+    if (authenticated) {
+      loadData();
+      addLog("DASHBOARD_OPEN", "Admin dashboard opened");
+    }
+  }, [authenticated, loadData, addLog]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { verifyAdminPasswordFn } = await import("@/server/adminFns");
+      const result = await verifyAdminPasswordFn({ data: { password: passInput } });
+      if (result.ok) {
+        setAuthenticated(true);
+        setPassError(false);
+      } else {
+        setPassError(true);
+      }
+    } catch {
+      setPassError(true);
+    }
+  };
+
+  // ── Filtered users for table ─────────────────────────────────────────────────
+  const filtered = useMemo(
+    () =>
+      users.filter((u) => {
+        if (filterCat !== "all" && u.category !== filterCat) return false;
+        if (filterGame !== "all" && u.scores[filterGame] === null) return false;
+        if (from && new Date(u.createdAt) < new Date(from)) return false;
+        if (to && new Date(u.createdAt) > new Date(to + "T23:59:59")) return false;
+        if (
+          search &&
+          !u.contact.toLowerCase().includes(search.toLowerCase()) &&
+          !(u.name || "").toLowerCase().includes(search.toLowerCase()) &&
+          !u.userId.toLowerCase().includes(search.toLowerCase())
+        )
+          return false;
+        return true;
+      }),
+    [users, filterCat, filterGame, from, to, search],
+  );
+
+  // ── Stats ────────────────────────────────────────────────────────────────────
   const stats = useMemo(() => {
     const total = users.length;
-    const avg = users.length ? Math.round(users.reduce((s, u) => s + u.total, 0) / users.length) : 0;
-    const dist = ["Peak Performer", "High Energy", "Charged Up", "Warming Up", "Recharge Needed"]
-      .map(label => ({ label, count: users.filter(u => u.category === label).length }));
-    const completed = users.filter(u => u.scores.reflex !== null && u.scores.memory !== null && u.scores.balance !== null).length;
-    return { total, avg, dist, completed };
+    const avg = total ? Math.round(users.reduce((s, u) => s + u.total, 0) / total) : 0;
+    const dist = CATEGORIES.map((label) => ({
+      label,
+      count: users.filter((u) => u.category === label).length,
+    }));
+    const completed = users.filter(
+      (u) => u.scores.reflex !== null && u.scores.memory !== null && u.scores.balance !== null,
+    ).length;
+    const reflexPlayed = users.filter((u) => u.scores.reflex !== null).length;
+    const memoryPlayed = users.filter((u) => u.scores.memory !== null).length;
+    const balancePlayed = users.filter((u) => u.scores.balance !== null).length;
+    const participation = [
+      { name: "Reflex", value: reflexPlayed },
+      { name: "Memory", value: memoryPlayed },
+      { name: "Balance", value: balancePlayed },
+      { name: "All 3", value: completed },
+    ];
+    return { total, avg, dist, completed, participation };
   }, [users]);
 
-  const exportCsv = () => {
-    const rows = [
-      ["Contact", "Name", "Address", "Reflex", "Memory", "Balance", "Total", "Category", "Consent", "Created"],
-      ...filtered.map(u => [
-        u.contact, u.name || "", u.address || "",
-        u.scores.reflex ?? "", u.scores.memory ?? "", u.scores.balance ?? "",
-        u.total, u.category, u.consent ? "Yes" : "No",
+  // ── Date-wise ───────────────────────────────────────────────────────────────
+  const dateWise = useMemo(() => {
+    const all = groupByDate(users);
+    if (!dateWiseSearch) return all;
+    const q = dateWiseSearch.toLowerCase();
+    return all
+      .map((d) => ({
+        ...d,
+        users: d.users.filter(
+          (u) =>
+            u.contact.toLowerCase().includes(q) ||
+            u.userId.toLowerCase().includes(q) ||
+            (u.name || "").toLowerCase().includes(q),
+        ),
+      }))
+      .filter((d) => d.date.includes(q) || d.users.length > 0);
+  }, [users, dateWiseSearch]);
+
+  // ── Streaks ─────────────────────────────────────────────────────────────────
+  const streaks = useMemo(
+    () =>
+      [...users]
+        .map((u) => ({ ...u, streak: calcStreak(u.playDates ?? []) }))
+        .sort((a, b) => b.streak - a.streak),
+    [users],
+  );
+
+  // ── Logs filtered ───────────────────────────────────────────────────────────
+  const filteredLogs = useMemo(() => {
+    if (!logSearch) return logs;
+    const q = logSearch.toLowerCase();
+    return logs.filter(
+      (l) => l.action.toLowerCase().includes(q) || l.details.toLowerCase().includes(q),
+    );
+  }, [logs, logSearch]);
+
+  const handleExportCsv = () => {
+    const rows: (string | number)[][] = [
+      ["User ID", "Contact", "Name", "Reflex", "Memory", "Balance", "Total", "Category", "Created"],
+      ...filtered.map((u) => [
+        u.userId,
+        u.contact,
+        u.name || "",
+        u.scores.reflex ?? "",
+        u.scores.memory ?? "",
+        u.scores.balance ?? "",
+        u.total,
+        u.category,
         new Date(u.createdAt).toISOString(),
       ]),
     ];
-    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `revital-users-${Date.now()}.csv`; a.click();
-    URL.revokeObjectURL(url);
+    exportCsv(rows, `revital-users-${Date.now()}.csv`);
+    addLog("EXPORT_CSV", `Exported ${filtered.length} users as CSV`);
   };
 
-  const saveSettings = (e: React.FormEvent) => {
+  const handleExportExcel = () => {
+    const rows: (string | number)[][] = [
+      ["User ID", "Contact", "Name", "Reflex", "Memory", "Balance", "Total", "Category", "Created"],
+      ...filtered.map((u) => [
+        u.userId,
+        u.contact,
+        u.name || "",
+        u.scores.reflex ?? "",
+        u.scores.memory ?? "",
+        u.scores.balance ?? "",
+        u.total,
+        u.category,
+        new Date(u.createdAt).toISOString(),
+      ]),
+    ];
+    exportExcel(rows, `revital-users-${Date.now()}.xls`);
+    addLog("EXPORT_EXCEL", `Exported ${filtered.length} users as Excel`);
+  };
+
+  const saveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    setSavedFlash(true); setTimeout(() => setSavedFlash(false), 1800);
+    try {
+      const { savePlatformSettingsFn, getAdminLogsFn } = await import("@/server/adminFns");
+      await savePlatformSettingsFn({ data: settings });
+      setSavedFlash(true);
+      setTimeout(() => setSavedFlash(false), 2000);
+      await addLog("SETTINGS_SAVED", "Platform settings updated");
+      setLogs(await getAdminLogsFn());
+    } catch (e) {
+      console.error("Save settings error", e);
+    }
   };
 
-  const maxDist = Math.max(1, ...stats.dist.map(d => d.count));
+  const handleTabChange = (t: Tab) => {
+    setTab(t);
+    setSidebarOpen(false);
+    addLog("TAB_CHANGE", `Navigated to ${t}`);
+  };
+
+  // ── Login Screen ─────────────────────────────────────────────────────────────
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-sm"
+        >
+          <div className="flex items-center gap-3 justify-center mb-8">
+            <Shield className="w-8 h-8 text-accent" />
+            <h1 className="text-2xl font-black">
+              Admin <span className="text-gradient-energy">Access</span>
+            </h1>
+          </div>
+          <form
+            onSubmit={handleLogin}
+            className="bg-gradient-card border border-border rounded-3xl p-6 shadow-card space-y-4"
+          >
+            <label className="block">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                Password
+              </span>
+              <input
+                type="password"
+                value={passInput}
+                onChange={(e) => setPassInput(e.target.value)}
+                className="mt-1.5 w-full bg-background/60 border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                autoFocus
+              />
+            </label>
+            {passError && <p className="text-xs text-red-400">Incorrect password.</p>}
+            <button className="w-full px-6 py-2.5 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform text-sm">
+              Sign In
+            </button>
+          </form>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ── Dashboard ────────────────────────────────────────────────────────────────
+  const navItems: { id: Tab; label: string; icon: React.ReactNode }[] = [
+    { id: "overview", label: "Overview", icon: <LayoutDashboard className="w-4 h-4" /> },
+    { id: "users", label: "Users", icon: <Users className="w-4 h-4" /> },
+    { id: "datewise", label: "Date-wise", icon: <CalendarDays className="w-4 h-4" /> },
+    { id: "streaks", label: "Streaks", icon: <Flame className="w-4 h-4" /> },
+    { id: "logs", label: "Admin Logs", icon: <ScrollText className="w-4 h-4" /> },
+    { id: "settings", label: "Settings", icon: <Settings className="w-4 h-4" /> },
+  ];
 
   return (
-    <div className="min-h-screen">
-      <Header />
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-accent">Admin</p>
-            <h1 className="text-3xl md:text-4xl font-black">Campaign <span className="text-gradient-energy">Dashboard</span></h1>
-          </div>
-          <button onClick={exportCsv} className="px-5 py-2.5 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform text-sm">
-            ⬇ Export CSV
+    <div className="min-h-screen flex flex-col">
+      {/* Top bar */}
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border h-14 flex items-center px-4 gap-3">
+        <button
+          onClick={() => setSidebarOpen((o) => !o)}
+          className="lg:hidden p-1.5 rounded-lg hover:bg-muted/30 transition-colors"
+          aria-label="Toggle sidebar"
+        >
+          <div className="w-5 h-0.5 bg-foreground mb-1" />
+          <div className="w-5 h-0.5 bg-foreground mb-1" />
+          <div className="w-5 h-0.5 bg-foreground" />
+        </button>
+        <Shield className="w-5 h-5 text-accent" />
+        <span className="font-black text-sm tracking-wide">
+          Admin <span className="text-gradient-energy">Dashboard</span>
+        </span>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={loadData}
+            disabled={loading}
+            title="Refresh data"
+            className="p-1.5 rounded-lg hover:bg-muted/30 transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          </button>
+          <button
+            onClick={() => setAuthenticated(false)}
+            title="Sign out"
+            className="p-1.5 rounded-lg hover:bg-muted/30 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
+      </header>
 
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card title="Total Users" value={stats.total} />
-          <Card title="Avg Score" value={`${stats.avg}/300`} />
-          <Card title="Completed All" value={stats.completed} />
-          <Card title="Conversion" value={`${stats.total ? Math.round((stats.completed / stats.total) * 100) : 0}%`} />
-        </div>
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Sidebar */}
+        <aside
+          className={`
+            fixed lg:static inset-y-0 left-0 z-30 w-56 bg-background border-r border-border flex flex-col pt-4 pb-6 gap-1
+            top-14 h-[calc(100vh-3.5rem)] lg:h-auto transition-transform duration-200
+            ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          `}
+        >
+          <div className="px-3 mb-2">
+            <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground px-2">
+              Navigation
+            </p>
+          </div>
+          {navItems.map((n) => (
+            <button
+              key={n.id}
+              onClick={() => handleTabChange(n.id)}
+              className={`mx-2 flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                tab === n.id
+                  ? "bg-accent/20 text-accent"
+                  : "hover:bg-muted/30 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {n.icon} {n.label}
+            </button>
+          ))}
+        </aside>
 
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-6 bg-gradient-card border border-border rounded-3xl p-5 shadow-card">
-          <h3 className="font-black text-lg">Score Distribution</h3>
-          <div className="mt-4 space-y-2">
-            {stats.dist.map(d => (
-              <div key={d.label} className="flex items-center gap-3">
-                <div className="w-32 text-xs text-muted-foreground">{d.label}</div>
-                <div className="flex-1 h-3 bg-background/60 rounded-full overflow-hidden">
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${(d.count / maxDist) * 100}%` }} transition={{ duration: 0.7 }} className="h-full bg-gradient-energy" />
-                </div>
-                <div className="w-10 text-right text-sm font-bold tabular-nums">{d.count}</div>
+        {/* Mobile overlay */}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.div
+              key="overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSidebarOpen(false)}
+              className="fixed inset-0 z-20 bg-black/40 lg:hidden"
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Main content */}
+        <main className="flex-1 overflow-y-auto px-4 md:px-6 py-6 min-w-0">
+          {/* ── OVERVIEW ───────────────────────────────────────────────── */}
+          {tab === "overview" && (
+            <motion.div
+              key="overview"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <SectionTitle>Campaign Overview</SectionTitle>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                <KpiCard title="Total Users" value={stats.total} />
+                <KpiCard title="Avg Score" value={`${stats.avg}/300`} />
+                <KpiCard title="Completed All" value={stats.completed} />
+                <KpiCard
+                  title="Conversion"
+                  value={`${stats.total ? Math.round((stats.completed / stats.total) * 100) : 0}%`}
+                />
               </div>
-            ))}
-          </div>
-        </motion.div>
 
-        <div className="mt-6 bg-gradient-card border border-border rounded-3xl p-5 shadow-card">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <h3 className="font-black text-lg">Users</h3>
-            <div className="flex flex-wrap gap-2 text-sm">
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." className="bg-background/60 border border-border rounded-full px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-ring" />
-              <select value={filterCat} onChange={(e) => setFilterCat(e.target.value)} className="bg-background/60 border border-border rounded-full px-3 py-1.5">
-                <option value="all">All categories</option>
-                {["Peak Performer", "High Energy", "Charged Up", "Warming Up", "Recharge Needed"].map(c => <option key={c}>{c}</option>)}
-              </select>
-              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="bg-background/60 border border-border rounded-full px-3 py-1.5" />
-              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="bg-background/60 border border-border rounded-full px-3 py-1.5" />
-            </div>
-          </div>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
-                  <th className="py-2 pr-3">Contact</th>
-                  <th className="py-2 pr-3">Name</th>
-                  <th className="py-2 pr-3">R</th>
-                  <th className="py-2 pr-3">M</th>
-                  <th className="py-2 pr-3">B</th>
-                  <th className="py-2 pr-3">Total</th>
-                  <th className="py-2 pr-3">Category</th>
-                  <th className="py-2 pr-3">When</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 && (
-                  <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">No users yet. Play a round to populate.</td></tr>
+              <div className="mt-5 grid md:grid-cols-2 gap-4">
+                <div className="bg-gradient-card border border-border rounded-3xl p-5 shadow-card">
+                  <h3 className="font-black text-sm mb-3">Score Distribution</h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={stats.dist} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 9 }}
+                        interval={0}
+                        angle={-20}
+                        textAnchor="end"
+                        height={44}
+                      />
+                      <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                      <Tooltip
+                        contentStyle={{
+                          background: "var(--background)",
+                          border: "1px solid var(--border)",
+                          borderRadius: 12,
+                        }}
+                      />
+                      <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                        {stats.dist.map((_, i) => (
+                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="bg-gradient-card border border-border rounded-3xl p-5 shadow-card">
+                  <h3 className="font-black text-sm mb-3">Game Participation</h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={stats.participation}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={70}
+                        label={({ name, value }: { name: string; value: number }) =>
+                          `${name}: ${value}`
+                        }
+                      >
+                        {stats.participation.map((_, i) => (
+                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Legend />
+                      <Tooltip
+                        contentStyle={{
+                          background: "var(--background)",
+                          border: "1px solid var(--border)",
+                          borderRadius: 12,
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── USERS TABLE ─────────────────────────────────────────────── */}
+          {tab === "users" && (
+            <motion.div key="users" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <SectionTitle>All Users</SectionTitle>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleExportCsv}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform text-xs"
+                  >
+                    <Download className="w-3.5 h-3.5" /> CSV
+                  </button>
+                  <button
+                    onClick={handleExportExcel}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-border hover:bg-muted/30 font-bold transition-colors text-xs"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Excel
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search user…"
+                    className="pl-7 pr-3 py-1.5 bg-background/60 border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-ring text-xs"
+                  />
+                </div>
+                <select
+                  value={filterCat}
+                  onChange={(e) => setFilterCat(e.target.value)}
+                  className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
+                >
+                  <option value="all">All categories</option>
+                  {CATEGORIES.map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
+                </select>
+                <select
+                  value={filterGame}
+                  onChange={(e) => setFilterGame(e.target.value as GameFilter)}
+                  className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
+                >
+                  <option value="all">All games</option>
+                  <option value="reflex">Reflex played</option>
+                  <option value="memory">Memory played</option>
+                  <option value="balance">Balance played</option>
+                </select>
+                <input
+                  type="date"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                  className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
+                />
+                <span className="self-center text-muted-foreground text-xs">to</span>
+                <input
+                  type="date"
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                  className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
+                />
+                {(search || filterCat !== "all" || filterGame !== "all" || from || to) && (
+                  <button
+                    onClick={() => {
+                      setSearch("");
+                      setFilterCat("all");
+                      setFilterGame("all");
+                      setFrom("");
+                      setTo("");
+                    }}
+                    className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-full"
+                  >
+                    Clear
+                  </button>
                 )}
-                {filtered.map((u, i) => (
-                  <tr key={i} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                    <td className="py-2 pr-3 font-mono text-xs">{u.contact}</td>
-                    <td className="py-2 pr-3">{u.name || "—"}</td>
-                    <td className="py-2 pr-3">{u.scores.reflex ?? "—"}</td>
-                    <td className="py-2 pr-3">{u.scores.memory ?? "—"}</td>
-                    <td className="py-2 pr-3">{u.scores.balance ?? "—"}</td>
-                    <td className="py-2 pr-3 font-bold text-gradient-energy">{u.total}</td>
-                    <td className="py-2 pr-3 text-xs">{u.category}</td>
-                    <td className="py-2 pr-3 text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {filtered.length} of {users.length} users
+              </p>
 
-        <form onSubmit={saveSettings} className="mt-6 bg-gradient-card border border-border rounded-3xl p-5 shadow-card">
-          <h3 className="font-black text-lg">Tracking & Security Keys</h3>
-          <p className="text-xs text-muted-foreground">Update IDs anytime. Saved locally for now — will sync to your VPS API.</p>
-          <div className="mt-4 grid md:grid-cols-2 gap-3">
-            <Field label="Google Analytics (GA4 ID)" value={settings.ga4} onChange={(v) => setSettings(s => ({ ...s, ga4: v }))} placeholder="G-XXXXXXXXXX" />
-            <Field label="Meta Pixel ID" value={settings.metaPixel} onChange={(v) => setSettings(s => ({ ...s, metaPixel: v }))} placeholder="123456789012345" />
-            <Field label="Microsoft Clarity ID" value={settings.clarity} onChange={(v) => setSettings(s => ({ ...s, clarity: v }))} placeholder="abcdefghij" />
-            <Field label="reCAPTCHA Site Key" value={settings.recaptchaSite} onChange={(v) => setSettings(s => ({ ...s, recaptchaSite: v }))} placeholder="6Lc..." />
-            <Field label="reCAPTCHA Secret" value={settings.recaptchaSecret} onChange={(v) => setSettings(s => ({ ...s, recaptchaSecret: v }))} placeholder="6Lc..." />
-          </div>
-          <div className="mt-5 flex items-center gap-3">
-            <button className="px-6 py-2.5 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform text-sm">Save Settings</button>
-            {savedFlash && <span className="text-sm text-accent">✓ Saved</span>}
-          </div>
-        </form>
+              <div className="mt-3 bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
+                <table className="w-full text-sm min-w-[750px]">
+                  <thead>
+                    <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10">
+                      <Th>User ID</Th>
+                      <Th>Contact</Th>
+                      <Th>Name</Th>
+                      <Th>Reflex</Th>
+                      <Th>Memory</Th>
+                      <Th>Balance</Th>
+                      <Th>Total</Th>
+                      <Th>Category</Th>
+                      <Th>Timestamp</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.length === 0 && (
+                      <tr>
+                        <td colSpan={9} className="py-10 text-center text-muted-foreground text-sm">
+                          No users match filters.
+                        </td>
+                      </tr>
+                    )}
+                    {filtered.map((u, i) => (
+                      <tr
+                        key={i}
+                        className="border-b border-border/40 hover:bg-muted/10 transition-colors"
+                      >
+                        <Td className="font-mono text-[11px]">{u.userId}</Td>
+                        <Td className="font-mono text-[11px]">{u.contact}</Td>
+                        <Td>{u.name || "—"}</Td>
+                        <Td>{u.scores.reflex ?? "—"}</Td>
+                        <Td>{u.scores.memory ?? "—"}</Td>
+                        <Td>{u.scores.balance ?? "—"}</Td>
+                        <Td className="font-bold text-gradient-energy">{u.total}</Td>
+                        <Td>
+                          <CategoryBadge cat={u.category} />
+                        </Td>
+                        <Td className="text-muted-foreground text-[11px]">
+                          {new Date(u.createdAt).toLocaleString()}
+                        </Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          )}
 
-        <Link to="/" className="mt-6 block text-center text-sm text-muted-foreground hover:text-foreground transition-colors">← Home</Link>
-      </main>
+          {/* ── DATE-WISE ───────────────────────────────────────────────── */}
+          {tab === "datewise" && (
+            <motion.div
+              key="datewise"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <SectionTitle>Date-wise Users</SectionTitle>
+              <p className="text-xs text-muted-foreground mt-1 mb-3">
+                Users grouped by the dates they played.
+              </p>
+
+              <div className="relative mb-3">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={dateWiseSearch}
+                  onChange={(e) => setDateWiseSearch(e.target.value)}
+                  placeholder="Search by date, user, contact…"
+                  className="pl-7 pr-3 py-1.5 bg-background/60 border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-ring text-xs w-full max-w-xs"
+                />
+              </div>
+
+              <div className="space-y-3">
+                {dateWise.length === 0 && (
+                  <p className="text-muted-foreground text-sm py-8 text-center">No data yet.</p>
+                )}
+                {dateWise.map((d) => {
+                  const isOpen = expandedDates.has(d.date);
+                  const toggle = () => {
+                    setExpandedDates((s) => {
+                      const ns = new Set(s);
+                      if (ns.has(d.date)) {
+                        ns.delete(d.date);
+                      } else {
+                        ns.add(d.date);
+                      }
+                      return ns;
+                    });
+                  };
+                  return (
+                    <div
+                      key={d.date}
+                      className="bg-gradient-card border border-border rounded-2xl overflow-hidden shadow-card"
+                    >
+                      <button
+                        onClick={toggle}
+                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/10 transition-colors text-left"
+                      >
+                        <div>
+                          <span className="font-bold text-sm">{d.date}</span>
+                          <span className="ml-3 text-xs text-muted-foreground">
+                            {d.users.length} user{d.users.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <ChevronDown
+                          className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
+                        />
+                      </button>
+                      {isOpen && (
+                        <div className="border-t border-border overflow-x-auto">
+                          <table className="w-full text-sm min-w-[600px]">
+                            <thead>
+                              <tr className="text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/10 text-left">
+                                <Th>User ID</Th>
+                                <Th>Contact</Th>
+                                <Th>Name</Th>
+                                <Th>Reflex</Th>
+                                <Th>Memory</Th>
+                                <Th>Balance</Th>
+                                <Th>Total</Th>
+                                <Th>Category</Th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {d.users.map((u, i) => (
+                                <tr
+                                  key={i}
+                                  className="border-b border-border/40 hover:bg-muted/10 transition-colors"
+                                >
+                                  <Td className="font-mono text-[11px]">{u.userId}</Td>
+                                  <Td className="font-mono text-[11px]">{u.contact}</Td>
+                                  <Td>{u.name || "—"}</Td>
+                                  <Td>{u.scores.reflex ?? "—"}</Td>
+                                  <Td>{u.scores.memory ?? "—"}</Td>
+                                  <Td>{u.scores.balance ?? "—"}</Td>
+                                  <Td className="font-bold text-gradient-energy">{u.total}</Td>
+                                  <Td>
+                                    <CategoryBadge cat={u.category} />
+                                  </Td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── STREAKS ────────────────────────────────────────────────── */}
+          {tab === "streaks" && (
+            <motion.div
+              key="streaks"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <SectionTitle>Consistent Players</SectionTitle>
+              <p className="text-xs text-muted-foreground mt-1 mb-4">
+                Users ranked by their current consecutive-day play streak.
+              </p>
+
+              <div className="bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
+                <table className="w-full text-sm min-w-[560px]">
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10 text-left">
+                      <Th>#</Th>
+                      <Th>User ID</Th>
+                      <Th>Contact</Th>
+                      <Th>Name</Th>
+                      <Th>🔥 Streak (days)</Th>
+                      <Th>Total Play Days</Th>
+                      <Th>Score</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {streaks.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="py-10 text-center text-muted-foreground text-sm">
+                          No users yet.
+                        </td>
+                      </tr>
+                    )}
+                    {streaks.map((u, i) => (
+                      <tr
+                        key={i}
+                        className="border-b border-border/40 hover:bg-muted/10 transition-colors"
+                      >
+                        <Td className="text-muted-foreground">{i + 1}</Td>
+                        <Td className="font-mono text-[11px]">{u.userId}</Td>
+                        <Td className="font-mono text-[11px]">{u.contact}</Td>
+                        <Td>{u.name || "—"}</Td>
+                        <Td>
+                          <span
+                            className={`font-black text-base ${
+                              u.streak >= 7
+                                ? "text-orange-400"
+                                : u.streak >= 3
+                                  ? "text-yellow-400"
+                                  : "text-foreground"
+                            }`}
+                          >
+                            {u.streak}
+                            {u.streak >= 7 ? " 🔥" : u.streak >= 3 ? " ⚡" : ""}
+                          </span>
+                        </Td>
+                        <Td className="text-muted-foreground">{(u.playDates ?? []).length}</Td>
+                        <Td className="font-bold text-gradient-energy">{u.total}</Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── LOGS ─────────────────────────────────────────────────────── */}
+          {tab === "logs" && (
+            <motion.div key="logs" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <SectionTitle>Admin Logs</SectionTitle>
+                <span className="text-xs text-muted-foreground bg-muted/20 border border-border px-3 py-1 rounded-full">
+                  Read-only · Lifetime retention · {logs.length} entries
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1 mb-3">
+                All admin actions are recorded here permanently. Deletion is disabled.
+              </p>
+
+              <div className="relative mb-3">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={logSearch}
+                  onChange={(e) => setLogSearch(e.target.value)}
+                  placeholder="Search logs…"
+                  className="pl-7 pr-3 py-1.5 bg-background/60 border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-ring text-xs w-full max-w-xs"
+                />
+              </div>
+
+              <div className="bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
+                <table className="w-full text-sm min-w-[480px]">
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10 text-left">
+                      <Th>Timestamp</Th>
+                      <Th>Action</Th>
+                      <Th>Details</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLogs.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="py-10 text-center text-muted-foreground text-sm">
+                          No logs yet.
+                        </td>
+                      </tr>
+                    )}
+                    {filteredLogs.map((l, i) => (
+                      <tr
+                        key={i}
+                        className="border-b border-border/40 hover:bg-muted/10 transition-colors"
+                      >
+                        <Td className="text-[11px] text-muted-foreground whitespace-nowrap">
+                          {new Date(l.timestamp).toLocaleString()}
+                        </Td>
+                        <Td>
+                          <span className="font-mono text-[11px] bg-accent/10 text-accent px-2 py-0.5 rounded">
+                            {l.action}
+                          </span>
+                        </Td>
+                        <Td className="text-[12px]">{l.details}</Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── SETTINGS ─────────────────────────────────────────────────── */}
+          {tab === "settings" && (
+            <motion.div
+              key="settings"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <SectionTitle>Tracking & Security Settings</SectionTitle>
+              <p className="text-xs text-muted-foreground mt-1 mb-5">
+                Settings are stored in the database and injected into all pages automatically.
+              </p>
+
+              <form onSubmit={saveSettings} className="space-y-4">
+                <SettingsSection title="Google Analytics (GA4)">
+                  <SettingsField
+                    label="Measurement ID"
+                    value={settings.ga4}
+                    onChange={(v) => setSettings((s) => ({ ...s, ga4: v }))}
+                    placeholder="G-XXXXXXXXXX"
+                    hint="Paste your GA4 Measurement ID. The gtag script will be injected automatically."
+                  />
+                </SettingsSection>
+
+                <SettingsSection title="Meta Pixel">
+                  <SettingsField
+                    label="Pixel ID"
+                    value={settings.metaPixel}
+                    onChange={(v) => setSettings((s) => ({ ...s, metaPixel: v }))}
+                    placeholder="123456789012345"
+                    hint="Found in Facebook Events Manager → Pixels → Your Pixel → Setup."
+                  />
+                </SettingsSection>
+
+                <SettingsSection title="Microsoft Clarity">
+                  <SettingsField
+                    label="Project ID"
+                    value={settings.clarity}
+                    onChange={(v) => setSettings((s) => ({ ...s, clarity: v }))}
+                    placeholder="abcdefghij"
+                    hint="Found in Clarity dashboard → Settings → Overview → Project ID."
+                  />
+                </SettingsSection>
+
+                <SettingsSection title="Google reCAPTCHA v2">
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <SettingsField
+                      label="Site Key (public)"
+                      value={settings.recaptchaSite}
+                      onChange={(v) => setSettings((s) => ({ ...s, recaptchaSite: v }))}
+                      placeholder="6Lc…"
+                      hint="Used client-side on forms."
+                    />
+                    <SettingsField
+                      label="Secret Key (server)"
+                      value={settings.recaptchaSecret}
+                      onChange={(v) => setSettings((s) => ({ ...s, recaptchaSecret: v }))}
+                      placeholder="6Lc…"
+                      hint="Used server-side to verify tokens. Keep private."
+                      isSecret
+                    />
+                  </div>
+                </SettingsSection>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button className="px-6 py-2.5 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform text-sm">
+                    Save Settings
+                  </button>
+                  {savedFlash && <span className="text-sm text-accent">✓ Saved</span>}
+                </div>
+              </form>
+            </motion.div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
 
-function Card({ title, value }: { title: string; value: string | number }) {
+// ── Sub-components ─────────────────────────────────────────────────────────────
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return <h2 className="text-xl font-black">{children}</h2>;
+}
+
+function KpiCard({ title, value }: { title: string; value: string | number }) {
   return (
     <div className="bg-gradient-card border border-border rounded-2xl p-4 shadow-card">
-      <div className="text-xs uppercase tracking-wider text-muted-foreground">{title}</div>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{title}</div>
       <div className="text-2xl md:text-3xl font-black text-gradient-energy mt-1">{value}</div>
     </div>
   );
 }
 
-function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+function Th({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
+  return <th className={`py-2.5 px-3 font-semibold ${className}`}>{children}</th>;
+}
+
+function Td({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
+  return <td className={`py-2 px-3 ${className}`}>{children}</td>;
+}
+
+const catColors: Record<string, string> = {
+  "Peak Performer": "bg-orange-500/15 text-orange-400",
+  "High Energy": "bg-yellow-500/15 text-yellow-400",
+  "Charged Up": "bg-green-500/15 text-green-400",
+  "Warming Up": "bg-blue-500/15 text-blue-400",
+  "Recharge Needed": "bg-purple-500/15 text-purple-400",
+};
+
+function CategoryBadge({ cat }: { cat: string }) {
+  return (
+    <span
+      className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${catColors[cat] ?? "bg-muted/30"}`}
+    >
+      {cat}
+    </span>
+  );
+}
+
+function SettingsSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-gradient-card border border-border rounded-2xl p-5 shadow-card">
+      <h3 className="font-black text-sm mb-3">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function SettingsField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  hint,
+  isSecret,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  hint?: string;
+  isSecret?: boolean;
+}) {
   return (
     <label className="block">
       <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
-      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="mt-1.5 w-full bg-background/60 border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+      {hint && <p className="text-[11px] text-muted-foreground mt-0.5 mb-1">{hint}</p>}
+      <input
+        type={isSecret ? "password" : "text"}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="mt-1 w-full bg-background/60 border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+      />
     </label>
   );
 }

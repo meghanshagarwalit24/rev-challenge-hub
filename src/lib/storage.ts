@@ -8,8 +8,8 @@ export interface GameScores {
 }
 
 export interface UserRecord {
-  userId: string;              // generated unique id
-  contact: string;             // mobile or email
+  userId: string; // generated unique id
+  contact: string; // mobile or email
   name?: string;
   address?: string;
   scores: GameScores;
@@ -17,6 +17,7 @@ export interface UserRecord {
   category: string;
   consent: boolean;
   createdAt: string;
+  playDates?: string[]; // YYYY-MM-DD dates the user played (for streak tracking)
 }
 
 export const generateUserId = (): string => {
@@ -38,8 +39,11 @@ const CONSENT_KEY = "revital.cookieConsent";
 
 export const getCurrentScores = (): GameScores => {
   if (typeof window === "undefined") return { reflex: null, memory: null, balance: null };
-  try { return JSON.parse(localStorage.getItem(SCORES_KEY) || "") as GameScores; }
-  catch { return { reflex: null, memory: null, balance: null }; }
+  try {
+    return JSON.parse(localStorage.getItem(SCORES_KEY) || "") as GameScores;
+  } catch {
+    return { reflex: null, memory: null, balance: null };
+  }
 };
 
 export const saveGameScore = (game: GameKey, score: number) => {
@@ -48,10 +52,33 @@ export const saveGameScore = (game: GameKey, score: number) => {
   localStorage.setItem(SCORES_KEY, JSON.stringify(cur));
 };
 
+/** Returns today's date as YYYY-MM-DD. */
+export const todayDateString = (): string => new Date().toISOString().slice(0, 10);
+
+const MS_PER_DAY = 86_400_000; // milliseconds in one day
+
+/** Calculate current consecutive-day streak from a sorted array of YYYY-MM-DD strings. */
+export const calcStreak = (playDates: string[]): number => {
+  if (!playDates || playDates.length === 0) return 0;
+  const sorted = [...new Set(playDates)].sort().reverse(); // most recent first
+  const today = todayDateString();
+  const yesterday = new Date(Date.now() - MS_PER_DAY).toISOString().slice(0, 10);
+  // streak must include today or yesterday to be "active"
+  if (sorted[0] !== today && sorted[0] !== yesterday) return 0;
+  let streak = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = new Date(sorted[i - 1]);
+    const curr = new Date(sorted[i]);
+    const diff = (prev.getTime() - curr.getTime()) / MS_PER_DAY;
+    if (Math.round(diff) === 1) streak++;
+    else break;
+  }
+  return streak;
+};
+
 export const resetScores = () => localStorage.removeItem(SCORES_KEY);
 
-export const computeTotal = (s: GameScores) =>
-  (s.reflex ?? 0) + (s.memory ?? 0) + (s.balance ?? 0);
+export const computeTotal = (s: GameScores) => (s.reflex ?? 0) + (s.memory ?? 0) + (s.balance ?? 0);
 
 export const categorize = (total: number) => {
   if (total >= 240) return { label: "Peak Performer", tier: "S" };
@@ -65,15 +92,21 @@ export const saveUser = (u: UserRecord) => {
   localStorage.setItem(USER_KEY, JSON.stringify(u));
   const all = getAllUsers();
   const idx = all.findIndex((x) => x.contact === u.contact);
-  if (idx >= 0) all[idx] = u; else all.push(u);
+  if (idx >= 0) all[idx] = u;
+  else all.push(u);
   localStorage.setItem(ALL_USERS_KEY, JSON.stringify(all));
 };
 
 /** Persist user to MongoDB (server) AND update localStorage cache. */
 export const saveUserRemote = async (u: UserRecord): Promise<void> => {
-  saveUser(u);
+  // Merge today's date into playDates
+  const today = todayDateString();
+  const existing = u.playDates ?? [];
+  const merged = existing.includes(today) ? existing : [...existing, today];
+  const withDate: UserRecord = { ...u, playDates: merged };
+  saveUser(withDate);
   const { saveUserFn } = await import("@/server/userFns");
-  await saveUserFn({ data: u });
+  await saveUserFn({ data: withDate });
 };
 
 /** Look up a user by contact in MongoDB (server), with localStorage as fallback. */
@@ -113,14 +146,23 @@ export const getUser = (): UserRecord | null => {
       localStorage.setItem(USER_KEY, JSON.stringify(u));
       const all = getAllUsers();
       const idx = all.findIndex((x) => x.contact === u.contact);
-      if (idx >= 0) { all[idx] = u; localStorage.setItem(ALL_USERS_KEY, JSON.stringify(all)); }
+      if (idx >= 0) {
+        all[idx] = u;
+        localStorage.setItem(ALL_USERS_KEY, JSON.stringify(all));
+      }
     }
     return u;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 };
 
 export const getAllUsers = (): UserRecord[] => {
-  try { return JSON.parse(localStorage.getItem(ALL_USERS_KEY) || "[]"); } catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(ALL_USERS_KEY) || "[]");
+  } catch {
+    return [];
+  }
 };
 
 export const findUserByContact = (contact: string) =>

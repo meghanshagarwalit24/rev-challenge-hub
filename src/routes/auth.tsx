@@ -1,13 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Header } from "@/components/Header";
 import {
   categorize,
   computeTotal,
   findUserByContact,
   generateUserId,
-  getUser,
   getCurrentScores,
   MOCK_OTP,
   normalizeUsername,
@@ -29,12 +28,6 @@ function Auth() {
   const [consent, setConsent] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (getUser()) {
-      nav({ to: "/profile" });
-    }
-  }, [nav]);
 
   const goToProfile = async () => {
     try {
@@ -80,12 +73,11 @@ function Auth() {
       };
       // Persist local login state immediately so `/profile` always opens after auth.
       saveUser(payload);
+      await goToProfile();
       try {
         await saveUserRemote(payload);
-        await goToProfile();
       } catch (e) {
         console.warn("Save encountered an issue after OTP/google verification", e);
-        await goToProfile();
       } finally {
         setLoading(false);
       }
@@ -143,12 +135,11 @@ function Auth() {
     };
     // Persist local login state immediately so `/profile` always opens after OTP verification.
     saveUser(payload);
+    await goToProfile();
     try {
       await saveUserRemote(payload);
-      await goToProfile();
     } catch (e) {
       console.warn("Save encountered an issue after OTP verification", e);
-      await goToProfile();
     } finally {
       setLoading(false);
     }

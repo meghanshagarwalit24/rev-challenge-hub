@@ -22,7 +22,10 @@ function Landing() {
   return (
     <div className="min-h-screen relative overflow-hidden">
       <div className="absolute -top-32 -right-32 w-96 h-96 bg-[var(--marigold)] rounded-full blur-3xl opacity-50 float-anim" />
-      <div className="absolute top-40 -left-32 w-96 h-96 bg-[var(--tiger)] rounded-full blur-3xl opacity-30 float-anim" style={{ animationDelay: "1.5s" }} />
+      <div
+        className="absolute top-40 -left-32 w-96 h-96 bg-[var(--tiger)] rounded-full blur-3xl opacity-30 float-anim"
+        style={{ animationDelay: "1.5s" }}
+      />
 
       <Header />
 
@@ -53,7 +56,8 @@ function Landing() {
             transition={{ delay: 0.4 }}
             className="mt-5 text-4xl md:text-7xl font-black leading-[1.05] text-garnet"
           >
-            YOUR DAY TESTS YOU<br />
+            YOUR DAY TESTS YOU
+            <br />
             <span className="text-gradient-energy">ARE YOU READY?</span>
           </motion.h1>
 
@@ -63,8 +67,12 @@ function Landing() {
             transition={{ delay: 0.55 }}
             className="mt-5 text-base md:text-xl text-garnet/80 max-w-2xl mx-auto"
           >
-            Take the Revital <span className="font-script text-[var(--tiger)] text-xl md:text-2xl">Energy Challenge</span>
-            <br />Play 3 quick games. Score your energy. Climb the leaderboard.
+            Take the Revital{" "}
+            <span className="font-script text-[var(--tiger)] text-xl md:text-2xl">
+              Energy Challenge
+            </span>
+            <br />
+            Play 3 quick games. Score your energy. Climb the leaderboard.
           </motion.p>
 
           <motion.div
@@ -99,9 +107,14 @@ function Landing() {
               { n: "20s", label: "Per challenge" },
               { n: "Daily", label: "Leaderboard" },
             ].map((s) => (
-              <div key={s.label} className="bg-white/90 border-2 border-[var(--garnet)]/10 rounded-2xl p-4 backdrop-blur shadow-card">
+              <div
+                key={s.label}
+                className="bg-white/90 border-2 border-[var(--garnet)]/10 rounded-2xl p-4 backdrop-blur shadow-card"
+              >
                 <div className="text-2xl md:text-4xl font-black text-gradient-energy">{s.n}</div>
-                <div className="text-[11px] md:text-sm text-muted-foreground uppercase tracking-wider mt-1 font-semibold">{s.label}</div>
+                <div className="text-[11px] md:text-sm text-muted-foreground uppercase tracking-wider mt-1 font-semibold">
+                  {s.label}
+                </div>
               </div>
             ))}
           </motion.div>
@@ -121,7 +134,9 @@ function Landing() {
             <h2 className="mt-3 text-3xl md:text-5xl font-black text-garnet">
               Get Started in <span className="text-gradient-energy">3 Easy Steps</span>
             </h2>
-            <p className="mt-2 text-muted-foreground">No sign-up required. Just show up, play, and win.</p>
+            <p className="mt-2 text-muted-foreground">
+              No sign-up required. Just show up, play, and win.
+            </p>
           </motion.div>
 
           <div className="grid gap-5 md:grid-cols-3">
@@ -130,7 +145,7 @@ function Landing() {
                 step: "01",
                 emoji: "⚡",
                 title: "Start the Challenge",
-                desc: "Hit "Start Now!" to kick off your first mini-game. No account needed — just your energy and reflexes.",
+                desc: 'Hit "Start Now!" to kick off your first mini-game. No account needed — just your energy and reflexes.',
               },
               {
                 step: "02",
@@ -142,7 +157,7 @@ function Landing() {
                 step: "03",
                 emoji: "🏆",
                 title: "Claim Your Score",
-                desc: "Enter your name to save your score, climb the leaderboard, and compete for daily prizes and eternal glory.",
+                desc: "Verify with OTP to save your score, climb the leaderboard, and compete for daily prizes.",
               },
             ].map((item, i) => (
               <motion.div
@@ -155,7 +170,9 @@ function Landing() {
               >
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">{item.emoji}</span>
-                  <span className="text-xs font-black text-[var(--tiger)] uppercase tracking-widest">{item.step}</span>
+                  <span className="text-xs font-black text-[var(--tiger)] uppercase tracking-widest">
+                    {item.step}
+                  </span>
                 </div>
                 <h3 className="text-lg font-black text-garnet">{item.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
@@ -193,7 +210,9 @@ function Landing() {
             <h2 className="mt-3 text-3xl md:text-5xl font-black text-garnet">
               Who's <span className="text-gradient-energy">Topping the Charts?</span>
             </h2>
-            <p className="mt-2 text-muted-foreground">Daily prizes for the daily board. Eternal glory for the global one.</p>
+            <p className="mt-2 text-muted-foreground">
+              Daily prizes for the daily board. Eternal glory for the global one.
+            </p>
           </motion.div>
 
           <div className="grid gap-5 md:grid-cols-2">

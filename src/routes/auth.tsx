@@ -73,12 +73,11 @@ function Auth() {
       };
       // Persist local login state immediately so `/profile` always opens after auth.
       saveUser(payload);
+      await goToProfile();
       try {
         await saveUserRemote(payload);
-        await goToProfile();
       } catch (e) {
         console.warn("Save encountered an issue after OTP/google verification", e);
-        await goToProfile();
       } finally {
         setLoading(false);
       }
@@ -136,12 +135,11 @@ function Auth() {
     };
     // Persist local login state immediately so `/profile` always opens after OTP verification.
     saveUser(payload);
+    await goToProfile();
     try {
       await saveUserRemote(payload);
-      await goToProfile();
     } catch (e) {
       console.warn("Save encountered an issue after OTP verification", e);
-      await goToProfile();
     } finally {
       setLoading(false);
     }

@@ -92,11 +92,31 @@ export const categorize = (total: number) => {
 };
 
 export const saveUser = (u: UserRecord) => {
-  localStorage.setItem(USER_KEY, JSON.stringify(u));
   const all = getAllUsers();
   const idx = all.findIndex((x) => x.contact === u.contact);
+  const existing = idx >= 0 ? all[idx] : null;
+  const normalizedReferral = normalizeUsername(u.referredBy || "");
+  const firstTimeReferral = !!normalizedReferral && !existing?.referredBy;
+
   if (idx >= 0) all[idx] = u;
   else all.push(u);
+
+  if (firstTimeReferral) {
+    const referredIdx = all.findIndex(
+      (candidate) =>
+        candidate.contact.toLowerCase() === normalizedReferral ||
+        normalizeUsername(candidate.username || "") === normalizedReferral,
+    );
+    const selfContact = u.contact.toLowerCase();
+    if (referredIdx >= 0 && all[referredIdx].contact.toLowerCase() !== selfContact) {
+      all[referredIdx] = {
+        ...all[referredIdx],
+        referCount: (all[referredIdx].referCount ?? 0) + 1,
+      };
+    }
+  }
+
+  localStorage.setItem(USER_KEY, JSON.stringify(u));
   localStorage.setItem(ALL_USERS_KEY, JSON.stringify(all));
 };
 

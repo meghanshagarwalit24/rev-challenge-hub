@@ -107,6 +107,78 @@ function Landing() {
           </motion.div>
         </section>
 
+        {/* HOW TO PARTICIPATE */}
+        <section className="mt-20 md:mt-28">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-10"
+          >
+            <div className="inline-block px-4 py-1.5 rounded-full bg-[var(--tiger)] text-white text-xs uppercase tracking-[0.2em] font-black">
+              🎮 How to Participate
+            </div>
+            <h2 className="mt-3 text-3xl md:text-5xl font-black text-garnet">
+              Get Started in <span className="text-gradient-energy">3 Easy Steps</span>
+            </h2>
+            <p className="mt-2 text-muted-foreground">No sign-up required. Just show up, play, and win.</p>
+          </motion.div>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            {[
+              {
+                step: "01",
+                emoji: "⚡",
+                title: "Start the Challenge",
+                desc: "Hit "Start Now!" to kick off your first mini-game. No account needed — just your energy and reflexes.",
+              },
+              {
+                step: "02",
+                emoji: "🎯",
+                title: "Play 3 Quick Games",
+                desc: "Complete the Reflex, Balance, and Memory challenges. Each game takes about 20 seconds. Score as high as you can!",
+              },
+              {
+                step: "03",
+                emoji: "🏆",
+                title: "Claim Your Score",
+                desc: "Enter your name to save your score, climb the leaderboard, and compete for daily prizes and eternal glory.",
+              },
+            ].map((item, i) => (
+              <motion.div
+                key={item.step}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15 }}
+                className="relative bg-white/90 border-2 border-[var(--garnet)]/10 rounded-2xl p-6 backdrop-blur shadow-card flex flex-col gap-3"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{item.emoji}</span>
+                  <span className="text-xs font-black text-[var(--tiger)] uppercase tracking-widest">{item.step}</span>
+                </div>
+                <h3 className="text-lg font-black text-garnet">{item.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.5 }}
+            className="mt-8 text-center"
+          >
+            <Link
+              to="/play/reflex"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-energy text-white font-bold text-lg shadow-button glow-pulse hover:scale-105 active:scale-95 transition-transform"
+            >
+              I'm Ready — Let's Go! →
+            </Link>
+          </motion.div>
+        </section>
+
         {/* LEADERBOARDS */}
         <section className="mt-20 md:mt-28">
           <motion.div

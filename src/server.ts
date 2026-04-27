@@ -1,12 +1,12 @@
 import { createStartHandler, defaultStreamHandler } from "@tanstack/react-start/server";
 import { serve } from "srvx/node";
 import { readFile } from "node:fs/promises";
-import { join, extname, dirname } from "node:path";
+import { join, extname, dirname, resolve, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // server.js lives at dist/server/server.js; client assets are at dist/client/
-const clientDir = join(__dirname, "../client");
+const clientDir = resolve(join(__dirname, "../client"));
 
 const MIME: Record<string, string> = {
   ".js": "application/javascript; charset=utf-8",
@@ -27,25 +27,35 @@ const ssrHandler = createStartHandler(defaultStreamHandler);
 
 const port = Number(process.env.PORT) || 3000;
 
+function getCacheControl(pathname: string): string {
+  // Vite emits fingerprinted files like `/assets/index-abc123.js`.
+  // These are safe to cache for a long time.
+  const isFingerprintedAsset = /\/assets\/.+-[a-z0-9]{8,}\./i.test(pathname);
+  if (isFingerprintedAsset) {
+    return "public, max-age=31536000, immutable";
+  }
+
+  // Non-fingerprinted files (e.g. /favicon.ico) should revalidate frequently.
+  return "public, max-age=0, must-revalidate";
+}
+
 serve({
   fetch: async (req: Request) => {
     const { pathname } = new URL(req.url);
 
-    // Serve static client-side assets before falling through to SSR
-    if (pathname.startsWith("/assets/")) {
+    // Try static file serving from `dist/client` first.
+    const resolvedPath = resolve(join(clientDir, pathname.slice(1)));
+    const rel = relative(clientDir, resolvedPath);
+    const isInsideClientDir = rel && !rel.startsWith("..") && !rel.includes("..\\");
+
+    if (isInsideClientDir) {
       try {
-        // Resolve the full path and guard against path traversal
-        const filePath = join(clientDir, pathname);
-        const resolvedPath = filePath.startsWith(clientDir + "/") ? filePath : null;
-        if (!resolvedPath) {
-          return new Response("Forbidden", { status: 403 });
-        }
         const data = await readFile(resolvedPath);
         const ext = extname(resolvedPath).toLowerCase();
         return new Response(data, {
           headers: {
             "Content-Type": MIME[ext] ?? "application/octet-stream",
-            "Cache-Control": "public, max-age=31536000, immutable",
+            "Cache-Control": getCacheControl(pathname),
           },
         });
       } catch {
@@ -53,7 +63,19 @@ serve({
       }
     }
 
-    return ssrHandler(req);
+    const response = await ssrHandler(req);
+
+    // Avoid stale HTML/SSR payloads after deploys.
+    const headers = new Headers(response.headers);
+    if (!headers.has("Cache-Control")) {
+      headers.set("Cache-Control", "no-store");
+    }
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
   },
   port,
 });

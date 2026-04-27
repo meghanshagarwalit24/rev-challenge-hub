@@ -2,6 +2,15 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getDb } from "./db";
 
+// ── Admin Auth ─────────────────────────────────────────────────────────────────
+/** Verify admin password on the server (compares against ADMIN_PASSWORD env var). */
+export const verifyAdminPasswordFn = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => z.object({ password: z.string() }).parse(data))
+  .handler(async ({ data }) => {
+    const expected = process.env.ADMIN_PASSWORD ?? "admin123";
+    return { ok: data.password === expected };
+  });
+
 // ── Admin Log ──────────────────────────────────────────────────────────────────
 export interface AdminLog {
   logId: string;

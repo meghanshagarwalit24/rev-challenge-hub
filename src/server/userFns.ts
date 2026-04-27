@@ -32,20 +32,19 @@ export const saveUserFn = createServerFn({ method: "POST" })
     const normalized = { ...data, contact: data.contact.toLowerCase() };
     // Merge playDates instead of replacing so we never lose history
     if (normalized.playDates && normalized.playDates.length > 0) {
+      const { playDates, ...rest } = normalized;
       await db.collection<UserRecord>("users").updateOne(
         { contact: normalized.contact },
         {
-          $set: { ...normalized, playDates: undefined },
-          $addToSet: { playDates: { $each: normalized.playDates } },
+          $set: rest,
+          $addToSet: { playDates: { $each: playDates } },
         },
         { upsert: true },
       );
     } else {
-      await db.collection<UserRecord>("users").updateOne(
-        { contact: normalized.contact },
-        { $set: normalized },
-        { upsert: true },
-      );
+      await db
+        .collection<UserRecord>("users")
+        .updateOne({ contact: normalized.contact }, { $set: normalized }, { upsert: true });
     }
     return { ok: true };
   });

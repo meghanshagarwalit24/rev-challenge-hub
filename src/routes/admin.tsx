@@ -37,6 +37,7 @@ export const Route = createFileRoute("/admin")({
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type Tab = "overview" | "users" | "datewise" | "streaks" | "logs" | "settings";
+type GameFilter = "all" | "reflex" | "memory" | "balance";
 
 interface DateWiseEntry {
   date: string;
@@ -53,7 +54,6 @@ interface DateWiseEntry {
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const CATEGORIES = ["Peak Performer", "High Energy", "Charged Up", "Warming Up", "Recharge Needed"];
 const CHART_COLORS = ["#F37421", "#FAAD14", "#52C41A", "#1890FF", "#9B59B6"];
-const ADMIN_PASS = "admin123"; // simple gate — not a security boundary, keep casual visitors out
 
 function groupByDate(users: UserRecord[]): DateWiseEntry[] {
   const map = new Map<string, DateWiseEntry["users"]>();
@@ -83,6 +83,7 @@ function exportCsv(rows: (string | number)[][], filename: string) {
   const csv = rows
     .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
     .join("\n");
+  // Prepend UTF-8 BOM so Excel auto-detects the encoding for international characters
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -93,6 +94,7 @@ function exportCsv(rows: (string | number)[][], filename: string) {
 }
 
 function exportExcel(rows: (string | number)[][], filename: string) {
+  // Uses SpreadsheetML (XML) format — no external library needed; Excel opens it natively
   const header = `<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Data"><Table>`;
   const footer = `</Table></Worksheet></Workbook>`;
   const xmlRows = rows
@@ -139,7 +141,7 @@ function Admin() {
 
   // Filters
   const [filterCat, setFilterCat] = useState("all");
-  const [filterGame, setFilterGame] = useState("all");
+  const [filterGame, setFilterGame] = useState<GameFilter>("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [search, setSearch] = useState("");
@@ -151,8 +153,8 @@ function Admin() {
     try {
       const { addAdminLogFn } = await import("@/server/adminFns");
       await addAdminLogFn({ data: { action, details } });
-    } catch {
-      /* best-effort */
+    } catch (e) {
+      if (import.meta.env.DEV) console.warn("Failed to add admin log:", e);
     }
   }, []);
 
@@ -181,12 +183,18 @@ function Admin() {
     }
   }, [authenticated, loadData, addLog]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passInput === ADMIN_PASS) {
-      setAuthenticated(true);
-      setPassError(false);
-    } else {
+    try {
+      const { verifyAdminPasswordFn } = await import("@/server/adminFns");
+      const result = await verifyAdminPasswordFn({ data: { password: passInput } });
+      if (result.ok) {
+        setAuthenticated(true);
+        setPassError(false);
+      } else {
+        setPassError(true);
+      }
+    } catch {
       setPassError(true);
     }
   };
@@ -196,11 +204,7 @@ function Admin() {
     () =>
       users.filter((u) => {
         if (filterCat !== "all" && u.category !== filterCat) return false;
-        if (
-          filterGame !== "all" &&
-          u.scores[filterGame as "reflex" | "memory" | "balance"] === null
-        )
-          return false;
+        if (filterGame !== "all" && u.scores[filterGame] === null) return false;
         if (from && new Date(u.createdAt) < new Date(from)) return false;
         if (to && new Date(u.createdAt) > new Date(to + "T23:59:59")) return false;
         if (
@@ -591,7 +595,7 @@ function Admin() {
                 </select>
                 <select
                   value={filterGame}
-                  onChange={(e) => setFilterGame(e.target.value)}
+                  onChange={(e) => setFilterGame(e.target.value as GameFilter)}
                   className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
                 >
                   <option value="all">All games</option>

@@ -55,19 +55,21 @@ export const saveGameScore = (game: GameKey, score: number) => {
 /** Returns today's date as YYYY-MM-DD. */
 export const todayDateString = (): string => new Date().toISOString().slice(0, 10);
 
+const MS_PER_DAY = 86_400_000; // milliseconds in one day
+
 /** Calculate current consecutive-day streak from a sorted array of YYYY-MM-DD strings. */
 export const calcStreak = (playDates: string[]): number => {
   if (!playDates || playDates.length === 0) return 0;
   const sorted = [...new Set(playDates)].sort().reverse(); // most recent first
   const today = todayDateString();
-  const yesterday = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - MS_PER_DAY).toISOString().slice(0, 10);
   // streak must include today or yesterday to be "active"
   if (sorted[0] !== today && sorted[0] !== yesterday) return 0;
   let streak = 1;
   for (let i = 1; i < sorted.length; i++) {
     const prev = new Date(sorted[i - 1]);
     const curr = new Date(sorted[i]);
-    const diff = (prev.getTime() - curr.getTime()) / 864e5;
+    const diff = (prev.getTime() - curr.getTime()) / MS_PER_DAY;
     if (Math.round(diff) === 1) streak++;
     else break;
   }

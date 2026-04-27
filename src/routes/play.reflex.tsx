@@ -141,9 +141,11 @@ function ReflexGame() {
                   transition={{ duration: 0.8, repeat: Infinity }}
                 />
               )}
-              <p className="mt-6 text-2xl md:text-5xl font-black text-white drop-shadow-[0_3px_6px_rgba(0,0,0,0.35)]">
-                {label[phase]}
-              </p>
+              {phase !== "go" && (
+                <p className="mt-6 text-2xl md:text-5xl font-black text-white drop-shadow-[0_3px_6px_rgba(0,0,0,0.35)]">
+                  {label[phase]}
+                </p>
+              )}
               {phase === "tooSoon" && (
                 <p className="mt-2 text-sm md:text-base text-white/85">Wait for the logo to appear.</p>
               )}

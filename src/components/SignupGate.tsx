@@ -94,7 +94,8 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
   const verify = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
-    if (otp !== MOCK_OTP) {
+    const normalizedOtp = otp.replace(/\D/g, "").slice(0, 6);
+    if (normalizedOtp !== MOCK_OTP) {
       setErr("Invalid code. Hint: 123456 (mock)");
       return;
     }

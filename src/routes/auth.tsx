@@ -10,6 +10,7 @@ import {
   getCurrentScores,
   MOCK_OTP,
   normalizeUsername,
+  saveUser,
   saveUserRemote,
 } from "@/lib/storage";
 import { useGoogleSignIn } from "@/hooks/useGoogleSignIn";
@@ -47,21 +48,24 @@ function Auth() {
       const cat = categorize(total);
       const existing = findUserByContact(profile.email);
       const normalizedUsername = buildAutoUsername(profile.email, existing?.username);
+      const payload = {
+        userId: existing?.userId ?? generateUserId(),
+        contact: profile.email,
+        username: normalizedUsername || existing?.username,
+        name: profile.name || existing?.name || "Google User",
+        address: existing?.address,
+        scores,
+        total,
+        category: cat.label,
+        consent: true,
+        createdAt: existing?.createdAt ?? new Date().toISOString(),
+        referredBy: referredBy.trim() || existing?.referredBy,
+        referCount: existing?.referCount ?? 0,
+      };
+      // Persist local login state immediately so `/profile` always opens after auth.
+      saveUser(payload);
       try {
-        await saveUserRemote({
-          userId: existing?.userId ?? generateUserId(),
-          contact: profile.email,
-          username: normalizedUsername || existing?.username,
-          name: profile.name || existing?.name || "Google User",
-          address: existing?.address,
-          scores,
-          total,
-          category: cat.label,
-          consent: true,
-          createdAt: existing?.createdAt ?? new Date().toISOString(),
-          referredBy: referredBy.trim() || existing?.referredBy,
-          referCount: existing?.referCount ?? 0,
-        });
+        await saveUserRemote(payload);
         nav({ to: "/profile" });
       } catch (e) {
         console.warn("Save encountered an issue after OTP/google verification", e);
@@ -107,21 +111,24 @@ function Auth() {
     const cat = categorize(total);
     const existing = findUserByContact(contact.trim());
     const normalizedUsername = buildAutoUsername(contact.trim(), existing?.username);
+    const payload = {
+      userId: existing?.userId ?? generateUserId(),
+      contact: contact.trim(),
+      username: normalizedUsername || existing?.username,
+      name: existing?.name,
+      address: existing?.address,
+      scores,
+      total,
+      category: cat.label,
+      consent: true,
+      createdAt: existing?.createdAt ?? new Date().toISOString(),
+      referredBy: referredBy.trim() || existing?.referredBy,
+      referCount: existing?.referCount ?? 0,
+    };
+    // Persist local login state immediately so `/profile` always opens after OTP verification.
+    saveUser(payload);
     try {
-      await saveUserRemote({
-        userId: existing?.userId ?? generateUserId(),
-        contact: contact.trim(),
-        username: normalizedUsername || existing?.username,
-        name: existing?.name,
-        address: existing?.address,
-        scores,
-        total,
-        category: cat.label,
-        consent: true,
-        createdAt: existing?.createdAt ?? new Date().toISOString(),
-        referredBy: referredBy.trim() || existing?.referredBy,
-        referCount: existing?.referCount ?? 0,
-      });
+      await saveUserRemote(payload);
       nav({ to: "/profile" });
     } catch (e) {
       console.warn("Save encountered an issue after OTP verification", e);

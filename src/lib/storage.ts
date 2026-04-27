@@ -128,8 +128,12 @@ export const saveUserRemote = async (u: UserRecord): Promise<void> => {
   const merged = existing.includes(today) ? existing : [...existing, today];
   const withDate: UserRecord = { ...u, playDates: merged };
 
-  // Always keep a local copy so OTP verification is not blocked by transient server/db issues.
-  saveUser(withDate);
+  // Keep a local copy when possible so OTP verification is not blocked by transient server/db issues.
+  try {
+    saveUser(withDate);
+  } catch (e) {
+    console.warn("Local save failed; continuing with remote save attempt", e);
+  }
 
   try {
     const { saveUserFn } = await import("@/server/userFns");

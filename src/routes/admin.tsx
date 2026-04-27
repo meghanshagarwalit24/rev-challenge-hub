@@ -163,7 +163,9 @@ function exportExcel(rows: (string | number)[][], filename: string) {
 
 // ── Main Admin Component ───────────────────────────────────────────────────────
 function Admin() {
-  const [authenticated, setAuthenticated] = useState(false);
+  const [authenticated, setAuthenticated] = useState(
+    () => sessionStorage.getItem("adminAuth") === "true",
+  );
   const [passInput, setPassInput] = useState("");
   const [passError, setPassError] = useState(false);
   const [tab, setTab] = useState<Tab>("overview");
@@ -230,6 +232,7 @@ function Admin() {
       const { verifyAdminPasswordFn } = await import("@/server/adminFns");
       const result = await verifyAdminPasswordFn({ data: { password: passInput } });
       if (result.ok) {
+        sessionStorage.setItem("adminAuth", "true");
         setAuthenticated(true);
         setPassError(false);
       } else {
@@ -502,7 +505,10 @@ function Admin() {
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
           <button
-            onClick={() => setAuthenticated(false)}
+            onClick={() => {
+              sessionStorage.removeItem("adminAuth");
+              setAuthenticated(false);
+            }}
             title="Sign out"
             className="p-1.5 rounded-lg hover:bg-muted/30 transition-colors"
           >

@@ -16,7 +16,9 @@ function isComplete(scores: UserRecord["scores"]) {
 function AdminUserDetail() {
   const { userId } = Route.useParams();
 
-  const [authenticated, setAuthenticated] = useState(false);
+  const [authenticated, setAuthenticated] = useState(
+    () => sessionStorage.getItem("adminAuth") === "true",
+  );
   const [passInput, setPassInput] = useState("");
   const [passError, setPassError] = useState(false);
   const [user, setUser] = useState<UserRecord | null>(null);
@@ -30,6 +32,7 @@ function AdminUserDetail() {
       const { verifyAdminPasswordFn } = await import("@/server/adminFns");
       const result = await verifyAdminPasswordFn({ data: { password: passInput } });
       if (result.ok) {
+        sessionStorage.setItem("adminAuth", "true");
         setAuthenticated(true);
         setPassError(false);
       } else {

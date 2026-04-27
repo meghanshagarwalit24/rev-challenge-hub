@@ -107,9 +107,16 @@ export const saveUserRemote = async (u: UserRecord): Promise<void> => {
   const existing = u.playDates ?? [];
   const merged = existing.includes(today) ? existing : [...existing, today];
   const withDate: UserRecord = { ...u, playDates: merged };
+
+  // Always keep a local copy so OTP verification is not blocked by transient server/db issues.
   saveUser(withDate);
-  const { saveUserFn } = await import("@/server/userFns");
-  await saveUserFn({ data: withDate });
+
+  try {
+    const { saveUserFn } = await import("@/server/userFns");
+    await saveUserFn({ data: withDate });
+  } catch (e) {
+    console.warn("Remote save failed; user was saved locally", e);
+  }
 };
 
 /** Look up a user by contact in MongoDB (server), with localStorage as fallback. */

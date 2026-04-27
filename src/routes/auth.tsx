@@ -6,7 +6,6 @@ import {
   categorize,
   computeTotal,
   findUserByContact,
-  findUserByUsername,
   generateUserId,
   getCurrentScores,
   MOCK_OTP,
@@ -23,12 +22,21 @@ function Auth() {
   const nav = useNavigate();
   const [step, setStep] = useState<"contact" | "otp">("contact");
   const [contact, setContact] = useState("");
-  const [username, setUsername] = useState("");
   const [referredBy, setReferredBy] = useState("");
   const [otp, setOtp] = useState("");
   const [consent, setConsent] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const buildAutoUsername = (value: string, existingUsername?: string): string => {
+    if (existingUsername) return normalizeUsername(existingUsername);
+    const normalizedContact = value.trim().toLowerCase();
+    const localPart = normalizedContact.includes("@")
+      ? normalizedContact.split("@")[0]
+      : normalizedContact.replace(/\D/g, "").slice(-8);
+    const base = normalizeUsername(localPart || "player");
+    return `${base}-${Math.random().toString(36).slice(2, 6)}`;
+  };
 
   const { signIn: googleSignIn } = useGoogleSignIn({
     onSuccess: async (profile) => {
@@ -38,13 +46,7 @@ function Auth() {
       const total = computeTotal(scores);
       const cat = categorize(total);
       const existing = findUserByContact(profile.email);
-      const normalizedUsername = normalizeUsername(username);
-      const usernameOwner = normalizedUsername ? findUserByUsername(normalizedUsername) : null;
-      if (usernameOwner && usernameOwner.contact.toLowerCase() !== profile.email.toLowerCase()) {
-        setErr("This username is already taken. Please choose another one.");
-        setLoading(false);
-        return;
-      }
+      const normalizedUsername = buildAutoUsername(profile.email, existing?.username);
       try {
         await saveUserRemote({
           userId: existing?.userId ?? generateUserId(),
@@ -61,8 +63,9 @@ function Auth() {
           referCount: existing?.referCount ?? 0,
         });
         nav({ to: "/profile" });
-      } catch {
-        setErr("Failed to save your score. Please try again.");
+      } catch (e) {
+        console.warn("Save encountered an issue after OTP/google verification", e);
+        nav({ to: "/profile" });
       } finally {
         setLoading(false);
       }
@@ -78,10 +81,6 @@ function Auth() {
     setErr("");
     if (!valid(contact)) {
       setErr("Enter a valid email or mobile number");
-      return;
-    }
-    if (!normalizeUsername(username)) {
-      setErr("Please choose a username");
       return;
     }
     if (!consent) {
@@ -107,13 +106,7 @@ function Auth() {
     const total = computeTotal(scores);
     const cat = categorize(total);
     const existing = findUserByContact(contact.trim());
-    const normalizedUsername = normalizeUsername(username);
-    const usernameOwner = normalizedUsername ? findUserByUsername(normalizedUsername) : null;
-    if (usernameOwner && usernameOwner.contact.toLowerCase() !== contact.trim().toLowerCase()) {
-      setErr("This username is already taken. Please choose another one.");
-      setLoading(false);
-      return;
-    }
+    const normalizedUsername = buildAutoUsername(contact.trim(), existing?.username);
     try {
       await saveUserRemote({
         userId: existing?.userId ?? generateUserId(),
@@ -130,8 +123,9 @@ function Auth() {
         referCount: existing?.referCount ?? 0,
       });
       nav({ to: "/profile" });
-    } catch {
-      setErr("Failed to save your score. Please try again.");
+    } catch (e) {
+      console.warn("Save encountered an issue after OTP verification", e);
+      nav({ to: "/profile" });
     } finally {
       setLoading(false);
     }
@@ -165,24 +159,10 @@ function Auth() {
               >
                 <div>
                   <label className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Username
-                  </label>
-                  <input
-                    autoFocus
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="@yourname"
-                    className="mt-2 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
-                  />
-                  <p className="mt-1.5 text-[11px] text-muted-foreground">
-                    People can refer you using this username.
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs uppercase tracking-wider text-muted-foreground">
                     Email or Mobile Number
                   </label>
                   <input
+                    autoFocus
                     value={contact}
                     onChange={(e) => setContact(e.target.value)}
                     placeholder="you@email.com  or  +971 50 123 4567"

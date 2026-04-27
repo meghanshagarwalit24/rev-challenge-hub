@@ -8,7 +8,6 @@ import {
   generateUserId,
   getCurrentScores,
   MOCK_OTP,
-  normalizeUsername,
   saveUserRemote,
 } from "@/lib/storage";
 import { useGoogleSignIn } from "@/hooks/useGoogleSignIn";
@@ -22,7 +21,6 @@ type Step = "contact" | "otp";
 export function SignupGate({ onSuccess }: SignupGateProps) {
   const [step, setStep] = useState<Step>("contact");
   const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
   const [contact, setContact] = useState("");
   const [referredBy, setReferredBy] = useState("");
   const [otp, setOtp] = useState("");
@@ -33,21 +31,31 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
   const valid = (v: string) =>
     /^\S+@\S+\.\S+$/.test(v) || /^\+?\d{8,15}$/.test(v.replace(/\s/g, ""));
 
+  const generateAutoUsername = (displayName: string, contactValue: string): string => {
+    const baseFromName = displayName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const baseFromContact = contactValue
+      .trim()
+      .toLowerCase()
+      .split("@")[0]
+      .replace(/[^a-z0-9]+/g, "");
+    const base = (baseFromName || baseFromContact || "player").slice(0, 14);
+    let attempt = 0;
+    while (attempt < 1000) {
+      const suffix = Math.floor(100 + Math.random() * 900).toString();
+      const candidate = `${base}${suffix}`;
+      if (!findUserByUsername(candidate)) return candidate;
+      attempt += 1;
+    }
+    return `${base}${Date.now().toString(36).slice(-4)}`;
+  };
+
   const completeSignup = async (contactValue: string, displayName: string, referrer?: string) => {
     const scores = getCurrentScores();
     const total = computeTotal(scores);
     const cat = categorize(total);
     const existing = findUserByContact(contactValue.trim());
-    const normalizedUsername = normalizeUsername(username);
-    const usernameOwner = normalizedUsername ? findUserByUsername(normalizedUsername) : null;
-    if (
-      usernameOwner &&
-      usernameOwner.contact.toLowerCase() !== contactValue.trim().toLowerCase()
-    ) {
-      setErr("This username is already taken. Please choose another one.");
-      setLoading(false);
-      return;
-    }
+    const normalizedUsername =
+      existing?.username || generateAutoUsername(displayName, contactValue.trim());
     try {
       await saveUserRemote({
         userId: existing?.userId ?? generateUserId(),
@@ -74,7 +82,6 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
     e.preventDefault();
     setErr("");
     if (!name.trim()) return setErr("Please enter your name");
-    if (!normalizeUsername(username)) return setErr("Please choose a username");
     if (!valid(contact)) return setErr("Enter a valid email or mobile number");
     if (!consent) return setErr("Please accept the consent to continue");
     setLoading(true);
@@ -87,7 +94,8 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
   const verify = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
-    if (otp !== MOCK_OTP) {
+    const normalizedOtp = otp.replace(/\D/g, "").slice(0, 6);
+    if (normalizedOtp !== MOCK_OTP) {
       setErr("Invalid code. Hint: 123456 (mock)");
       return;
     }
@@ -172,20 +180,6 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
               </div>
               <div>
                 <label className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Username
-                </label>
-                <input
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="@yourname"
-                  className="mt-1.5 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  People can refer you using this username.
-                </p>
-              </div>
-              <div>
-                <label className="text-xs uppercase tracking-wider text-muted-foreground">
                   Email or Mobile Number
                 </label>
                 <input
@@ -230,7 +224,7 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
               </label>
               {err && <p className="text-sm text-destructive">{err}</p>}
               <button
-                disabled={loading}
+                disabled={loading || !consent}
                 className="w-full py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-60"
               >
                 {loading ? "Sending..." : "Send OTP →"}
@@ -247,7 +241,7 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
               <button
                 type="button"
                 onClick={google}
-                disabled={loading}
+                disabled={loading || !consent}
                 className="w-full py-3 rounded-full bg-card border border-border font-semibold hover:bg-muted/50 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 <svg width="18" height="18" viewBox="0 0 48 48">

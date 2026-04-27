@@ -18,6 +18,8 @@ export interface UserRecord {
   consent: boolean;
   createdAt: string;
   playDates?: string[]; // YYYY-MM-DD dates the user played (for streak tracking)
+  referredBy?: string; // contact of the user who referred this person
+  referCount?: number; // number of people this user has referred
 }
 
 export const generateUserId = (): string => {

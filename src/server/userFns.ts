@@ -20,6 +20,8 @@ const userRecordSchema = z.object({
   consent: z.boolean(),
   createdAt: z.string(),
   playDates: z.array(z.string()).optional(),
+  referredBy: z.string().optional(),
+  referCount: z.number().optional(),
 });
 
 const contactSchema = z.object({ contact: z.string().min(1) });
@@ -30,6 +32,11 @@ export const saveUserFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const db = await getDb();
     const normalized = { ...data, contact: data.contact.toLowerCase() };
+
+    // Check if this is a brand-new referral for this user (to avoid double-counting)
+    const existing = await db.collection<UserRecord>("users").findOne({ contact: normalized.contact });
+    const firstTimeReferral = normalized.referredBy && !existing?.referredBy;
+
     // Merge playDates instead of replacing so we never lose history
     if (normalized.playDates && normalized.playDates.length > 0) {
       const { playDates, ...rest } = normalized;
@@ -46,6 +53,15 @@ export const saveUserFn = createServerFn({ method: "POST" })
         .collection<UserRecord>("users")
         .updateOne({ contact: normalized.contact }, { $set: normalized }, { upsert: true });
     }
+
+    // Increment referrer's referCount on first referral only
+    if (firstTimeReferral) {
+      await db.collection<UserRecord>("users").updateOne(
+        { contact: normalized.referredBy!.toLowerCase() },
+        { $inc: { referCount: 1 } as any },
+      );
+    }
+
     return { ok: true };
   });
 

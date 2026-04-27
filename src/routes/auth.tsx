@@ -29,6 +29,15 @@ function Auth() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const goToProfile = async () => {
+    try {
+      await nav({ to: "/profile" });
+    } catch (e) {
+      console.warn("Router navigation failed, falling back to hard redirect", e);
+      if (typeof window !== "undefined") window.location.assign("/profile");
+    }
+  };
+
   const buildAutoUsername = (value: string, existingUsername?: string): string => {
     if (existingUsername) return normalizeUsername(existingUsername);
     const normalizedContact = value.trim().toLowerCase();
@@ -66,10 +75,10 @@ function Auth() {
       saveUser(payload);
       try {
         await saveUserRemote(payload);
-        nav({ to: "/profile" });
+        await goToProfile();
       } catch (e) {
         console.warn("Save encountered an issue after OTP/google verification", e);
-        nav({ to: "/profile" });
+        await goToProfile();
       } finally {
         setLoading(false);
       }
@@ -129,10 +138,10 @@ function Auth() {
     saveUser(payload);
     try {
       await saveUserRemote(payload);
-      nav({ to: "/profile" });
+      await goToProfile();
     } catch (e) {
       console.warn("Save encountered an issue after OTP verification", e);
-      nav({ to: "/profile" });
+      await goToProfile();
     } finally {
       setLoading(false);
     }

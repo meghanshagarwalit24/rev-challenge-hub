@@ -10,6 +10,7 @@ export interface GameScores {
 export interface UserRecord {
   userId: string; // generated unique id
   contact: string; // mobile or email
+  username?: string; // unique username for referrals
   name?: string;
   address?: string;
   scores: GameScores;
@@ -169,6 +170,13 @@ export const getAllUsers = (): UserRecord[] => {
 
 export const findUserByContact = (contact: string) =>
   getAllUsers().find((u) => u.contact.toLowerCase() === contact.toLowerCase()) || null;
+
+export const normalizeUsername = (value: string): string =>
+  value.trim().toLowerCase().replace(/^@+/, "");
+
+export const findUserByUsername = (username: string) =>
+  getAllUsers().find((u) => normalizeUsername(u.username || "") === normalizeUsername(username)) ||
+  null;
 
 export const hasConsent = () => localStorage.getItem(CONSENT_KEY) === "true";
 export const setConsent = (v: boolean) => localStorage.setItem(CONSENT_KEY, v ? "true" : "false");

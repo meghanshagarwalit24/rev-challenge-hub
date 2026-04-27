@@ -13,6 +13,7 @@ function Auth() {
   const nav = useNavigate();
   const [step, setStep] = useState<"contact" | "otp">("contact");
   const [contact, setContact] = useState("");
+  const [referredBy, setReferredBy] = useState("");
   const [otp, setOtp] = useState("");
   const [consent, setConsent] = useState(false);
   const [err, setErr] = useState("");
@@ -34,6 +35,8 @@ function Auth() {
           address: existing?.address,
           scores, total, category: cat.label, consent: true,
           createdAt: existing?.createdAt ?? new Date().toISOString(),
+          referredBy: referredBy.trim() || existing?.referredBy,
+          referCount: existing?.referCount ?? 0,
         });
         nav({ to: "/profile" });
       } catch {
@@ -73,6 +76,8 @@ function Auth() {
         address: existing?.address,
         scores, total, category: cat.label, consent: true,
         createdAt: existing?.createdAt ?? new Date().toISOString(),
+        referredBy: referredBy.trim() || existing?.referredBy,
+        referCount: existing?.referCount ?? 0,
       });
       nav({ to: "/profile" });
     } catch {
@@ -105,6 +110,18 @@ function Auth() {
                     className="mt-2 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
                   />
                   <p className="mt-1.5 text-[11px] text-muted-foreground">Enter either your email address or mobile number — we'll send a one-time code.</p>
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Referred by <span className="text-muted-foreground/60 normal-case font-normal">(optional)</span>
+                  </label>
+                  <input
+                    value={referredBy}
+                    onChange={(e) => setReferredBy(e.target.value)}
+                    placeholder="Friend's email or mobile"
+                    className="mt-2 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+                  />
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">Enter your friend's contact who referred you — they'll get more chances to win! 🏆</p>
                 </div>
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 accent-[oklch(0.72_0.19_50)]" />

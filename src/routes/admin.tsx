@@ -239,7 +239,12 @@ function Admin() {
       { name: "Balance", value: balancePlayed },
       { name: "All 3", value: completed },
     ];
-    return { total, avg, dist, completed, participation };
+    const totalReferrals = users.reduce((s, u) => s + (u.referCount ?? 0), 0);
+    const topReferrers = [...users]
+      .filter((u) => (u.referCount ?? 0) > 0)
+      .sort((a, b) => (b.referCount ?? 0) - (a.referCount ?? 0))
+      .slice(0, 5);
+    return { total, avg, dist, completed, participation, totalReferrals, topReferrers };
   }, [users]);
 
   // ── Date-wise ───────────────────────────────────────────────────────────────
@@ -280,7 +285,7 @@ function Admin() {
 
   const handleExportCsv = () => {
     const rows: (string | number)[][] = [
-      ["User ID", "Contact", "Name", "Reflex", "Memory", "Balance", "Total", "Category", "Created"],
+      ["User ID", "Contact", "Name", "Reflex", "Memory", "Balance", "Total", "Category", "Refer Count", "Referred By", "Created"],
       ...filtered.map((u) => [
         u.userId,
         u.contact,
@@ -290,6 +295,8 @@ function Admin() {
         u.scores.balance ?? "",
         u.total,
         u.category,
+        u.referCount ?? 0,
+        u.referredBy || "",
         new Date(u.createdAt).toISOString(),
       ]),
     ];
@@ -299,7 +306,7 @@ function Admin() {
 
   const handleExportExcel = () => {
     const rows: (string | number)[][] = [
-      ["User ID", "Contact", "Name", "Reflex", "Memory", "Balance", "Total", "Category", "Created"],
+      ["User ID", "Contact", "Name", "Reflex", "Memory", "Balance", "Total", "Category", "Refer Count", "Referred By", "Created"],
       ...filtered.map((u) => [
         u.userId,
         u.contact,
@@ -309,6 +316,8 @@ function Admin() {
         u.scores.balance ?? "",
         u.total,
         u.category,
+        u.referCount ?? 0,
+        u.referredBy || "",
         new Date(u.createdAt).toISOString(),
       ]),
     ];
@@ -487,6 +496,10 @@ function Admin() {
                 />
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                <KpiCard title="Total Referrals" value={stats.totalReferrals} />
+              </div>
+
               <div className="mt-5 grid md:grid-cols-2 gap-4">
                 <div className="bg-gradient-card border border-border rounded-3xl p-5 shadow-card">
                   <h3 className="font-black text-sm mb-3">Score Distribution</h3>
@@ -549,6 +562,34 @@ function Admin() {
                   </ResponsiveContainer>
                 </div>
               </div>
+
+              {stats.topReferrers.length > 0 && (
+                <div className="mt-5 bg-gradient-card border border-border rounded-3xl p-5 shadow-card">
+                  <h3 className="font-black text-sm mb-3">🏆 Top Referrers</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm min-w-[400px]">
+                      <thead>
+                        <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
+                          <Th>Rank</Th>
+                          <Th>Contact</Th>
+                          <Th>Name</Th>
+                          <Th>Referrals</Th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {stats.topReferrers.map((u, i) => (
+                          <tr key={u.userId} className="border-b border-border/40">
+                            <Td className="font-bold text-accent">#{i + 1}</Td>
+                            <Td className="font-mono text-[11px]">{u.contact}</Td>
+                            <Td>{u.name || "—"}</Td>
+                            <Td className="font-bold text-gradient-energy">{u.referCount ?? 0}</Td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -636,7 +677,7 @@ function Admin() {
               </p>
 
               <div className="mt-3 bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
-                <table className="w-full text-sm min-w-[750px]">
+                <table className="w-full text-sm min-w-[900px]">
                   <thead>
                     <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10">
                       <Th>User ID</Th>
@@ -647,13 +688,15 @@ function Admin() {
                       <Th>Balance</Th>
                       <Th>Total</Th>
                       <Th>Category</Th>
+                      <Th>Refer Count</Th>
+                      <Th>Referred By</Th>
                       <Th>Timestamp</Th>
                     </tr>
                   </thead>
                   <tbody>
                     {filtered.length === 0 && (
                       <tr>
-                        <td colSpan={9} className="py-10 text-center text-muted-foreground text-sm">
+                        <td colSpan={11} className="py-10 text-center text-muted-foreground text-sm">
                           No users match filters.
                         </td>
                       </tr>
@@ -673,6 +716,8 @@ function Admin() {
                         <Td>
                           <CategoryBadge cat={u.category} />
                         </Td>
+                        <Td className="font-bold text-center">{u.referCount ?? 0}</Td>
+                        <Td className="font-mono text-[11px] text-muted-foreground">{u.referredBy || "—"}</Td>
                         <Td className="text-muted-foreground text-[11px]">
                           {new Date(u.createdAt).toLocaleString()}
                         </Td>

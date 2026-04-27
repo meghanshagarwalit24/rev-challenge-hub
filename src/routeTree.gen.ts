@@ -17,6 +17,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ChallengesRouteImport } from './routes/challenges'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AdminUserUserIdRouteImport } from './routes/admin.user.$userId'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PlayReflexRouteImport } from './routes/play.reflex'
 import { Route as PlayMemoryRouteImport } from './routes/play.memory'
@@ -62,6 +63,11 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUserUserIdRoute = AdminUserUserIdRouteImport.update({
+  id: '/admin/user/$userId',
+  path: '/admin/user/$userId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -86,6 +92,7 @@ const PlayBalanceRoute = PlayBalanceRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/admin/user/$userId': typeof AdminUserUserIdRoute
   '/auth': typeof AuthRoute
   '/challenges': typeof ChallengesRoute
   '/privacy': typeof PrivacyRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/admin/user/$userId': typeof AdminUserUserIdRoute
   '/auth': typeof AuthRoute
   '/challenges': typeof ChallengesRoute
   '/privacy': typeof PrivacyRoute
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/admin/user/$userId': typeof AdminUserUserIdRoute
   '/auth': typeof AuthRoute
   '/challenges': typeof ChallengesRoute
   '/privacy': typeof PrivacyRoute
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/admin/user/$userId'
     | '/auth'
     | '/challenges'
     | '/privacy'
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/admin/user/$userId'
     | '/auth'
     | '/challenges'
     | '/privacy'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/admin/user/$userId'
     | '/auth'
     | '/challenges'
     | '/privacy'
@@ -174,6 +186,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  AdminUserUserIdRoute: typeof AdminUserUserIdRoute
   AuthRoute: typeof AuthRoute
   ChallengesRoute: typeof ChallengesRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -244,6 +257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/user/$userId': {
+      id: '/admin/user/$userId'
+      path: '/admin/user/$userId'
+      fullPath: '/admin/user/$userId'
+      preLoaderRoute: typeof AdminUserUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -278,6 +298,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  AdminUserUserIdRoute: AdminUserUserIdRoute,
   AuthRoute: AuthRoute,
   ChallengesRoute: ChallengesRoute,
   PrivacyRoute: PrivacyRoute,

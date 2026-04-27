@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import {
   categorize,
   computeTotal,
   findUserByContact,
   generateUserId,
+  getUser,
   getCurrentScores,
   MOCK_OTP,
   normalizeUsername,
@@ -28,6 +29,12 @@ function Auth() {
   const [consent, setConsent] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (getUser()) {
+      nav({ to: "/profile" });
+    }
+  }, [nav]);
 
   const goToProfile = async () => {
     try {

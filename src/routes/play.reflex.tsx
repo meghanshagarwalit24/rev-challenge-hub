@@ -13,8 +13,8 @@ export const Route = createFileRoute("/play/reflex")({
 
 type Phase = "idle" | "waiting" | "go" | "tooSoon" | "done";
 const ROUNDS = 3;
-const MIN_DELAY = 1500;
-const MAX_DELAY = 4000;
+const MIN_DELAY = 1800;
+const MAX_DELAY = 5200;
 
 function ReflexGame() {
   const nav = useNavigate();
@@ -22,6 +22,7 @@ function ReflexGame() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [round, setRound] = useState(0);
   const [times, setTimes] = useState<number[]>([]);
+  const [lastReactionMs, setLastReactionMs] = useState<number | null>(null);
   const startRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -34,6 +35,7 @@ function ReflexGame() {
 
   const startRound = () => {
     setPhase("waiting");
+    // Slightly wider random delay range to make anticipation harder.
     const delay = Math.floor(Math.random() * (MAX_DELAY - MIN_DELAY + 1)) + MIN_DELAY;
     timeoutRef.current = setTimeout(() => {
       startRef.current = Date.now();
@@ -69,6 +71,7 @@ function ReflexGame() {
 
     if (phase === "go") {
       const reflexMs = Date.now() - startRef.current;
+      setLastReactionMs(reflexMs);
       const next = [...times, reflexMs];
       const nextRound = round + 1;
       setTimes(next);
@@ -85,7 +88,7 @@ function ReflexGame() {
 
   const label: Record<Phase, string> = {
     idle: "Tap to begin",
-    waiting: `Round ${round + 1}/${ROUNDS} · Wait for logo...`,
+    waiting: `Round ${round + 1} · Wait for logo...`,
     go: "TAP NOW!",
     tooSoon: "Too early!",
     done: "Complete!",
@@ -133,7 +136,7 @@ function ReflexGame() {
                 <motion.img
                   src={logo}
                   alt="Revital Ginseng Plus"
-                  className="w-[220px] md:w-[300px] h-auto drop-shadow-[0_14px_26px_rgba(0,0,0,0.45)]"
+                  className="w-[130px] md:w-[180px] h-auto drop-shadow-[0_14px_26px_rgba(0,0,0,0.45)]"
                   animate={{ scale: [1, 1.03, 1] }}
                   transition={{ duration: 0.8, repeat: Infinity }}
                 />
@@ -143,6 +146,11 @@ function ReflexGame() {
               </p>
               {phase === "tooSoon" && (
                 <p className="mt-2 text-sm md:text-base text-white/85">Wait for the logo to appear.</p>
+              )}
+              {lastReactionMs !== null && phase !== "done" && (
+                <p className="mt-3 text-sm md:text-base text-white/90">
+                  Reaction time: <span className="font-bold">{lastReactionMs} ms</span>
+                </p>
               )}
               {phase === "done" && (
                 <div className="mt-6 text-center">

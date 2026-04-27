@@ -7,6 +7,14 @@ export interface GameScores {
   balance: number | null;
 }
 
+export interface PlayAttempt {
+  playedAt: string; // ISO timestamp
+  date: string; // YYYY-MM-DD
+  scores: GameScores;
+  total: number;
+  category: string;
+}
+
 export interface UserRecord {
   userId: string; // generated unique id
   contact: string; // mobile or email
@@ -18,6 +26,7 @@ export interface UserRecord {
   consent: boolean;
   createdAt: string;
   playDates?: string[]; // YYYY-MM-DD dates the user played (for streak tracking)
+  playAttempts?: PlayAttempt[]; // all completed 3-challenge runs
   referredBy?: string; // userId of the user who referred this person
   referCount?: number; // number of people this user has referred
 }
@@ -132,9 +141,40 @@ export const saveUser = (u: UserRecord) => {
 export const saveUserRemote = async (u: UserRecord): Promise<void> => {
   // Merge today's date into playDates
   const today = todayDateString();
-  const existing = u.playDates ?? [];
-  const merged = existing.includes(today) ? existing : [...existing, today];
-  const withDate: UserRecord = { ...u, playDates: merged };
+  const existingLocal = findUserByContact(u.contact);
+  const priorDates = existingLocal?.playDates ?? u.playDates ?? [];
+  const mergedDates = priorDates.includes(today) ? priorDates : [...priorDates, today];
+
+  const completeRun =
+    u.scores.reflex !== null && u.scores.memory !== null && u.scores.balance !== null;
+
+  const priorAttempts = existingLocal?.playAttempts ?? u.playAttempts ?? [];
+  const nextAttempts = completeRun
+    ? [
+        ...priorAttempts,
+        {
+          playedAt: new Date().toISOString(),
+          date: today,
+          scores: u.scores,
+          total: u.total,
+          category: u.category,
+        },
+      ]
+    : priorAttempts;
+
+  const bestAttempt = nextAttempts.reduce<PlayAttempt | null>(
+    (best, curr) => (!best || curr.total > best.total ? curr : best),
+    null,
+  );
+
+  const withDate: UserRecord = {
+    ...u,
+    playDates: mergedDates,
+    playAttempts: nextAttempts,
+    scores: bestAttempt?.scores ?? u.scores,
+    total: bestAttempt?.total ?? u.total,
+    category: bestAttempt?.category ?? u.category,
+  };
 
   // Keep a local copy when possible so OTP verification is not blocked by transient server/db issues.
   try {

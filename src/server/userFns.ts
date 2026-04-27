@@ -20,6 +20,17 @@ const userRecordSchema = z.object({
   consent: z.boolean(),
   createdAt: z.string(),
   playDates: z.array(z.string()).optional(),
+  playAttempts: z
+    .array(
+      z.object({
+        playedAt: z.string(),
+        date: z.string(),
+        scores: gameScoresSchema,
+        total: z.number(),
+        category: z.string(),
+      }),
+    )
+    .optional(),
   referredBy: z.string().optional(),
   referCount: z.number().optional(),
 });
@@ -44,13 +55,25 @@ export const saveUserFn = createServerFn({ method: "POST" })
     const firstTimeReferral = normalized.referredBy && !existing?.referredBy;
 
     // Merge playDates instead of replacing so we never lose history
-    if (normalized.playDates && normalized.playDates.length > 0) {
-      const { playDates, ...rest } = normalized;
+    if (
+      (normalized.playDates && normalized.playDates.length > 0) ||
+      (normalized.playAttempts && normalized.playAttempts.length > 0)
+    ) {
+      const { playDates, playAttempts, ...rest } = normalized;
       await db.collection<UserRecord>("users").updateOne(
         { contact: normalized.contact },
         {
           $set: rest,
-          $addToSet: { playDates: { $each: playDates } },
+          ...(playDates && playDates.length > 0
+            ? { $addToSet: { playDates: { $each: playDates } } }
+            : {}),
+          ...(playAttempts && playAttempts.length > 0
+            ? {
+                $push: {
+                  playAttempts: { $each: playAttempts },
+                },
+              }
+            : {}),
         },
         { upsert: true },
       );

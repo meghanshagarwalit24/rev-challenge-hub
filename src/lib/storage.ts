@@ -7,10 +7,17 @@ export interface GameScores {
   balance: number | null;
 }
 
+export interface PlayAttempt {
+  playedAt: string; // ISO timestamp
+  date: string; // YYYY-MM-DD
+  scores: GameScores;
+  total: number;
+  category: string;
+}
+
 export interface UserRecord {
   userId: string; // generated unique id
   contact: string; // mobile or email
-  username?: string; // unique username for referrals
   name?: string;
   address?: string;
   scores: GameScores;
@@ -19,7 +26,8 @@ export interface UserRecord {
   consent: boolean;
   createdAt: string;
   playDates?: string[]; // YYYY-MM-DD dates the user played (for streak tracking)
-  referredBy?: string; // contact of the user who referred this person
+  playAttempts?: PlayAttempt[]; // all completed 3-challenge runs
+  referredBy?: string; // userId of the user who referred this person
   referCount?: number; // number of people this user has referred
 }
 
@@ -106,17 +114,15 @@ export const saveUser = (u: UserRecord) => {
   const all = getAllUsers();
   const idx = all.findIndex((x) => x.contact === u.contact);
   const existing = idx >= 0 ? all[idx] : null;
-  const normalizedReferral = normalizeUsername(u.referredBy || "");
-  const firstTimeReferral = !!normalizedReferral && !existing?.referredBy;
+  const referralUserId = (u.referredBy || "").trim().toUpperCase();
+  const firstTimeReferral = !!referralUserId && !existing?.referredBy;
 
   if (idx >= 0) all[idx] = u;
   else all.push(u);
 
   if (firstTimeReferral) {
     const referredIdx = all.findIndex(
-      (candidate) =>
-        candidate.contact.toLowerCase() === normalizedReferral ||
-        normalizeUsername(candidate.username || "") === normalizedReferral,
+      (candidate) => candidate.userId.toUpperCase() === referralUserId,
     );
     const selfContact = u.contact.toLowerCase();
     if (referredIdx >= 0 && all[referredIdx].contact.toLowerCase() !== selfContact) {
@@ -135,9 +141,40 @@ export const saveUser = (u: UserRecord) => {
 export const saveUserRemote = async (u: UserRecord): Promise<void> => {
   // Merge today's date into playDates
   const today = todayDateString();
-  const existing = u.playDates ?? [];
-  const merged = existing.includes(today) ? existing : [...existing, today];
-  const withDate: UserRecord = { ...u, playDates: merged };
+  const existingLocal = findUserByContact(u.contact);
+  const priorDates = existingLocal?.playDates ?? u.playDates ?? [];
+  const mergedDates = priorDates.includes(today) ? priorDates : [...priorDates, today];
+
+  const completeRun =
+    u.scores.reflex !== null && u.scores.memory !== null && u.scores.balance !== null;
+
+  const priorAttempts = existingLocal?.playAttempts ?? u.playAttempts ?? [];
+  const nextAttempts = completeRun
+    ? [
+        ...priorAttempts,
+        {
+          playedAt: new Date().toISOString(),
+          date: today,
+          scores: u.scores,
+          total: u.total,
+          category: u.category,
+        },
+      ]
+    : priorAttempts;
+
+  const bestAttempt = nextAttempts.reduce<PlayAttempt | null>(
+    (best, curr) => (!best || curr.total > best.total ? curr : best),
+    null,
+  );
+
+  const withDate: UserRecord = {
+    ...u,
+    playDates: mergedDates,
+    playAttempts: nextAttempts,
+    scores: bestAttempt?.scores ?? u.scores,
+    total: bestAttempt?.total ?? u.total,
+    category: bestAttempt?.category ?? u.category,
+  };
 
   // Keep a local copy when possible so OTP verification is not blocked by transient server/db issues.
   try {
@@ -212,13 +249,6 @@ export const getAllUsers = (): UserRecord[] => {
 
 export const findUserByContact = (contact: string) =>
   getAllUsers().find((u) => u.contact.toLowerCase() === contact.toLowerCase()) || null;
-
-export const normalizeUsername = (value: string): string =>
-  value.trim().toLowerCase().replace(/^@+/, "");
-
-export const findUserByUsername = (username: string) =>
-  getAllUsers().find((u) => normalizeUsername(u.username || "") === normalizeUsername(username)) ||
-  null;
 
 export const hasConsent = () => localStorage.getItem(CONSENT_KEY) === "true";
 export const setConsent = (v: boolean) => localStorage.setItem(CONSENT_KEY, v ? "true" : "false");

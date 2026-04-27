@@ -51,6 +51,14 @@ interface DateWiseEntry {
   }[];
 }
 
+interface AdminUserRow extends UserRecord {
+  selectedScores: UserRecord["scores"];
+  selectedTotal: number;
+  selectedCategory: string;
+  selectedPlayedAt: string;
+  attemptsInRange: number;
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const CATEGORIES = ["Peak Performer", "High Energy", "Charged Up", "Warming Up", "Recharge Needed"];
 const CHART_COLORS = ["#F37421", "#FAAD14", "#52C41A", "#1890FF", "#9B59B6"];
@@ -77,6 +85,39 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
   return [...map.entries()]
     .sort(([a], [b]) => b.localeCompare(a))
     .map(([date, userList]) => ({ date, users: userList }));
+}
+
+function isComplete(scores: UserRecord["scores"]) {
+  return scores.reflex !== null && scores.memory !== null && scores.balance !== null;
+}
+
+function pickBestAttempt(user: UserRecord, from?: string, to?: string) {
+  const attempts = (user.playAttempts ?? []).filter((a) => isComplete(a.scores));
+  const inRange = attempts.filter((a) => {
+    if (from && a.date < from) return false;
+    if (to && a.date > to) return false;
+    return true;
+  });
+  const source = inRange.length > 0 ? inRange : attempts;
+  if (source.length === 0) {
+    if (!isComplete(user.scores)) return { best: null, countInRange: 0 };
+    const fallbackDate = new Date(user.createdAt).toISOString().slice(0, 10);
+    if ((from && fallbackDate < from) || (to && fallbackDate > to)) {
+      return { best: null, countInRange: 0 };
+    }
+    return {
+      best: {
+        playedAt: user.createdAt,
+        date: fallbackDate,
+        scores: user.scores,
+        total: user.total,
+        category: user.category,
+      },
+      countInRange: 1,
+    };
+  }
+  const best = source.reduce((top, cur) => (cur.total > top.total ? cur : top));
+  return { best, countInRange: inRange.length || source.length };
 }
 
 function exportCsv(rows: (string | number)[][], filename: string) {
@@ -148,6 +189,7 @@ function Admin() {
   const [logSearch, setLogSearch] = useState("");
   const [dateWiseSearch, setDateWiseSearch] = useState("");
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
 
   const addLog = useCallback(async (action: string, details: string) => {
     try {
@@ -200,22 +242,36 @@ function Admin() {
   };
 
   // ── Filtered users for table ─────────────────────────────────────────────────
-  const filtered = useMemo(
+  const filtered = useMemo<AdminUserRow[]>(
     () =>
-      users.filter((u) => {
-        if (filterCat !== "all" && u.category !== filterCat) return false;
-        if (filterGame !== "all" && u.scores[filterGame] === null) return false;
-        if (from && new Date(u.createdAt) < new Date(from)) return false;
-        if (to && new Date(u.createdAt) > new Date(to + "T23:59:59")) return false;
-        if (
-          search &&
-          !u.contact.toLowerCase().includes(search.toLowerCase()) &&
-          !(u.name || "").toLowerCase().includes(search.toLowerCase()) &&
-          !u.userId.toLowerCase().includes(search.toLowerCase())
-        )
-          return false;
-        return true;
-      }),
+      users
+        .map((u) => {
+          const picked = pickBestAttempt(u, from || undefined, to || undefined);
+          if (!picked.best) return null;
+          return {
+            ...u,
+            selectedScores: picked.best.scores,
+            selectedTotal: picked.best.total,
+            selectedCategory: picked.best.category,
+            selectedPlayedAt: picked.best.playedAt,
+            attemptsInRange: picked.countInRange,
+          } as AdminUserRow;
+        })
+        .filter((u): u is AdminUserRow => !!u)
+        .filter((u) => {
+          if (filterCat !== "all" && u.selectedCategory !== filterCat) return false;
+          if (filterGame !== "all" && u.selectedScores[filterGame] === null) return false;
+          if (from && new Date(u.selectedPlayedAt) < new Date(from)) return false;
+          if (to && new Date(u.selectedPlayedAt) > new Date(to + "T23:59:59")) return false;
+          if (
+            search &&
+            !u.contact.toLowerCase().includes(search.toLowerCase()) &&
+            !(u.name || "").toLowerCase().includes(search.toLowerCase()) &&
+            !u.userId.toLowerCase().includes(search.toLowerCase())
+          )
+            return false;
+          return true;
+        }),
     [users, filterCat, filterGame, from, to, search],
   );
 
@@ -283,11 +339,29 @@ function Admin() {
     );
   }, [logs, logSearch]);
 
+  const selectedUserAttempts = useMemo(() => {
+    if (!selectedUser) return [];
+    return [...(selectedUser.playAttempts ?? [])].sort((a, b) =>
+      b.playedAt.localeCompare(a.playedAt),
+    );
+  }, [selectedUser]);
+
+  const selectedBestAttempt = useMemo(() => {
+    if (selectedUserAttempts.length === 0) return null;
+    return selectedUserAttempts.reduce((top, cur) => (cur.total > top.total ? cur : top));
+  }, [selectedUserAttempts]);
+
+  const selectedReferredUsers = useMemo(() => {
+    if (!selectedUser) return [];
+    return users
+      .filter((u) => u.referredBy?.toUpperCase() === selectedUser.userId.toUpperCase())
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }, [users, selectedUser]);
+
   const handleExportCsv = () => {
     const rows: (string | number)[][] = [
       [
         "User ID",
-        "Username",
         "Contact",
         "Name",
         "Reflex",
@@ -296,22 +370,21 @@ function Admin() {
         "Total",
         "Category",
         "Refer Count",
-        "Referred By",
+        "Referred By (User ID)",
         "Created",
       ],
       ...filtered.map((u) => [
         u.userId,
-        u.username || "",
         u.contact,
         u.name || "",
-        u.scores.reflex ?? "",
-        u.scores.memory ?? "",
-        u.scores.balance ?? "",
-        u.total,
-        u.category,
+        u.selectedScores.reflex ?? "",
+        u.selectedScores.memory ?? "",
+        u.selectedScores.balance ?? "",
+        u.selectedTotal,
+        u.selectedCategory,
         u.referCount ?? 0,
         u.referredBy || "",
-        new Date(u.createdAt).toISOString(),
+        new Date(u.selectedPlayedAt).toISOString(),
       ]),
     ];
     exportCsv(rows, `revital-users-${Date.now()}.csv`);
@@ -322,7 +395,6 @@ function Admin() {
     const rows: (string | number)[][] = [
       [
         "User ID",
-        "Username",
         "Contact",
         "Name",
         "Reflex",
@@ -331,22 +403,21 @@ function Admin() {
         "Total",
         "Category",
         "Refer Count",
-        "Referred By",
+        "Referred By (User ID)",
         "Created",
       ],
       ...filtered.map((u) => [
         u.userId,
-        u.username || "",
         u.contact,
         u.name || "",
-        u.scores.reflex ?? "",
-        u.scores.memory ?? "",
-        u.scores.balance ?? "",
-        u.total,
-        u.category,
+        u.selectedScores.reflex ?? "",
+        u.selectedScores.memory ?? "",
+        u.selectedScores.balance ?? "",
+        u.selectedTotal,
+        u.selectedCategory,
         u.referCount ?? 0,
         u.referredBy || "",
-        new Date(u.createdAt).toISOString(),
+        new Date(u.selectedPlayedAt).toISOString(),
       ]),
     ];
     exportExcel(rows, `revital-users-${Date.now()}.xls`);
@@ -709,7 +780,6 @@ function Admin() {
                   <thead>
                     <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10">
                       <Th>User ID</Th>
-                      <Th>Username</Th>
                       <Th>Contact</Th>
                       <Th>Name</Th>
                       <Th>Reflex</Th>
@@ -718,7 +788,7 @@ function Admin() {
                       <Th>Total</Th>
                       <Th>Category</Th>
                       <Th>Refer Count</Th>
-                      <Th>Referred By</Th>
+                      <Th>Referred By (User ID)</Th>
                       <Th>Timestamp</Th>
                     </tr>
                   </thead>
@@ -726,7 +796,7 @@ function Admin() {
                     {filtered.length === 0 && (
                       <tr>
                         <td
-                          colSpan={12}
+                          colSpan={11}
                           className="py-10 text-center text-muted-foreground text-sm"
                         >
                           No users match filters.
@@ -736,27 +806,25 @@ function Admin() {
                     {filtered.map((u, i) => (
                       <tr
                         key={i}
-                        className="border-b border-border/40 hover:bg-muted/10 transition-colors"
+                        onClick={() => setSelectedUser(u)}
+                        className="border-b border-border/40 hover:bg-muted/10 transition-colors cursor-pointer"
                       >
                         <Td className="font-mono text-[11px]">{u.userId}</Td>
-                        <Td className="font-mono text-[11px]">
-                          {u.username ? `@${u.username}` : "—"}
-                        </Td>
                         <Td className="font-mono text-[11px]">{u.contact}</Td>
                         <Td>{u.name || "—"}</Td>
-                        <Td>{u.scores.reflex ?? "—"}</Td>
-                        <Td>{u.scores.memory ?? "—"}</Td>
-                        <Td>{u.scores.balance ?? "—"}</Td>
-                        <Td className="font-bold text-gradient-energy">{u.total}</Td>
+                        <Td>{u.selectedScores.reflex ?? "—"}</Td>
+                        <Td>{u.selectedScores.memory ?? "—"}</Td>
+                        <Td>{u.selectedScores.balance ?? "—"}</Td>
+                        <Td className="font-bold text-gradient-energy">{u.selectedTotal}</Td>
                         <Td>
-                          <CategoryBadge cat={u.category} />
+                          <CategoryBadge cat={u.selectedCategory} />
                         </Td>
                         <Td className="font-bold text-center">{u.referCount ?? 0}</Td>
-                        <Td className="font-mono text-[11px] text-muted-foreground">
+                        <Td className="font-mono text-[11px] text-muted-foreground uppercase">
                           {u.referredBy || "—"}
                         </Td>
                         <Td className="text-muted-foreground text-[11px]">
-                          {new Date(u.createdAt).toLocaleString()}
+                          {new Date(u.selectedPlayedAt).toLocaleString()}
                         </Td>
                       </tr>
                     ))}
@@ -1070,6 +1138,103 @@ function Admin() {
           )}
         </main>
       </div>
+
+      <AnimatePresence>
+        {selectedUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
+            onClick={() => setSelectedUser(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.98, opacity: 0 }}
+              transition={{ type: "spring", damping: 18 }}
+              className="max-w-4xl mx-auto bg-gradient-card border border-border rounded-3xl p-5 md:p-6 shadow-card"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-xl font-black">User Details</h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {selectedUser.name || "Unnamed"} · {selectedUser.contact}
+                  </p>
+                  <p className="text-xs text-muted-foreground font-mono">
+                    {selectedUser.userId}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedUser(null)}
+                  className="px-3 py-1.5 rounded-full border border-border text-xs hover:bg-muted/20"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-3 mt-4">
+                <KpiCard title="Best Score Selected" value={selectedBestAttempt?.total ?? 0} />
+                <KpiCard
+                  title="Completed Attempts"
+                  value={selectedUserAttempts.length}
+                />
+                <KpiCard
+                  title="Users Referred"
+                  value={selectedReferredUsers.length}
+                />
+              </div>
+
+              <div className="mt-5 grid md:grid-cols-2 gap-4">
+                <div className="bg-background/30 border border-border rounded-2xl p-4">
+                  <h4 className="font-bold text-sm mb-2">Referred Users (Date-wise)</h4>
+                  {selectedReferredUsers.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No referrals yet.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {selectedReferredUsers.map((u) => (
+                        <div key={u.userId} className="rounded-xl border border-border/70 p-2.5">
+                          <div className="text-sm font-semibold">{u.name || "—"}</div>
+                          <div className="text-[11px] text-muted-foreground font-mono">{u.contact}</div>
+                          <div className="text-[11px] text-muted-foreground">
+                            Joined: {new Date(u.createdAt).toLocaleString()}
+                          </div>
+                          <div className="text-[11px] font-semibold text-gradient-energy">
+                            Best: {u.total}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-background/30 border border-border rounded-2xl p-4">
+                  <h4 className="font-bold text-sm mb-2">All Completed Attempts</h4>
+                  {selectedUserAttempts.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No completed 3-game runs found.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {selectedUserAttempts.map((a, idx) => (
+                        <div key={`${a.playedAt}-${idx}`} className="rounded-xl border border-border/70 p-2.5">
+                          <div className="flex items-center justify-between">
+                            <div className="text-[11px] text-muted-foreground">{new Date(a.playedAt).toLocaleString()}</div>
+                            <div className="font-bold text-gradient-energy">{a.total}</div>
+                          </div>
+                          <div className="text-[11px] mt-1">
+                            R:{a.scores.reflex ?? 0} · M:{a.scores.memory ?? 0} · B:{a.scores.balance ?? 0}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground">{a.category}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

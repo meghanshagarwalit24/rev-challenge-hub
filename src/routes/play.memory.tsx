@@ -1,26 +1,50 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Header } from "@/components/Header";
 import { ProgressDots } from "@/components/ProgressDots";
 import { StartOverlay } from "@/components/StartOverlay";
 import { isGameUnlocked, saveGameScore } from "@/lib/storage";
-import revitalProduct from "@/assets/revital-poster.png";
+import revitalLogo from "@/assets/revital-logo.png";
 
 export const Route = createFileRoute("/play/memory")({
   component: MemoryGame,
 });
 
-const SYMBOLS = ["⚡", "🔥", "💪", "🌟"]; // 4 pairs = 8 cards around center
-const MAX_DURATION = 20;
-const TOTAL_PAIRS = SYMBOLS.length;
+const CARD_TYPES = [
+  { key: "energy", icon: "⚡", label: "Energy Strike" },
+  { key: "gym", icon: "🏋️", label: "Active Gym" },
+  { key: "dart", icon: "🎯", label: "Dart Focus" },
+  { key: "shield", icon: "🛡️", label: "Revital Shield" },
+] as const;
 
-interface Card { id: number; symbol: string; matched: boolean; }
+const MAX_DURATION = 15; // seconds
+const TOTAL_PAIRS = CARD_TYPES.length;
+const STARTING_CAPSULES = 3;
 
-function shuffle<T>(arr: T[]) { return arr.map(v => [Math.random(), v] as const).sort((a,b)=>a[0]-b[0]).map(([,v])=>v); }
+interface Card {
+  id: number;
+  key: string;
+  icon: string;
+  label: string;
+  matched: boolean;
+}
+
+function shuffle<T>(arr: T[]) {
+  return arr
+    .map((v) => [Math.random(), v] as const)
+    .sort((a, b) => a[0] - b[0])
+    .map(([, v]) => v);
+}
 
 function buildDeck(): Card[] {
-  return shuffle([...SYMBOLS, ...SYMBOLS]).map((s, i) => ({ id: i, symbol: s, matched: false }));
+  return shuffle([...CARD_TYPES, ...CARD_TYPES]).map((item, i) => ({
+    id: i,
+    key: item.key,
+    icon: item.icon,
+    label: item.label,
+    matched: false,
+  }));
 }
 
 function MemoryGame() {
@@ -31,66 +55,78 @@ function MemoryGame() {
   const [moves, setMoves] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const [done, setDone] = useState(false);
+  const [capsulesLeft, setCapsulesLeft] = useState(STARTING_CAPSULES);
 
-  useEffect(() => { if (!isGameUnlocked("memory")) nav({ to: "/challenges" }); }, [nav]);
+  useEffect(() => {
+    if (!isGameUnlocked("memory")) nav({ to: "/challenges" });
+  }, [nav]);
 
   useEffect(() => {
     if (done || showStart) return;
-    const t = setInterval(() => setSeconds(s => {
-      const next = s + 1;
-      if (next >= MAX_DURATION) setDone(true);
-      return next;
-    }), 1000);
+    const t = setInterval(() =>
+      setSeconds((s) => {
+        const next = s + 1;
+        if (next >= MAX_DURATION) setDone(true);
+        return next;
+      }), 1000);
     return () => clearInterval(t);
   }, [done, showStart]);
 
   useEffect(() => {
     if (flipped.length !== 2) return;
-    setMoves(m => m + 1);
+    setMoves((m) => m + 1);
     const [a, b] = flipped;
-    const ca = deck.find(c => c.id === a)!;
-    const cb = deck.find(c => c.id === b)!;
-    if (ca.symbol === cb.symbol) {
+    const ca = deck.find((c) => c.id === a)!;
+    const cb = deck.find((c) => c.id === b)!;
+    if (ca.key === cb.key) {
       setTimeout(() => {
-        setDeck(d => d.map(c => (c.id === a || c.id === b) ? { ...c, matched: true } : c));
+        setDeck((d) =>
+          d.map((c) =>
+            c.id === a || c.id === b ? { ...c, matched: true } : c,
+          ),
+        );
         setFlipped([]);
       }, 350);
     } else {
+      setCapsulesLeft((n) => Math.max(0, n - 1));
       setTimeout(() => setFlipped([]), 750);
     }
   }, [flipped, deck]);
 
   useEffect(() => {
-    if (deck.every(c => c.matched) && !done) setDone(true);
+    if (deck.every((c) => c.matched) && !done) setDone(true);
   }, [deck, done]);
+
+  const matchedPairs = useMemo(
+    () => deck.filter((c) => c.matched).length / 2,
+    [deck],
+  );
 
   useEffect(() => {
     if (!done) return;
-    const allMatched = deck.every(c => c.matched);
-    let score: number;
-    if (allMatched) {
-      const ideal = TOTAL_PAIRS;
-      const moveScore = Math.max(0, 100 - Math.max(0, moves - ideal) * 8);
-      const timeScore = Math.max(0, 100 - Math.max(0, seconds - 8) * 6);
-      score = Math.round((moveScore + timeScore) / 2);
-    } else {
-      const pairs = deck.filter(c => c.matched).length / 2;
-      score = Math.round((pairs / TOTAL_PAIRS) * 100);
-    }
-    saveGameScore("memory", score);
+
+    const remainingMs = Math.max(0, (MAX_DURATION - seconds) * 1000);
+    const timeScore = Math.round((Math.min(remainingMs, 15000) / 15000) * 1000);
+    const pairScore = matchedPairs * 75;
+    const accuracyScore =
+      capsulesLeft >= 3 ? 200 : capsulesLeft === 2 ? 130 : capsulesLeft === 1 ? 60 : 0;
+
+    const finalScore = timeScore + pairScore + accuracyScore;
+
+    saveGameScore("memory", finalScore);
     const t = setTimeout(() => nav({ to: "/play/balance" }), 1500);
     return () => clearTimeout(t);
-  }, [done, deck, moves, seconds, nav]);
+  }, [done, matchedPairs, seconds, capsulesLeft, nav]);
 
   const flip = (id: number) => {
     if (showStart) return;
     if (flipped.length === 2) return;
     if (flipped.includes(id)) return;
-    if (deck.find(c => c.id === id)?.matched) return;
+    if (deck.find((c) => c.id === id)?.matched) return;
     setFlipped([...flipped, id]);
   };
 
-  // Build 3x3 layout: 8 cards around a fixed center product image (index 4)
+  // 3x3 layout with fixed center logo
   const grid: (Card | "center")[] = [
     deck[0], deck[1], deck[2],
     deck[3], "center", deck[4],
@@ -106,8 +142,8 @@ function MemoryGame() {
           title="Memory Match"
           lines={[
             "Flip cards to find matching pairs.",
-            "The Revital product stays in the center as your guide.",
-            "Match all 4 pairs as fast as you can!",
+            "The Revital Ginseng Plus logo stays in the center as your guide.",
+            "Match all 4 pairs before time runs out!",
           ]}
           onStart={() => setShowStart(false)}
         />
@@ -122,7 +158,8 @@ function MemoryGame() {
         <div className="mt-5 flex justify-around bg-gradient-card border border-border rounded-2xl p-3">
           <Stat label="Moves" value={moves} />
           <Stat label="Time" value={`${seconds}s`} />
-          <Stat label="Pairs" value={`${deck.filter(c=>c.matched).length/2}/${TOTAL_PAIRS}`} />
+          <Stat label="Capsules" value={capsulesLeft} />
+          <Stat label="Pairs" value={`${matchedPairs}/${TOTAL_PAIRS}`} />
         </div>
 
         <div className="mt-5 grid grid-cols-3 gap-2 md:gap-3">
@@ -131,11 +168,11 @@ function MemoryGame() {
               return (
                 <div
                   key="center"
-                  className="aspect-square rounded-2xl bg-gradient-card border-2 border-accent/60 shadow-glow flex items-center justify-center p-2 relative overflow-hidden"
+                  className="aspect-square rounded-2xl bg-gradient-card border-2 border-accent/60 shadow-glow flex items-center justify-center p-3 relative overflow-hidden"
                 >
                   <img
-                    src={revitalProduct}
-                    alt="Revital product"
+                    src={revitalLogo}
+                    alt="Revital Ginseng Plus"
                     className="w-full h-full object-contain"
                   />
                 </div>
@@ -155,8 +192,11 @@ function MemoryGame() {
                   <div className="absolute inset-0 backface-hidden rounded-2xl bg-gradient-energy shadow-card group-active:scale-95 transition-transform flex items-center justify-center">
                     <span className="text-2xl text-energy-foreground/40 font-black">?</span>
                   </div>
-                  <div className={`absolute inset-0 backface-hidden [transform:rotateY(180deg)] rounded-2xl ${card.matched ? "bg-accent/30 ring-2 ring-accent" : "bg-card"} border border-border flex items-center justify-center text-3xl md:text-5xl`}>
-                    {card.symbol}
+                  <div
+                    className={`absolute inset-0 backface-hidden [transform:rotateY(180deg)] rounded-2xl ${card.matched ? "bg-accent/30 ring-2 ring-accent" : "bg-card"} border border-border flex flex-col items-center justify-center text-center px-1`}
+                  >
+                    <span className="text-2xl md:text-4xl leading-none">{card.icon}</span>
+                    <span className="mt-1 text-[10px] md:text-xs font-bold uppercase tracking-wide text-foreground/90">{card.label}</span>
                   </div>
                 </div>
               </button>

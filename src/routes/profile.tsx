@@ -49,7 +49,6 @@ function Profile() {
 
             <div className="mt-5 bg-background/40 rounded-2xl p-4 text-left space-y-2">
               <Row label="User ID" value={user.userId} mono />
-              {user.username && <Row label="Username" value={`@${user.username}`} mono />}
               <Row label={user.contact.includes("@") ? "Email" : "Mobile"} value={user.contact} />
               {user.name && <Row label="Name" value={user.name} />}
             </div>

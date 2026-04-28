@@ -40,7 +40,8 @@ export const dedupeAttempts = (attempts: PlayAttempt[]): PlayAttempt[] => {
 
 export interface UserRecord {
   userId: string; // generated unique id
-  contact: string; // mobile or email
+  contact: string; // mobile number used for OTP login
+  email?: string; // optional profile email (no OTP verification)
   name?: string;
   address?: string;
   scores: GameScores;

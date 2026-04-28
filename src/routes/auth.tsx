@@ -12,7 +12,6 @@ import {
   saveUser,
   saveUserRemote,
 } from "@/lib/storage";
-import { useGoogleSignIn } from "@/hooks/useGoogleSignIn";
 
 export const Route = createFileRoute("/auth")({
   component: Auth,
@@ -47,49 +46,11 @@ function Auth() {
     }
   };
 
-  const { signIn: googleSignIn } = useGoogleSignIn({
-    onSuccess: async (profile) => {
-      setErr("");
-      setLoading(true);
-      const scores = getCurrentScores();
-      const total = computeTotal(scores);
-      const cat = categorize(total);
-      const existing = findUserByContact(profile.email);
-      const payload = {
-        userId: existing?.userId ?? generateUserId(),
-        contact: profile.email,
-        name: profile.name || existing?.name || "Google User",
-        address: existing?.address,
-        scores,
-        total,
-        category: cat.label,
-        consent: true,
-        createdAt: existing?.createdAt ?? new Date().toISOString(),
-        referredBy: referredBy.trim().toUpperCase() || existing?.referredBy,
-        referCount: existing?.referCount ?? 0,
-      };
-      // Persist local login state immediately so `/profile` always opens after auth.
-      saveUser(payload);
-      await goToProfile();
-      try {
-        await saveUserRemote(payload);
-      } catch (e) {
-        console.warn("Save encountered an issue after OTP/google verification", e);
-      } finally {
-        setLoading(false);
-      }
-    },
-    onError: (reason) => setErr(reason),
-  });
-
-  const valid = (v: string) =>
-    /^\S+@\S+\.\S+$/.test(v) || /^\+?\d{8,15}$/.test(v.replace(/\s/g, ""));
-
   const sendOtp = (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
-    if (!valid(contact)) {
-      setErr("Enter a valid email or mobile number");
+    if (!isValidUaePhone(contact)) {
+      setErr("Enter a valid UAE mobile number");
       return;
     }
     if (!consent) {
@@ -114,10 +75,11 @@ function Auth() {
     const scores = getCurrentScores();
     const total = computeTotal(scores);
     const cat = categorize(total);
-    const existing = findUserByContact(contact.trim());
+    const normalizedContact = normalizeUaePhone(contact.trim());
+    const existing = findUserByContact(normalizedContact);
     const payload = {
       userId: existing?.userId ?? generateUserId(),
-      contact: contact.trim(),
+      contact: normalizedContact,
       name: existing?.name,
       address: existing?.address,
       scores,
@@ -168,17 +130,17 @@ function Auth() {
               >
                 <div>
                   <label className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Email or Mobile Number
+                    UAE Mobile Number
                   </label>
                   <input
                     autoFocus
                     value={contact}
                     onChange={(e) => setContact(e.target.value)}
-                    placeholder="you@email.com  or  +971 50 123 4567"
+                    placeholder="+971 50 123 4567"
                     className="mt-2 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
                   />
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
-                    Enter either your email address or mobile number — we'll send a one-time code.
+                    Enter a UAE mobile number (e.g. +971501234567) — we'll send a one-time code.
                   </p>
                 </div>
                 <div>
@@ -195,8 +157,7 @@ function Auth() {
                     className="mt-2 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
                   />
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
-                    Enter your friend's User ID who referred you — they'll get more chances to
-                    win!
+                    Enter your friend's User ID who referred you — they'll get more chances to win!
                     🏆
                   </p>
                 </div>
@@ -208,8 +169,8 @@ function Auth() {
                     className="mt-1 accent-[oklch(0.72_0.19_50)]"
                   />
                   <span className="text-xs text-muted-foreground">
-                    I agree to be contacted via email/phone about Revital campaigns and to the
-                    privacy policy (UAE compliant).
+                    I agree to be contacted via phone about Revital campaigns and to the privacy
+                    policy (UAE compliant).
                   </span>
                 </label>
                 {err && <p className="text-sm text-destructive">{err}</p>}
@@ -218,32 +179,6 @@ function Auth() {
                   className="w-full py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-60"
                 >
                   {loading ? "Sending..." : "Send OTP"}
-                </button>
-                <button
-                  type="button"
-                  onClick={googleSignIn}
-                  disabled={loading}
-                  className="w-full py-3 rounded-full bg-card border border-border font-semibold hover:bg-muted/50 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
-                >
-                  <svg width="18" height="18" viewBox="0 0 48 48">
-                    <path
-                      fill="#FFC107"
-                      d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.5 29.5 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.4-.4-3.5z"
-                    />
-                    <path
-                      fill="#FF3D00"
-                      d="M6.3 14.1l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.5 29.5 4.5 24 4.5 16.3 4.5 9.7 8.9 6.3 14.1z"
-                    />
-                    <path
-                      fill="#4CAF50"
-                      d="M24 43.5c5.4 0 10.3-2.1 14-5.5l-6.5-5.3c-2 1.4-4.6 2.3-7.5 2.3-5.3 0-9.7-3.1-11.3-7.4l-6.5 5C9.5 39 16.2 43.5 24 43.5z"
-                    />
-                    <path
-                      fill="#1976D2"
-                      d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.7l6.5 5.3c-.5.5 7-5.1 7-15 0-1.2-.1-2.4-.4-3.5z"
-                    />
-                  </svg>
-                  Continue with Google
                 </button>
               </motion.form>
             ) : (
@@ -280,7 +215,7 @@ function Auth() {
                   onClick={() => setStep("contact")}
                   className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  ← Change number/email
+                  ← Change number
                 </button>
               </motion.form>
             )}
@@ -297,3 +232,8 @@ function Auth() {
     </div>
   );
 }
+const normalizeUaePhone = (value: string): string => value.replace(/[\s()-]/g, "");
+const isValidUaePhone = (value: string): boolean => {
+  const normalized = normalizeUaePhone(value);
+  return /^(?:\+971|00971|0)?5\d{8}$/.test(normalized);
+};

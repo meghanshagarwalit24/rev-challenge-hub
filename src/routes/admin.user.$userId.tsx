@@ -207,6 +207,7 @@ function AdminUserDetail() {
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2 text-sm">
             <InfoRow label="User ID" value={user.userId} mono />
             <InfoRow label="Contact" value={user.contact} mono />
+            {user.email && <InfoRow label="Email" value={user.email} mono />}
             {user.name && <InfoRow label="Name" value={user.name} />}
             {user.address && <InfoRow label="Address" value={user.address} />}
             <InfoRow label="Joined" value={new Date(user.createdAt).toLocaleString()} />

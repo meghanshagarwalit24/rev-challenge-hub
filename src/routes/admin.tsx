@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useMatchRoute, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import {
@@ -200,6 +200,13 @@ function exportExcel(rows: (string | number)[][], filename: string) {
 
 // ── Main Admin Component ───────────────────────────────────────────────────────
 function Admin() {
+  const matchRoute = useMatchRoute();
+  const detailMatch = matchRoute({ to: "/admin/user/$userId", fuzzy: false });
+
+  if (detailMatch) {
+    return <Outlet />;
+  }
+
   const navigate = useNavigate();
   const [authenticated, setAuthenticated] = useState(() => {
     if (typeof window === "undefined") return false;

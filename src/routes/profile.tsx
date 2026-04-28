@@ -2,7 +2,14 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { Header } from "@/components/Header";
-import { getAllUsersRemote, getUser, saveUserRemote, type UserRecord } from "@/lib/storage";
+import {
+  dedupeAttempts,
+  findUserByContactRemote,
+  getAllUsersRemote,
+  getUser,
+  saveUserRemote,
+  type UserRecord,
+} from "@/lib/storage";
 
 export const Route = createFileRoute("/profile")({
   component: Profile,
@@ -30,16 +37,22 @@ function Profile() {
 
     const loadReferralData = async () => {
       try {
+        const latestUser = await findUserByContactRemote(u.contact);
+        const currentUser = latestUser ?? u;
+        setUser(currentUser);
+        setName(currentUser.name || "");
+        setAddress(currentUser.address || "");
+
         const allUsers = await getAllUsersRemote();
-        if (u.referredBy) {
+        if (currentUser.referredBy) {
           const referrer = allUsers.find(
-            (candidate) => candidate.userId.toUpperCase() === u.referredBy?.toUpperCase(),
+            (candidate) => candidate.userId.toUpperCase() === currentUser.referredBy?.toUpperCase(),
           );
           setReferrerName(referrer?.name || referrer?.contact || "");
         }
         setReferralUsers(
           allUsers.filter(
-            (candidate) => candidate.referredBy?.toUpperCase() === u.userId.toUpperCase(),
+            (candidate) => candidate.referredBy?.toUpperCase() === currentUser.userId.toUpperCase(),
           ),
         );
       } catch {
@@ -52,7 +65,7 @@ function Profile() {
 
   const attempts = useMemo(() => {
     if (!user) return [];
-    const historic = user.playAttempts ?? [];
+    const historic = dedupeAttempts([...(user.playAttempts ?? [])]);
     if (historic.length > 0) {
       return [...historic].sort((a, b) => b.playedAt.localeCompare(a.playedAt));
     }

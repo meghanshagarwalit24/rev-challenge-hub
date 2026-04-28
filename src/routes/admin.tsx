@@ -288,6 +288,13 @@ function Admin() {
   const stats = useMemo(() => {
     const total = users.length;
     const avg = total ? Math.round(users.reduce((s, u) => s + u.total, 0) / total) : 0;
+    const totals = users.map((u) => u.total).sort((a, b) => a - b);
+    const median = totals.length
+      ? totals.length % 2 === 0
+        ? Math.round((totals[totals.length / 2 - 1] + totals[totals.length / 2]) / 2)
+        : totals[Math.floor(totals.length / 2)]
+      : 0;
+    const bestScore = totals.length ? totals[totals.length - 1] : 0;
     const dist = CATEGORIES.map((label) => ({
       label,
       count: users.filter((u) => u.category === label).length,
@@ -305,11 +312,49 @@ function Admin() {
       { name: "All 3", value: completed },
     ];
     const totalReferrals = users.reduce((s, u) => s + (u.referCount ?? 0), 0);
+    const referredUsers = users.filter((u) => !!u.referredBy).length;
+    const attemptsPerUser = total
+      ? Number(
+          (
+            users.reduce(
+              (sum, user) =>
+                sum +
+                Math.max(
+                  dedupeAttempts(user.playAttempts ?? []).filter((attempt) =>
+                    isComplete(attempt.scores),
+                  ).length,
+                  isComplete(user.scores) ? 1 : 0,
+                ),
+              0,
+            ) / total
+          ).toFixed(1),
+        )
+      : 0;
+    const returningUsers = users.filter(
+      (u) =>
+        dedupeAttempts(u.playAttempts ?? []).filter((attempt) => isComplete(attempt.scores))
+          .length > 1 || (u.playDates ?? []).length > 1,
+    ).length;
+    const completionRate = total ? Math.round((completed / total) * 100) : 0;
     const topReferrers = [...users]
       .filter((u) => (u.referCount ?? 0) > 0)
       .sort((a, b) => (b.referCount ?? 0) - (a.referCount ?? 0))
       .slice(0, 5);
-    return { total, avg, dist, completed, participation, totalReferrals, topReferrers };
+    return {
+      total,
+      avg,
+      median,
+      bestScore,
+      dist,
+      completed,
+      completionRate,
+      participation,
+      totalReferrals,
+      referredUsers,
+      attemptsPerUser,
+      returningUsers,
+      topReferrers,
+    };
   }, [users]);
 
   // ── Date-wise ───────────────────────────────────────────────────────────────
@@ -578,18 +623,20 @@ function Admin() {
             >
               <SectionTitle>Campaign Overview</SectionTitle>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3 mt-4">
                 <KpiCard title="Total Users" value={stats.total} />
                 <KpiCard title="Avg Score" value={`${stats.avg}/300`} />
+                <KpiCard title="Median Score" value={`${stats.median}/300`} />
+                <KpiCard title="Best Score" value={`${stats.bestScore}/300`} />
                 <KpiCard title="Completed All" value={stats.completed} />
-                <KpiCard
-                  title="Conversion"
-                  value={`${stats.total ? Math.round((stats.completed / stats.total) * 100) : 0}%`}
-                />
+                <KpiCard title="Conversion" value={`${stats.completionRate}%`} />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
                 <KpiCard title="Total Referrals" value={stats.totalReferrals} />
+                <KpiCard title="Users Referred" value={stats.referredUsers} />
+                <KpiCard title="Avg Attempts / User" value={stats.attemptsPerUser} />
+                <KpiCard title="Returning Users" value={stats.returningUsers} />
               </div>
 
               <div className="mt-5 grid md:grid-cols-2 gap-4">

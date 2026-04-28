@@ -9,8 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as RulesRouteImport } from './routes/rules'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as RulesRouteImport } from './routes/rules'
 import { Route as RetrieveRouteImport } from './routes/retrieve'
 import { Route as ResultRouteImport } from './routes/result'
 import { Route as ProfileRouteImport } from './routes/profile'

@@ -81,6 +81,7 @@ const SCORES_KEY = "revital.currentScores";
 const USER_KEY = "revital.user";
 const ALL_USERS_KEY = "revital.allUsers";
 const CONSENT_KEY = "revital.cookieConsent";
+const RUN_COMPLETED_AT_KEY = "revital.runCompletedAt";
 
 export const getCurrentScores = (): GameScores => {
   if (typeof window === "undefined") return { reflex: null, memory: null, balance: null };
@@ -95,6 +96,9 @@ export const saveGameScore = (game: GameKey, score: number) => {
   const cur = getCurrentScores();
   cur[game] = score;
   localStorage.setItem(SCORES_KEY, JSON.stringify(cur));
+  if (game === "balance") {
+    localStorage.setItem(RUN_COMPLETED_AT_KEY, new Date().toISOString());
+  }
 };
 
 /** Returns today's date as YYYY-MM-DD. */
@@ -121,7 +125,10 @@ export const calcStreak = (playDates: string[]): number => {
   return streak;
 };
 
-export const resetScores = () => localStorage.removeItem(SCORES_KEY);
+export const resetScores = () => {
+  localStorage.removeItem(SCORES_KEY);
+  localStorage.removeItem(RUN_COMPLETED_AT_KEY);
+};
 
 export const computeTotal = (s: GameScores) =>
   Math.round(((s.reflex ?? 0) + (s.memory ?? 0) + (s.balance ?? 0)) / 3);
@@ -173,12 +180,16 @@ export const saveUserRemote = async (u: UserRecord): Promise<void> => {
     u.scores.reflex !== null && u.scores.memory !== null && u.scores.balance !== null;
 
   const priorAttempts = existingLocal?.playAttempts ?? u.playAttempts ?? [];
+  const completedAtFromStorage =
+    typeof window !== "undefined" ? localStorage.getItem(RUN_COMPLETED_AT_KEY) : null;
+  const completedAt = completedAtFromStorage || new Date().toISOString();
+  const completedDate = completedAt.slice(0, 10);
   const nextAttempts = completeRun
     ? [
         ...priorAttempts,
         {
-          playedAt: new Date().toISOString(),
-          date: today,
+          playedAt: completedAt,
+          date: completedDate,
           scores: u.scores,
           total: u.total,
           category: u.category,

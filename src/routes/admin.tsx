@@ -62,6 +62,23 @@ interface AdminUserRow extends UserRecord {
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const CATEGORIES = ["Peak Performer", "High Energy", "Charged Up", "Warming Up", "Recharge Needed"];
 const CHART_COLORS = ["#F37421", "#FAAD14", "#52C41A", "#1890FF", "#9B59B6"];
+const FALLBACK_DATE = "1970-01-01";
+
+function getSafeDate(value?: string) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getSafeIsoTimestamp(value?: string) {
+  const date = getSafeDate(value);
+  return date ? date.toISOString() : "";
+}
+
+function getSafeIsoDay(value?: string) {
+  const iso = getSafeIsoTimestamp(value);
+  return iso ? iso.slice(0, 10) : FALLBACK_DATE;
+}
 
 function groupByDate(users: UserRecord[]): DateWiseEntry[] {
   const map = new Map<string, DateWiseEntry["users"]>();
@@ -91,7 +108,7 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
       continue;
     }
 
-    const fallbackDate = new Date(u.createdAt).toISOString().slice(0, 10);
+    const fallbackDate = getSafeIsoDay(u.createdAt);
     if (!map.has(fallbackDate)) map.set(fallbackDate, []);
     map.get(fallbackDate)!.push({
       userId: u.userId,
@@ -121,7 +138,7 @@ function pickBestAttempt(user: UserRecord, from?: string, to?: string) {
   const source = inRange.length > 0 ? inRange : attempts;
   if (source.length === 0) {
     if (!isComplete(user.scores)) return { best: null, countInRange: 0 };
-    const fallbackDate = new Date(user.createdAt).toISOString().slice(0, 10);
+    const fallbackDate = getSafeIsoDay(user.createdAt);
     if ((from && fallbackDate < from) || (to && fallbackDate > to)) {
       return { best: null, countInRange: 0 };
     }
@@ -285,8 +302,9 @@ function Admin() {
         .filter((u) => {
           if (filterCat !== "all" && u.selectedCategory !== filterCat) return false;
           if (filterGame !== "all" && u.selectedScores[filterGame] === null) return false;
-          if (from && new Date(u.selectedPlayedAt) < new Date(from)) return false;
-          if (to && new Date(u.selectedPlayedAt) > new Date(to + "T23:59:59")) return false;
+          const selectedDate = getSafeDate(u.selectedPlayedAt);
+          if (from && selectedDate && selectedDate < new Date(from)) return false;
+          if (to && selectedDate && selectedDate > new Date(to + "T23:59:59")) return false;
           if (
             search &&
             !u.contact.toLowerCase().includes(search.toLowerCase()) &&
@@ -434,7 +452,7 @@ function Admin() {
         u.selectedCategory,
         u.referCount ?? 0,
         u.referredBy || "",
-        new Date(u.selectedPlayedAt).toISOString(),
+        getSafeIsoTimestamp(u.selectedPlayedAt),
       ]),
     ];
     exportCsv(rows, `revital-users-${Date.now()}.csv`);
@@ -467,7 +485,7 @@ function Admin() {
         u.selectedCategory,
         u.referCount ?? 0,
         u.referredBy || "",
-        new Date(u.selectedPlayedAt).toISOString(),
+        getSafeIsoTimestamp(u.selectedPlayedAt),
       ]),
     ];
     exportExcel(rows, `revital-users-${Date.now()}.xls`);

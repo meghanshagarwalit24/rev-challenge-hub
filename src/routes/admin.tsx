@@ -514,6 +514,9 @@ function Admin() {
     setTab(t);
     setSidebarOpen(false);
     addLog("TAB_CHANGE", `Navigated to ${t}`);
+    if (isUserDetailRoute) {
+      navigate({ to: "/admin" });
+    }
   };
 
   // ── Login Screen ─────────────────────────────────────────────────────────────
@@ -620,19 +623,23 @@ function Admin() {
               Navigation
             </p>
           </div>
-          {navItems.map((n) => (
-            <button
-              key={n.id}
-              onClick={() => handleTabChange(n.id)}
-              className={`mx-2 flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
-                (isUserDetailRoute && n.id === "users") || tab === n.id
-                  ? "bg-accent/20 text-accent"
-                  : "hover:bg-muted/30 text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {n.icon} {n.label}
-            </button>
-          ))}
+          {navItems.map((n) => {
+            const isActive = (isUserDetailRoute && n.id === "users") || tab === n.id;
+
+            return (
+              <button
+                key={n.id}
+                onClick={() => handleTabChange(n.id)}
+                className={`mx-2 flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
+                  isActive
+                    ? "bg-accent/20 text-accent border-accent/40 shadow-sm"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30 hover:border-border/80"
+                }`}
+              >
+                {n.icon} {n.label}
+              </button>
+            );
+          })}
         </aside>
 
         {/* Mobile overlay */}

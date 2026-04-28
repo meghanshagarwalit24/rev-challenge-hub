@@ -41,7 +41,7 @@ export function StartOverlay({ emoji, title, lines, onStart }: StartOverlayProps
         >
           ▶ Start Now
         </button>
-        <p className="mt-3 text-xs text-muted-foreground">20 seconds max</p>
+        <p className="mt-3 text-xs text-muted-foreground">15 seconds max</p>
       </motion.div>
     </motion.div>
   );

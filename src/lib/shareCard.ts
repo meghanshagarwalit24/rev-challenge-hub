@@ -71,7 +71,7 @@ export async function buildShareCard(data: ShareCardData): Promise<Blob> {
   grad.addColorStop(0.5, "#ff8a2a");
   grad.addColorStop(1, "#e8421f");
   ctx.strokeStyle = grad;
-  const pct = Math.min(1, data.total / 300);
+  const pct = Math.min(1, data.total / 100);
   ctx.beginPath();
   ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct);
   ctx.stroke();
@@ -80,9 +80,6 @@ export async function buildShareCard(data: ShareCardData): Promise<Blob> {
   ctx.fillStyle = "#fff";
   ctx.font = "900 200px system-ui, -apple-system, sans-serif";
   ctx.fillText(String(data.total), cx, cy + 50);
-  ctx.fillStyle = "rgba(255,255,255,0.6)";
-  ctx.font = "600 40px system-ui, -apple-system, sans-serif";
-  ctx.fillText("/ 300", cx, cy + 110);
 
   // Category pill
   ctx.font = "800 48px system-ui, -apple-system, sans-serif";

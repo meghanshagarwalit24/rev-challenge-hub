@@ -12,6 +12,7 @@ const gameScoresSchema = z.object({
 const userRecordSchema = z.object({
   userId: z.string(),
   contact: z.string().min(1),
+  email: z.string().optional(),
   name: z.string().optional(),
   address: z.string().optional(),
   scores: gameScoresSchema,

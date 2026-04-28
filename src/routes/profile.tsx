@@ -19,8 +19,10 @@ function Profile() {
   const nav = useNavigate();
   const [user, setUser] = useState<UserRecord | null>(null);
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
   const [referrerName, setReferrerName] = useState("");
@@ -34,6 +36,7 @@ function Profile() {
     }
     setUser(u);
     setName(u.name || "");
+    setEmail(u.email || "");
     setAddress(u.address || "");
 
     const loadReferralData = async () => {
@@ -42,6 +45,7 @@ function Profile() {
         const currentUser = latestUser ?? u;
         setUser(currentUser);
         setName(currentUser.name || "");
+        setEmail(currentUser.email || "");
         setAddress(currentUser.address || "");
 
         const allUsers = await getAllUsersRemote();
@@ -90,7 +94,18 @@ function Profile() {
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    const updated = { ...user, name: name.trim(), address: address.trim() };
+    setError("");
+    const normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail && !/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    const updated = {
+      ...user,
+      name: name.trim(),
+      email: normalizedEmail || undefined,
+      address: address.trim(),
+    };
     await saveUserRemote(updated);
     setUser(updated);
     setSaved(true);
@@ -142,7 +157,8 @@ function Profile() {
 
             <div className="mt-5 bg-background/40 rounded-2xl p-4 text-left space-y-2">
               <Row label="User ID" value={user.userId} mono />
-              <Row label={user.contact.includes("@") ? "Email" : "Mobile"} value={user.contact} />
+              <Row label="Mobile" value={user.contact} />
+              {user.email && <Row label="Email" value={user.email} />}
               {user.name && <Row label="Name" value={user.name} />}
               {user.referredBy && <Row label="Referred By ID" value={user.referredBy} mono />}
               {user.referredBy && <Row label="Referrer Name" value={referrerName || "—"} />}
@@ -203,6 +219,20 @@ function Profile() {
           </div>
           <div>
             <label className="text-xs uppercase tracking-wider text-muted-foreground">
+              Gmail / Email
+            </label>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="yourname@gmail.com"
+              className="mt-2 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Email is saved to your profile and shown in admin dashboard. No OTP verification.
+            </p>
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground">
               Address (for prize delivery)
             </label>
             <textarea
@@ -212,6 +242,7 @@ function Profile() {
               className="mt-2 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring resize-none"
             />
           </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <button className="w-full py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-[1.02] active:scale-[0.98] transition-transform">
             {saved ? "✓ Saved!" : "Save Profile"}
           </button>

@@ -44,6 +44,7 @@ interface DateWiseEntry {
   users: {
     userId: string;
     contact: string;
+    email?: string;
     name?: string;
     scores: UserRecord["scores"];
     total: number;
@@ -99,6 +100,7 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
         map.get(date)!.push({
           userId: u.userId,
           contact: u.contact,
+          email: u.email,
           name: u.name,
           scores: attempt.scores,
           total: attempt.total,
@@ -113,6 +115,7 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
     map.get(fallbackDate)!.push({
       userId: u.userId,
       contact: u.contact,
+      email: u.email,
       name: u.name,
       scores: u.scores,
       total: u.total,
@@ -312,6 +315,7 @@ function Admin() {
           if (
             search &&
             !u.contact.toLowerCase().includes(search.toLowerCase()) &&
+            !(u.email || "").toLowerCase().includes(search.toLowerCase()) &&
             !(u.name || "").toLowerCase().includes(search.toLowerCase()) &&
             !u.userId.toLowerCase().includes(search.toLowerCase())
           )
@@ -405,6 +409,7 @@ function Admin() {
         users: d.users.filter(
           (u) =>
             u.contact.toLowerCase().includes(q) ||
+            (u.email || "").toLowerCase().includes(q) ||
             u.userId.toLowerCase().includes(q) ||
             (u.name || "").toLowerCase().includes(q),
         ),
@@ -435,6 +440,7 @@ function Admin() {
       [
         "User ID",
         "Contact",
+        "Email",
         "Name",
         "Reflex",
         "Memory",
@@ -448,6 +454,7 @@ function Admin() {
       ...filtered.map((u) => [
         u.userId,
         u.contact,
+        u.email || "",
         u.name || "",
         u.selectedScores.reflex ?? "",
         u.selectedScores.memory ?? "",
@@ -468,6 +475,7 @@ function Admin() {
       [
         "User ID",
         "Contact",
+        "Email",
         "Name",
         "Reflex",
         "Memory",
@@ -481,6 +489,7 @@ function Admin() {
       ...filtered.map((u) => [
         u.userId,
         u.contact,
+        u.email || "",
         u.name || "",
         u.selectedScores.reflex ?? "",
         u.selectedScores.memory ?? "",
@@ -878,6 +887,7 @@ function Admin() {
                         <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10">
                           <Th>User ID</Th>
                           <Th>Contact</Th>
+                          <Th>Email</Th>
                           <Th>Name</Th>
                           <Th>Reflex</Th>
                           <Th>Memory</Th>
@@ -893,7 +903,7 @@ function Admin() {
                         {filtered.length === 0 && (
                           <tr>
                             <td
-                              colSpan={11}
+                              colSpan={12}
                               className="py-10 text-center text-muted-foreground text-sm"
                             >
                               No users match filters.
@@ -910,6 +920,7 @@ function Admin() {
                           >
                             <Td className="font-mono text-[11px]">{u.userId}</Td>
                             <Td className="font-mono text-[11px]">{u.contact}</Td>
+                            <Td className="font-mono text-[11px]">{u.email || "—"}</Td>
                             <Td>{u.name || "—"}</Td>
                             <Td>{u.selectedScores.reflex ?? "—"}</Td>
                             <Td>{u.selectedScores.memory ?? "—"}</Td>
@@ -998,6 +1009,7 @@ function Admin() {
                                   <tr className="text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/10 text-left">
                                     <Th>User ID</Th>
                                     <Th>Contact</Th>
+                                    <Th>Email</Th>
                                     <Th>Name</Th>
                                     <Th>Reflex</Th>
                                     <Th>Memory</Th>
@@ -1014,6 +1026,7 @@ function Admin() {
                                     >
                                       <Td className="font-mono text-[11px]">{u.userId}</Td>
                                       <Td className="font-mono text-[11px]">{u.contact}</Td>
+                                      <Td className="font-mono text-[11px]">{u.email || "—"}</Td>
                                       <Td>{u.name || "—"}</Td>
                                       <Td>{u.scores.reflex ?? "—"}</Td>
                                       <Td>{u.scores.memory ?? "—"}</Td>

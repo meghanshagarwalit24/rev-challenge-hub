@@ -9,13 +9,18 @@ import {
   MOCK_OTP,
   saveUserRemote,
 } from "@/lib/storage";
-import { useGoogleSignIn } from "@/hooks/useGoogleSignIn";
 
 interface SignupGateProps {
   onSuccess: () => void;
 }
 
 type Step = "contact" | "otp";
+
+const normalizeUaePhone = (value: string): string => value.replace(/[\s()-]/g, "");
+const isValidUaePhone = (value: string): boolean => {
+  const normalized = normalizeUaePhone(value);
+  return /^(?:\+971|00971|0)?5\d{8}$/.test(normalized);
+};
 
 export function SignupGate({ onSuccess }: SignupGateProps) {
   const [step, setStep] = useState<Step>("contact");
@@ -42,9 +47,6 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
       window.localStorage.setItem("revital_referral_code", referralCode);
     }
   }, []);
-
-  const valid = (v: string) =>
-    /^\S+@\S+\.\S+$/.test(v) || /^\+?\d{8,15}$/.test(v.replace(/\s/g, ""));
 
   const completeSignup = async (contactValue: string, displayName: string, referrer?: string) => {
     const scores = getCurrentScores();
@@ -77,7 +79,7 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
     e.preventDefault();
     setErr("");
     if (!name.trim()) return setErr("Please enter your name");
-    if (!valid(contact)) return setErr("Enter a valid email or mobile number");
+    if (!isValidUaePhone(contact)) return setErr("Enter a valid UAE mobile number");
     if (!consent) return setErr("Please accept the consent to continue");
     setLoading(true);
     setTimeout(() => {
@@ -95,29 +97,7 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
       return;
     }
     setLoading(true);
-    await completeSignup(contact, name, referredBy || undefined);
-  };
-
-  const { signIn: googleSignIn } = useGoogleSignIn({
-    onSuccess: async (profile) => {
-      if (!consent) {
-        setErr("Please accept the consent to continue with Google");
-        return;
-      }
-      setErr("");
-      setLoading(true);
-      await completeSignup(
-        profile.email,
-        profile.name || name || "Google User",
-        referredBy || undefined,
-      );
-    },
-    onError: (reason) => setErr(reason),
-  });
-
-  const google = () => {
-    if (!consent) return setErr("Please accept the consent to continue with Google");
-    googleSignIn();
+    await completeSignup(normalizeUaePhone(contact), name, referredBy || undefined);
   };
 
   useEffect(() => {
@@ -175,16 +155,16 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
               </div>
               <div>
                 <label className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Email or Mobile Number
+                  UAE Mobile Number
                 </label>
                 <input
                   value={contact}
                   onChange={(e) => setContact(e.target.value)}
-                  placeholder="you@email.com  or  +971 50 123 4567"
+                  placeholder="+971 50 123 4567"
                   className="mt-1.5 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
                 />
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  We'll send a one-time code to verify.
+                  Enter a UAE mobile number (e.g. +971501234567). We'll send a one-time code.
                 </p>
                 {existingUser && (
                   <p className="mt-1 text-[11px] text-accent">
@@ -220,8 +200,8 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
                   className="mt-1 accent-[oklch(0.72_0.19_50)]"
                 />
                 <span className="text-xs text-muted-foreground">
-                  I agree to be contacted by Revital about campaigns & rewards, and accept the
-                  privacy policy (UAE compliant).
+                  I agree to be contacted by Revital about campaigns & rewards by phone, and accept
+                  the privacy policy (UAE compliant).
                 </span>
               </label>
               {err && <p className="text-sm text-destructive">{err}</p>}
@@ -230,41 +210,6 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
                 className="w-full py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-60"
               >
                 {loading ? "Sending..." : "Send OTP →"}
-              </button>
-
-              <div className="flex items-center gap-3 my-1">
-                <div className="flex-1 h-px bg-border" />
-                <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                  or
-                </span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
-
-              <button
-                type="button"
-                onClick={google}
-                disabled={loading || !consent}
-                className="w-full py-3 rounded-full bg-card border border-border font-semibold hover:bg-muted/50 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
-              >
-                <svg width="18" height="18" viewBox="0 0 48 48">
-                  <path
-                    fill="#FFC107"
-                    d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.5 29.5 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.4-.4-3.5z"
-                  />
-                  <path
-                    fill="#FF3D00"
-                    d="M6.3 14.1l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.5 29.5 4.5 24 4.5 16.3 4.5 9.7 8.9 6.3 14.1z"
-                  />
-                  <path
-                    fill="#4CAF50"
-                    d="M24 43.5c5.4 0 10.3-2.1 14-5.5l-6.5-5.3c-2 1.4-4.6 2.3-7.5 2.3-5.3 0-9.7-3.1-11.3-7.4l-6.5 5C9.5 39 16.2 43.5 24 43.5z"
-                  />
-                  <path
-                    fill="#1976D2"
-                    d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.7l6.5 5.3c-.5.5 7-5.1 7-15 0-1.2-.1-2.4-.4-3.5z"
-                  />
-                </svg>
-                Continue with Google
               </button>
             </motion.form>
           ) : (
@@ -308,7 +253,7 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
                 }}
                 className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                ← Change number/email
+                ← Change number
               </button>
             </motion.form>
           )}

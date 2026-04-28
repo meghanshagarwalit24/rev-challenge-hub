@@ -10,49 +10,47 @@ function RulesPage() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 max-w-3xl mx-auto px-4 py-12">
-        <h1 className="text-4xl md:text-5xl font-black text-garnet">Rules</h1>
+        <h1 className="text-4xl md:text-5xl font-black text-garnet">Revital Energy Challenge — Game Rules</h1>
         <p className="mt-2 text-sm text-muted-foreground">Last updated: {new Date().toLocaleDateString()}</p>
 
         <div className="prose prose-sm md:prose-base mt-8 space-y-5 text-garnet/85">
           <section>
-            <h2 className="text-xl font-bold text-garnet">1. Eligibility</h2>
-            <p>The Revital Energy Challenge is open to UAE residents aged 18 and above. Participants must have a valid mobile number or email address. Employees of Revital and their immediate family members are not eligible.</p>
+            <h2 className="text-xl font-bold text-garnet">1. Memory Match Game (3x3 Grid)</h2>
+            <ul>
+              <li>Objective: Match all card pairs within 15 seconds.</li>
+              <li>Grid Size: 3x3 grid (4 pairs + 1 dummy card).</li>
+              <li>Time Limit: 15 seconds (15000 milliseconds).</li>
+              <li>Lives: Maximum 3 incorrect attempts allowed.</li>
+              <li>Each turn allows flipping 2 cards.</li>
+              <li>If cards match, they remain open; if not, they flip back.</li>
+              <li>Game ends when all pairs are matched OR lives are exhausted OR time runs out.</li>
+              <li>Score is based on speed, number of correct matches, and remaining lives.</li>
+              <li>Faster completion with fewer mistakes results in higher score.</li>
+            </ul>
           </section>
           <section>
-            <h2 className="text-xl font-bold text-garnet">2. How to Play</h2>
-            <p>Complete all three mini-games — Reflex Tap, Memory Match, and Balance — in sequence. Each game lasts up to 20 seconds. Your combined performance across all three games determines your final Energy Score out of 300.</p>
+            <h2 className="text-xl font-bold text-garnet">2. Focus Reflex Test</h2>
+            <ul>
+              <li>Objective: Tap/click as quickly as possible when the signal appears.</li>
+              <li>Reaction time is measured in milliseconds (ms).</li>
+              <li>The faster the reaction, the higher the score.</li>
+              <li>Maximum Score: 1500 points for fastest response.</li>
+              <li>Minimum Score: 0 points for slowest response (up to 15 seconds).</li>
+              <li>Multiple attempts may be allowed; best score is considered.</li>
+              <li>Early clicks (before signal) may result in penalty or retry.</li>
+            </ul>
           </section>
           <section>
-            <h2 className="text-xl font-bold text-garnet">3. One Entry Per Day</h2>
-            <p>Each verified participant may submit one score per day. Duplicate entries using the same contact details within a 24-hour period will be discarded and the earlier score will be retained.</p>
-          </section>
-          <section>
-            <h2 className="text-xl font-bold text-garnet">4. Score Verification</h2>
-            <p>Scores are only eligible for prizes once verified via OTP. Unverified scores will not appear on the leaderboard and will not be considered for rewards.</p>
-          </section>
-          <section>
-            <h2 className="text-xl font-bold text-garnet">5. Fair Play</h2>
-            <p>Any attempt to manipulate or artificially inflate scores — including the use of automation tools, bots, emulators, or multiple accounts — will result in immediate disqualification. Revital reserves the right to investigate suspicious activity and remove entries at its sole discretion.</p>
-          </section>
-          <section>
-            <h2 className="text-xl font-bold text-garnet">6. Leaderboard & Prizes</h2>
-            <p>The daily leaderboard resets every 24 hours at midnight UAE time. The top-ranked participants on the daily leaderboard are eligible for the daily prize draw. The global leaderboard tracks all-time top scores. Prize winners will be contacted via their registered email or phone number within 5 business days.</p>
-          </section>
-          <section>
-            <h2 className="text-xl font-bold text-garnet">7. Prize Claim</h2>
-            <p>Winners must claim their prize within 14 days of being contacted. Failure to respond within this period will result in forfeiture of the prize and selection of an alternate winner. Prizes are non-transferable and cannot be exchanged for cash.</p>
-          </section>
-          <section>
-            <h2 className="text-xl font-bold text-garnet">8. Modifications</h2>
-            <p>Revital reserves the right to modify, suspend, or terminate the challenge at any time without prior notice. In such cases, no compensation will be owed to participants.</p>
-          </section>
-          <section>
-            <h2 className="text-xl font-bold text-garnet">9. Governing Law</h2>
-            <p>These rules are governed by the laws of the United Arab Emirates. Any disputes arising from participation in the challenge shall be subject to the exclusive jurisdiction of the UAE courts.</p>
-          </section>
-          <section>
-            <h2 className="text-xl font-bold text-garnet">10. Contact</h2>
-            <p>For questions about the rules, email <a className="text-[var(--tiger)] font-semibold" href="mailto:hello@revital.example">hello@revital.example</a>.</p>
+            <h2 className="text-xl font-bold text-garnet">3. Focus Control / Ball Balance Game</h2>
+            <ul>
+              <li>Objective: Keep the ball inside the Revital zone.</li>
+              <li>Total Game Duration: 15 seconds (15000 milliseconds).</li>
+              <li>Score is based on the total time the ball remains inside the box.</li>
+              <li>Maximum Score: 1500 points if ball stays inside for full duration.</li>
+              <li>Minimum Score: 0 points if ball remains outside the box.</li>
+              <li>Continuous control improves score; losing control reduces score.</li>
+              <li>Smooth and stable control leads to higher performance.</li>
+            </ul>
           </section>
         </div>
       </main>

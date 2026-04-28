@@ -93,6 +93,15 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   useEffect(() => {
+    // Persist referral code from URL so it can be auto-filled later in the signup popup
+    // even after route changes during gameplay.
+    if (typeof window !== "undefined") {
+      const referralCode = new URLSearchParams(window.location.search).get("ref")?.trim();
+      if (referralCode) {
+        window.localStorage.setItem("revital_referral_code", referralCode.toUpperCase());
+      }
+    }
+
     // Inject tracking scripts from platform settings stored in the database.
     // We do this lazily so it never blocks the initial paint.
     const inject = async () => {

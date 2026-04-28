@@ -31,6 +31,18 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
     [contact],
   );
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const refFromUrl = new URLSearchParams(window.location.search).get("ref")?.trim();
+    const persistedRef = window.localStorage.getItem("revital_referral_code")?.trim();
+    const referralCode = (refFromUrl || persistedRef || "").toUpperCase();
+    if (referralCode) {
+      setReferredBy(referralCode);
+      window.localStorage.setItem("revital_referral_code", referralCode);
+    }
+  }, []);
+
   const valid = (v: string) =>
     /^\S+@\S+\.\S+$/.test(v) || /^\+?\d{8,15}$/.test(v.replace(/\s/g, ""));
 

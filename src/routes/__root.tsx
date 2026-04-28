@@ -2,6 +2,7 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 import { useEffect } from "react";
 import appCss from "../styles.css?url";
 import { CookieConsent } from "@/components/CookieConsent";
+import { Footer } from "@/components/Footer";
 
 function NotFoundComponent() {
   return (
@@ -136,9 +137,12 @@ function RootComponent() {
   }, []);
 
   return (
-    <>
-      <Outlet />
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1">
+        <Outlet />
+      </div>
+      <Footer />
       <CookieConsent />
-    </>
+    </div>
   );
 }

@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 import { getUser, saveUserRemote, type UserRecord } from "@/lib/storage";
 
 export const Route = createFileRoute("/profile")({
@@ -114,7 +113,6 @@ function Profile() {
           </Link>
         </div>
       </main>
-      <Footer />
     </div>
   );
 }

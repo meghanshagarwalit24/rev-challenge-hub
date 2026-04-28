@@ -72,21 +72,41 @@ const CHART_COLORS = ["#F37421", "#FAAD14", "#52C41A", "#1890FF", "#9B59B6"];
 function groupByDate(users: UserRecord[]): DateWiseEntry[] {
   const map = new Map<string, DateWiseEntry["users"]>();
   for (const u of users) {
-    const dates =
-      u.playDates && u.playDates.length > 0
-        ? u.playDates
-        : [new Date(u.createdAt).toISOString().slice(0, 10)];
-    for (const d of dates) {
-      if (!map.has(d)) map.set(d, []);
-      map.get(d)!.push({
-        userId: u.userId,
-        contact: u.contact,
-        name: u.name,
-        scores: u.scores,
-        total: u.total,
-        category: u.category,
-      });
+    const completedAttempts = dedupeAttempts([...(u.playAttempts ?? [])]).filter((a) =>
+      isComplete(a.scores),
+    );
+    if (completedAttempts.length > 0) {
+      const bestByDate = new Map<string, (typeof completedAttempts)[number]>();
+      for (const attempt of completedAttempts) {
+        const current = bestByDate.get(attempt.date);
+        if (!current || attempt.total > current.total) {
+          bestByDate.set(attempt.date, attempt);
+        }
+      }
+      for (const [date, attempt] of bestByDate.entries()) {
+        if (!map.has(date)) map.set(date, []);
+        map.get(date)!.push({
+          userId: u.userId,
+          contact: u.contact,
+          name: u.name,
+          scores: attempt.scores,
+          total: attempt.total,
+          category: attempt.category,
+        });
+      }
+      continue;
     }
+
+    const fallbackDate = new Date(u.createdAt).toISOString().slice(0, 10);
+    if (!map.has(fallbackDate)) map.set(fallbackDate, []);
+    map.get(fallbackDate)!.push({
+      userId: u.userId,
+      contact: u.contact,
+      name: u.name,
+      scores: u.scores,
+      total: u.total,
+      category: u.category,
+    });
   }
   return [...map.entries()]
     .sort(([a], [b]) => b.localeCompare(a))

@@ -10,7 +10,7 @@ export const Route = createFileRoute("/play/balance")({
   component: BalanceGame,
 });
 
-const DURATION = 20; // seconds
+const DURATION = 15; // seconds
 const GRAVITY = 0.55;
 const TAP_BOOST = -8;
 const TARGET_Y = 50; // % from top — sweet zone center

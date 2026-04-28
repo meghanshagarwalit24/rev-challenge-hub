@@ -27,6 +27,7 @@ import {
   ChevronDown,
   Shield,
   LogOut,
+  X,
 } from "lucide-react";
 import { getAllUsersRemote, calcStreak, type UserRecord } from "@/lib/storage";
 import type { AdminLog, PlatformSettings } from "@/server/adminFns";
@@ -181,6 +182,7 @@ function Admin() {
   const [savedFlash, setSavedFlash] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   // Filters
   const [filterCat, setFilterCat] = useState("all");
@@ -792,7 +794,7 @@ function Admin() {
                     {filtered.map((u, i) => (
                       <tr
                         key={i}
-                        onClick={() => window.open(`/admin/user/${u.userId}`, "_blank")}
+                        onClick={() => setSelectedUserId(u.userId)}
                         className="border-b border-border/40 hover:bg-muted/10 transition-colors cursor-pointer"
                       >
                         <Td className="font-mono text-[11px]">{u.userId}</Td>
@@ -1124,11 +1126,182 @@ function Admin() {
           )}
         </main>
       </div>
+
+      {/* ── User Detail Modal ──────────────────────────────────────────────── */}
+      {selectedUserId && (
+        <UserDetailModal
+          userId={selectedUserId}
+          allUsers={users}
+          onClose={() => setSelectedUserId(null)}
+        />
+      )}
     </div>
   );
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
+
+// ── User Detail Modal ──────────────────────────────────────────────────────────
+function UserDetailModal({
+  userId,
+  allUsers,
+  onClose,
+}: {
+  userId: string;
+  allUsers: UserRecord[];
+  onClose: () => void;
+}) {
+  const user = useMemo(() => allUsers.find((u) => u.userId === userId) ?? null, [allUsers, userId]);
+
+  const completedAttempts = useMemo(() => {
+    if (!user) return [];
+    return [...(user.playAttempts ?? [])]
+      .filter((a) => a.scores.reflex !== null && a.scores.memory !== null && a.scores.balance !== null)
+      .sort((a, b) => b.playedAt.localeCompare(a.playedAt));
+  }, [user]);
+
+  const bestAttempt = useMemo(() => {
+    if (completedAttempts.length === 0) return null;
+    return completedAttempts.reduce((top, cur) => (cur.total > top.total ? cur : top));
+  }, [completedAttempts]);
+
+  const referredUsers = useMemo(() => {
+    if (!user) return [];
+    return allUsers
+      .filter((u) => u.referredBy?.toUpperCase() === user.userId.toUpperCase())
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }, [allUsers, user]);
+
+  const streak = useMemo(() => calcStreak(user?.playDates ?? []), [user]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 16 }}
+        className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-background border border-border rounded-3xl shadow-2xl"
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 p-2 rounded-full border border-border hover:bg-muted/20 transition-colors"
+          title="Close"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        <div className="px-6 py-6">
+          {!user ? (
+            <div className="text-center py-12">
+              <p className="text-2xl font-black text-gradient-energy">User Not Found</p>
+              <p className="text-sm text-muted-foreground mt-2">No user found with ID: {userId}</p>
+            </div>
+          ) : (
+            <>
+              {/* Header */}
+              <div className="mb-6 pr-10">
+                <h1 className="text-2xl font-black">User Details</h1>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {user.name || "Unnamed"} · {user.contact}
+                </p>
+                <p className="text-xs text-muted-foreground font-mono">{user.userId}</p>
+              </div>
+
+              {/* KPI cards */}
+              <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <KpiCard title="Best Score" value={bestAttempt?.total ?? 0} />
+                <KpiCard title="Completed Attempts" value={completedAttempts.length} />
+                <KpiCard title="Users Referred" value={referredUsers.length} />
+                <KpiCard title="Current Streak" value={`${streak}d`} />
+              </div>
+
+              {/* User info */}
+              <div className="bg-gradient-card border border-border rounded-2xl p-4 mb-4">
+                <h2 className="font-bold text-sm mb-3">Profile</h2>
+                <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                  <InfoRow label="User ID" value={user.userId} mono />
+                  <InfoRow label="Contact" value={user.contact} mono />
+                  {user.name && <InfoRow label="Name" value={user.name} />}
+                  {user.address && <InfoRow label="Address" value={user.address} />}
+                  <InfoRow label="Joined" value={new Date(user.createdAt).toLocaleString()} />
+                  <InfoRow label="Category" value={user.category} />
+                  <InfoRow label="Total (Best)" value={String(user.total)} />
+                  {user.referredBy && <InfoRow label="Referred By" value={user.referredBy} mono />}
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* All Completed Attempts */}
+                <div className="bg-gradient-card border border-border rounded-2xl p-4">
+                  <h2 className="font-bold text-sm mb-3">All Completed Attempts</h2>
+                  {completedAttempts.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No completed 3-game runs found.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {completedAttempts.map((a, idx) => (
+                        <div
+                          key={`${a.playedAt}-${idx}`}
+                          className="rounded-xl border border-border/70 p-2.5"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="text-[11px] text-muted-foreground">
+                              {new Date(a.playedAt).toLocaleString()}
+                            </div>
+                            <div className="font-bold text-gradient-energy">{a.total}</div>
+                          </div>
+                          <div className="text-[11px] mt-1">
+                            R:{a.scores.reflex ?? 0} · M:{a.scores.memory ?? 0} · B:{a.scores.balance ?? 0}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground">{a.category}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Referred Users */}
+                <div className="bg-gradient-card border border-border rounded-2xl p-4">
+                  <h2 className="font-bold text-sm mb-3">Referred Users</h2>
+                  {referredUsers.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No referrals yet.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {referredUsers.map((u) => (
+                        <div key={u.userId} className="rounded-xl border border-border/70 p-2.5">
+                          <div className="text-sm font-semibold">{u.name || "—"}</div>
+                          <div className="text-[11px] text-muted-foreground font-mono">{u.contact}</div>
+                          <div className="text-[11px] text-muted-foreground">
+                            Joined: {new Date(u.createdAt).toLocaleString()}
+                          </div>
+                          <div className="text-[11px] font-semibold text-gradient-energy">
+                            Best: {u.total}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div>
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground block">{label}</span>
+      <span className={`text-sm ${mono ? "font-mono" : ""}`}>{value}</span>
+    </div>
+  );
+}
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="text-xl font-black">{children}</h2>;
 }

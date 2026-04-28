@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { getUser, saveUserRemote, type UserRecord } from "@/lib/storage";
 
 export const Route = createFileRoute("/profile")({
@@ -36,9 +37,9 @@ function Profile() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="max-w-xl mx-auto px-4 py-8">
+      <main className="flex-1 max-w-xl mx-auto px-4 py-8">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <div className="bg-gradient-card border border-border rounded-3xl p-6 shadow-card text-center">
             <div className="text-5xl">🏆</div>
@@ -113,6 +114,7 @@ function Profile() {
           </Link>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

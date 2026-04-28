@@ -8,6 +8,10 @@ export function Footer() {
           © {new Date().getFullYear()} Revital Energy Challenge. All rights reserved.
         </p>
         <nav className="flex items-center gap-5">
+          <Link to="/rules" className="text-garnet/80 hover:text-[var(--tiger)] font-semibold transition-colors">
+            Rules
+          </Link>
+          <span className="text-garnet/30">•</span>
           <Link to="/privacy" className="text-garnet/80 hover:text-[var(--tiger)] font-semibold transition-colors">
             Privacy Policy
           </Link>

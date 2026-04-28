@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RulesRouteImport } from './routes/rules'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as RetrieveRouteImport } from './routes/retrieve'
 import { Route as ResultRouteImport } from './routes/result'
@@ -26,6 +27,11 @@ import { Route as AdminUserUserIdRouteImport } from './routes/admin.user.$userId
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RulesRoute = RulesRouteImport.update({
+  id: '/rules',
+  path: '/rules',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RetrieveRoute = RetrieveRouteImport.update({
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/result': typeof ResultRoute
   '/retrieve': typeof RetrieveRoute
+  '/rules': typeof RulesRoute
   '/terms': typeof TermsRoute
   '/play/balance': typeof PlayBalanceRoute
   '/play/memory': typeof PlayMemoryRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/result': typeof ResultRoute
   '/retrieve': typeof RetrieveRoute
+  '/rules': typeof RulesRoute
   '/terms': typeof TermsRoute
   '/play/balance': typeof PlayBalanceRoute
   '/play/memory': typeof PlayMemoryRoute
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/result': typeof ResultRoute
   '/retrieve': typeof RetrieveRoute
+  '/rules': typeof RulesRoute
   '/terms': typeof TermsRoute
   '/play/balance': typeof PlayBalanceRoute
   '/play/memory': typeof PlayMemoryRoute
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/result'
     | '/retrieve'
+    | '/rules'
     | '/terms'
     | '/play/balance'
     | '/play/memory'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/result'
     | '/retrieve'
+    | '/rules'
     | '/terms'
     | '/play/balance'
     | '/play/memory'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/result'
     | '/retrieve'
+    | '/rules'
     | '/terms'
     | '/play/balance'
     | '/play/memory'
@@ -192,6 +204,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   ResultRoute: typeof ResultRoute
   RetrieveRoute: typeof RetrieveRoute
+  RulesRoute: typeof RulesRoute
   TermsRoute: typeof TermsRoute
   PlayBalanceRoute: typeof PlayBalanceRoute
   PlayMemoryRoute: typeof PlayMemoryRoute
@@ -205,6 +218,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rules': {
+      id: '/rules'
+      path: '/rules'
+      fullPath: '/rules'
+      preLoaderRoute: typeof RulesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/retrieve': {
@@ -313,6 +333,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   ResultRoute: ResultRoute,
   RetrieveRoute: RetrieveRoute,
+  RulesRoute: RulesRoute,
   TermsRoute: TermsRoute,
   PlayBalanceRoute: PlayBalanceRoute,
   PlayMemoryRoute: PlayMemoryRoute,

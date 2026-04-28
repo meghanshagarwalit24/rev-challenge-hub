@@ -15,6 +15,29 @@ export interface PlayAttempt {
   category: string;
 }
 
+const makeAttemptKey = (attempt: PlayAttempt): string =>
+  [
+    attempt.playedAt,
+    attempt.date,
+    attempt.scores.reflex ?? "",
+    attempt.scores.memory ?? "",
+    attempt.scores.balance ?? "",
+    attempt.total,
+    attempt.category,
+  ].join("|");
+
+export const dedupeAttempts = (attempts: PlayAttempt[]): PlayAttempt[] => {
+  const seen = new Set<string>();
+  const deduped: PlayAttempt[] = [];
+  for (const attempt of attempts) {
+    const key = makeAttemptKey(attempt);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(attempt);
+  }
+  return deduped;
+};
+
 export interface UserRecord {
   userId: string; // generated unique id
   contact: string; // mobile or email
@@ -162,8 +185,9 @@ export const saveUserRemote = async (u: UserRecord): Promise<void> => {
         },
       ]
     : priorAttempts;
+  const dedupedAttempts = dedupeAttempts(nextAttempts);
 
-  const bestAttempt = nextAttempts.reduce<PlayAttempt | null>(
+  const bestAttempt = dedupedAttempts.reduce<PlayAttempt | null>(
     (best, curr) => (!best || curr.total > best.total ? curr : best),
     null,
   );
@@ -171,7 +195,7 @@ export const saveUserRemote = async (u: UserRecord): Promise<void> => {
   const withDate: UserRecord = {
     ...u,
     playDates: mergedDates,
-    playAttempts: nextAttempts,
+    playAttempts: dedupedAttempts,
     scores: bestAttempt?.scores ?? u.scores,
     total: bestAttempt?.total ?? u.total,
     category: bestAttempt?.category ?? u.category,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   categorize,
@@ -26,6 +26,10 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
   const [consent, setConsent] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+  const existingUser = useMemo(
+    () => (contact.trim() ? findUserByContact(contact.trim()) : null),
+    [contact],
+  );
 
   const valid = (v: string) =>
     /^\S+@\S+\.\S+$/.test(v) || /^\+?\d{8,15}$/.test(v.replace(/\s/g, ""));
@@ -35,6 +39,7 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
     const total = computeTotal(scores);
     const cat = categorize(total);
     const existing = findUserByContact(contactValue.trim());
+    const normalizedReferrer = existing?.referredBy || referrer?.trim().toUpperCase();
     try {
       await saveUserRemote({
         userId: existing?.userId ?? generateUserId(),
@@ -46,7 +51,7 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
         category: cat.label,
         consent: true,
         createdAt: existing?.createdAt ?? new Date().toISOString(),
-        referredBy: referrer?.trim().toUpperCase() || existing?.referredBy,
+        referredBy: normalizedReferrer,
         referCount: existing?.referCount ?? 0,
       });
       onSuccess();
@@ -169,25 +174,32 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   We'll send a one-time code to verify.
                 </p>
+                {existingUser && (
+                  <p className="mt-1 text-[11px] text-accent">
+                    Existing account detected. Referral code is locked for returning users.
+                  </p>
+                )}
               </div>
-              <div>
-                <label className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Referred by{" "}
-                  <span className="text-muted-foreground/60 normal-case font-normal">
-                    (optional)
-                  </span>
-                </label>
-                <input
-                  value={referredBy}
-                  onChange={(e) => setReferredBy(e.target.value)}
-                  placeholder="RVT-AB12CD34"
-                  className="mt-1.5 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Enter your friend's User ID who referred you — they'll get more chances to win!
-                  🏆
-                </p>
-              </div>
+              {!existingUser && (
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Referred by{" "}
+                    <span className="text-muted-foreground/60 normal-case font-normal">
+                      (optional)
+                    </span>
+                  </label>
+                  <input
+                    value={referredBy}
+                    onChange={(e) => setReferredBy(e.target.value)}
+                    placeholder="RVT-AB12CD34"
+                    className="mt-1.5 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Enter your friend's User ID who referred you — they'll get more chances to win!
+                    🏆
+                  </p>
+                </div>
+              )}
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"

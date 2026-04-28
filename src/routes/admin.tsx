@@ -29,7 +29,7 @@ import {
   LogOut,
   X,
 } from "lucide-react";
-import { getAllUsersRemote, calcStreak, type UserRecord } from "@/lib/storage";
+import { getAllUsersRemote, calcStreak, dedupeAttempts, type UserRecord } from "@/lib/storage";
 import type { AdminLog, PlatformSettings } from "@/server/adminFns";
 
 export const Route = createFileRoute("/admin")({
@@ -58,6 +58,11 @@ interface AdminUserRow extends UserRecord {
   selectedCategory: string;
   selectedPlayedAt: string;
   attemptsInRange: number;
+}
+
+interface DateWiseAttemptGroup {
+  date: string;
+  attempts: NonNullable<UserRecord["playAttempts"]>;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -1155,10 +1160,24 @@ function UserDetailModal({
 
   const completedAttempts = useMemo(() => {
     if (!user) return [];
-    return [...(user.playAttempts ?? [])]
-      .filter((a) => a.scores.reflex !== null && a.scores.memory !== null && a.scores.balance !== null)
+    return dedupeAttempts([...(user.playAttempts ?? [])])
+      .filter(
+        (a) => a.scores.reflex !== null && a.scores.memory !== null && a.scores.balance !== null,
+      )
       .sort((a, b) => b.playedAt.localeCompare(a.playedAt));
   }, [user]);
+
+  const dateWiseAttempts = useMemo<DateWiseAttemptGroup[]>(() => {
+    const groups = new Map<string, NonNullable<UserRecord["playAttempts"]>>();
+    for (const attempt of completedAttempts) {
+      const bucket = groups.get(attempt.date) ?? [];
+      bucket.push(attempt);
+      groups.set(attempt.date, bucket);
+    }
+    return [...groups.entries()]
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([date, attempts]) => ({ date, attempts }));
+  }, [completedAttempts]);
 
   const bestAttempt = useMemo(() => {
     if (completedAttempts.length === 0) return null;
@@ -1177,7 +1196,9 @@ function UserDetailModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 16 }}
@@ -1254,7 +1275,8 @@ function UserDetailModal({
                             <div className="font-bold text-gradient-energy">{a.total}</div>
                           </div>
                           <div className="text-[11px] mt-1">
-                            R:{a.scores.reflex ?? 0} · M:{a.scores.memory ?? 0} · B:{a.scores.balance ?? 0}
+                            R:{a.scores.reflex ?? 0} · M:{a.scores.memory ?? 0} · B:
+                            {a.scores.balance ?? 0}
                           </div>
                           <div className="text-[11px] text-muted-foreground">{a.category}</div>
                         </div>
@@ -1273,7 +1295,9 @@ function UserDetailModal({
                       {referredUsers.map((u) => (
                         <div key={u.userId} className="rounded-xl border border-border/70 p-2.5">
                           <div className="text-sm font-semibold">{u.name || "—"}</div>
-                          <div className="text-[11px] text-muted-foreground font-mono">{u.contact}</div>
+                          <div className="text-[11px] text-muted-foreground font-mono">
+                            {u.contact}
+                          </div>
                           <div className="text-[11px] text-muted-foreground">
                             Joined: {new Date(u.createdAt).toLocaleString()}
                           </div>
@@ -1286,6 +1310,46 @@ function UserDetailModal({
                   )}
                 </div>
               </div>
+
+              <div className="bg-gradient-card border border-border rounded-2xl p-4 mt-4">
+                <h2 className="font-bold text-sm mb-3">Date-wise Scores</h2>
+                {dateWiseAttempts.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No dated attempts available yet.</p>
+                ) : (
+                  <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                    {dateWiseAttempts.map((d) => (
+                      <div
+                        key={d.date}
+                        className="rounded-xl border border-border/70 overflow-hidden"
+                      >
+                        <div className="px-3 py-2 bg-muted/10 flex items-center justify-between">
+                          <div className="font-semibold text-sm">{d.date}</div>
+                          <div className="text-[11px] text-muted-foreground">
+                            {d.attempts.length} run{d.attempts.length === 1 ? "" : "s"}
+                          </div>
+                        </div>
+                        <div className="divide-y divide-border/60">
+                          {d.attempts.map((a, idx) => (
+                            <div
+                              key={`${d.date}-${a.playedAt}-${idx}`}
+                              className="px-3 py-2 text-[11px] flex items-center justify-between gap-2"
+                            >
+                              <div className="text-muted-foreground">
+                                {new Date(a.playedAt).toLocaleTimeString()}
+                              </div>
+                              <div className="font-medium">
+                                R:{a.scores.reflex ?? 0} · M:{a.scores.memory ?? 0} · B:
+                                {a.scores.balance ?? 0}
+                              </div>
+                              <div className="font-bold text-gradient-energy">{a.total}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
@@ -1297,7 +1361,9 @@ function UserDetailModal({
 function InfoRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <span className="text-[10px] uppercase tracking-wider text-muted-foreground block">{label}</span>
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground block">
+        {label}
+      </span>
       <span className={`text-sm ${mono ? "font-mono" : ""}`}>{value}</span>
     </div>
   );

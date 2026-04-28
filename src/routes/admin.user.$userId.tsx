@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { Shield, ArrowLeft } from "lucide-react";
 import type { UserRecord } from "@/lib/storage";
-import { calcStreak } from "@/lib/storage";
+import { calcStreak, dedupeAttempts } from "@/lib/storage";
 
 export const Route = createFileRoute("/admin/user/$userId")({
   component: AdminUserDetail,
@@ -71,10 +71,22 @@ function AdminUserDetail() {
 
   const completedAttempts = useMemo(() => {
     if (!user) return [];
-    return [...(user.playAttempts ?? [])].filter((a) => isComplete(a.scores)).sort((a, b) =>
-      b.playedAt.localeCompare(a.playedAt),
-    );
+    return dedupeAttempts([...(user.playAttempts ?? [])])
+      .filter((a) => isComplete(a.scores))
+      .sort((a, b) => b.playedAt.localeCompare(a.playedAt));
   }, [user]);
+
+  const dateWiseAttempts = useMemo(() => {
+    const groups = new Map<string, NonNullable<UserRecord["playAttempts"]>>();
+    for (const attempt of completedAttempts) {
+      const bucket = groups.get(attempt.date) ?? [];
+      bucket.push(attempt);
+      groups.set(attempt.date, bucket);
+    }
+    return [...groups.entries()]
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([date, attempts]) => ({ date, attempts }));
+  }, [completedAttempts]);
 
   const bestAttempt = useMemo(() => {
     if (completedAttempts.length === 0) return null;
@@ -223,7 +235,8 @@ function AdminUserDetail() {
                       <div className="font-bold text-gradient-energy">{a.total}</div>
                     </div>
                     <div className="text-[11px] mt-1">
-                      R:{a.scores.reflex ?? 0} · M:{a.scores.memory ?? 0} · B:{a.scores.balance ?? 0}
+                      R:{a.scores.reflex ?? 0} · M:{a.scores.memory ?? 0} · B:
+                      {a.scores.balance ?? 0}
                     </div>
                     <div className="text-[11px] text-muted-foreground">{a.category}</div>
                   </div>
@@ -255,6 +268,43 @@ function AdminUserDetail() {
             )}
           </div>
         </div>
+
+        <div className="bg-gradient-card border border-border rounded-2xl p-4 mt-4">
+          <h2 className="font-bold text-sm mb-3">Date-wise Scores</h2>
+          {dateWiseAttempts.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No dated attempts available yet.</p>
+          ) : (
+            <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+              {dateWiseAttempts.map((d) => (
+                <div key={d.date} className="rounded-xl border border-border/70 overflow-hidden">
+                  <div className="px-3 py-2 bg-muted/10 flex items-center justify-between">
+                    <div className="font-semibold text-sm">{d.date}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {d.attempts.length} run{d.attempts.length === 1 ? "" : "s"}
+                    </div>
+                  </div>
+                  <div className="divide-y divide-border/60">
+                    {d.attempts.map((a, idx) => (
+                      <div
+                        key={`${d.date}-${a.playedAt}-${idx}`}
+                        className="px-3 py-2 text-[11px] flex items-center justify-between gap-2"
+                      >
+                        <div className="text-muted-foreground">
+                          {new Date(a.playedAt).toLocaleTimeString()}
+                        </div>
+                        <div className="font-medium">
+                          R:{a.scores.reflex ?? 0} · M:{a.scores.memory ?? 0} · B:
+                          {a.scores.balance ?? 0}
+                        </div>
+                        <div className="font-bold text-gradient-energy">{a.total}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -269,15 +319,7 @@ function KpiCard({ title, value }: { title: string; value: string | number }) {
   );
 }
 
-function InfoRow({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
+function InfoRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
       <span className="text-[10px] uppercase tracking-wider text-muted-foreground block">

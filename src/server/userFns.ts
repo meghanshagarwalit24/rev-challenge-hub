@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getDb } from "./db";
-import type { UserRecord } from "@/lib/storage";
+import { dedupeAttempts, type PlayAttempt, type UserRecord } from "@/lib/storage";
 
 const gameScoresSchema = z.object({
   reflex: z.number().nullable(),
@@ -55,41 +55,39 @@ export const saveUserFn = createServerFn({ method: "POST" })
       .findOne({ contact: normalized.contact });
     const firstTimeReferral = normalized.referredBy && !existing?.referredBy;
 
-    // Merge playDates instead of replacing so we never lose history
-    if (
-      (normalized.playDates && normalized.playDates.length > 0) ||
-      (normalized.playAttempts && normalized.playAttempts.length > 0)
-    ) {
-      const { playDates, playAttempts, ...rest } = normalized;
-      await db.collection<UserRecord>("users").updateOne(
-        { contact: normalized.contact },
-        {
-          $set: rest,
-          ...(playDates && playDates.length > 0
-            ? { $addToSet: { playDates: { $each: playDates } } }
-            : {}),
-          ...(playAttempts && playAttempts.length > 0
-            ? {
-                $push: {
-                  playAttempts: { $each: playAttempts },
-                },
-              }
-            : {}),
+    // Merge playDates / playAttempts deterministically so repeated saves do not duplicate attempts.
+    const mergedPlayDates = [
+      ...new Set([...(existing?.playDates ?? []), ...(normalized.playDates ?? [])]),
+    ];
+    const mergedAttempts = dedupeAttempts([
+      ...((existing?.playAttempts ?? []) as PlayAttempt[]),
+      ...((normalized.playAttempts ?? []) as PlayAttempt[]),
+    ]);
+    const bestAttempt = mergedAttempts.reduce<PlayAttempt | null>(
+      (best, curr) => (!best || curr.total > best.total ? curr : best),
+      null,
+    );
+
+    await db.collection<UserRecord>("users").updateOne(
+      { contact: normalized.contact },
+      {
+        $set: {
+          ...normalized,
+          playDates: mergedPlayDates,
+          playAttempts: mergedAttempts,
+          scores: bestAttempt?.scores ?? normalized.scores,
+          total: bestAttempt?.total ?? normalized.total,
+          category: bestAttempt?.category ?? normalized.category,
         },
-        { upsert: true },
-      );
-    } else {
-      await db
-        .collection<UserRecord>("users")
-        .updateOne({ contact: normalized.contact }, { $set: normalized }, { upsert: true });
-    }
+      },
+      { upsert: true },
+    );
 
     // Increment referrer's referCount on first referral only
     if (firstTimeReferral) {
-      await db.collection<UserRecord>("users").updateOne(
-        { userId: normalized.referredBy! },
-        { $inc: { referCount: 1 } },
-      );
+      await db
+        .collection<UserRecord>("users")
+        .updateOne({ userId: normalized.referredBy! }, { $inc: { referCount: 1 } });
     }
 
     return { ok: true };

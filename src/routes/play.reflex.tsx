@@ -127,18 +127,17 @@ function ReflexGame() {
           <AnimatePresence mode="wait">
             <motion.div
               key={phase}
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={phase === "go" ? { opacity: 1, scale: 1 } : { scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: phase === "go" ? 0 : 0.15 }}
               className="absolute inset-0 flex flex-col items-center justify-center px-4"
             >
               {phase === "go" ? (
-                <motion.img
+                <img
                   src={logo}
                   alt="Revital Ginseng Plus"
                   className="w-[130px] md:w-[180px] h-auto drop-shadow-[0_14px_26px_rgba(0,0,0,0.45)]"
-                  animate={{ scale: [1, 1.03, 1] }}
-                  transition={{ duration: 0.8, repeat: Infinity }}
                 />
               ) : (
                 <p className="mt-6 text-2xl md:text-5xl font-black text-white drop-shadow-[0_3px_6px_rgba(0,0,0,0.35)]">

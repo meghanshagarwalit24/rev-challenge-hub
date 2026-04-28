@@ -145,6 +145,9 @@ function ReflexGame() {
                   {label[phase]}
                 </p>
               )}
+              {phase === "waiting" && (
+                <p className="mt-2 text-sm md:text-base text-white/85">Wait for the logo…</p>
+              )}
               {phase === "tooSoon" && (
                 <p className="mt-2 text-sm md:text-base text-white/85">Wait for the logo to appear.</p>
               )}

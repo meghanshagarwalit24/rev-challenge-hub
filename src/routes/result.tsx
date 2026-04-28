@@ -41,9 +41,9 @@ function Result() {
 
   const total = computeTotal(scores);
   const cat = categorize(total);
-  const pct = Math.min(100, Math.round((total / 300) * 100));
+  const pct = Math.min(100, total);
 
-  const shareText = `I scored ${total}/300 — ${cat.label} on the Revital Energy Challenge ⚡ Tag @revitalofficial on Instagram & boost your chance to win! ${typeof window !== "undefined" ? window.location.origin : ""}`;
+  const shareText = `I scored ${total} — ${cat.label} on the Revital Energy Challenge ⚡ Tag @revitalofficial on Instagram & boost your chance to win! ${typeof window !== "undefined" ? window.location.origin : ""}`;
 
   const generateAndShare = async (openInstagram = false) => {
     try {
@@ -135,7 +135,6 @@ function Result() {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <div className="text-6xl md:text-7xl font-black text-gradient-energy tabular-nums">{animatedTotal}</div>
-            <div className="text-sm text-muted-foreground">/ 300</div>
           </div>
           <div className="absolute -inset-6 rounded-full bg-gradient-glow opacity-50 blur-2xl pointer-events-none" />
         </motion.div>

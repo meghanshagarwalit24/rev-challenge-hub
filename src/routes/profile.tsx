@@ -54,7 +54,7 @@ function Profile() {
             </div>
 
             <div className="mt-4 grid grid-cols-3 gap-3">
-              <Stat label="Total" value={`${user.total}/300`} />
+              <Stat label="Score" value={`${user.total}`} />
               <Stat label="Tier" value={user.category.split(" ")[0]} />
               <Stat label="Eligible" value="✓" />
             </div>

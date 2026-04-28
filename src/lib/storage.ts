@@ -100,13 +100,14 @@ export const calcStreak = (playDates: string[]): number => {
 
 export const resetScores = () => localStorage.removeItem(SCORES_KEY);
 
-export const computeTotal = (s: GameScores) => (s.reflex ?? 0) + (s.memory ?? 0) + (s.balance ?? 0);
+export const computeTotal = (s: GameScores) =>
+  Math.round(((s.reflex ?? 0) + (s.memory ?? 0) + (s.balance ?? 0)) / 3);
 
 export const categorize = (total: number) => {
-  if (total >= 240) return { label: "Peak Performer", tier: "S" };
-  if (total >= 180) return { label: "High Energy", tier: "A" };
-  if (total >= 120) return { label: "Charged Up", tier: "B" };
-  if (total >= 60) return { label: "Warming Up", tier: "C" };
+  if (total >= 80) return { label: "Peak Performer", tier: "S" };
+  if (total >= 60) return { label: "High Energy", tier: "A" };
+  if (total >= 40) return { label: "Charged Up", tier: "B" };
+  if (total >= 20) return { label: "Warming Up", tier: "C" };
   return { label: "Recharge Needed", tier: "D" };
 };
 

@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 
 export const Route = createFileRoute("/rules")({
   component: RulesPage,
@@ -57,7 +56,6 @@ function RulesPage() {
           </section>
         </div>
       </main>
-      <Footer />
     </div>
   );
 }

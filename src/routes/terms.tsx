@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 
 export const Route = createFileRoute("/terms")({
   component: TermsPage,
@@ -45,7 +44,6 @@ function TermsPage() {
           </section>
         </div>
       </main>
-      <Footer />
     </div>
   );
 }

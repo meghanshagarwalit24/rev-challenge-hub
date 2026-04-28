@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 import { ChallengeProgressBar } from "@/components/ChallengeProgressBar";
 import { getCurrentScores, getNextGame, CHALLENGE_ORDER } from "@/lib/storage";
 import { useEffect, useState } from "react";
@@ -50,7 +49,6 @@ function Challenges() {
           <p className="mt-4 text-sm text-muted-foreground">Each challenge lasts up to 20 seconds.</p>
         </motion.div>
       </main>
-      <Footer />
     </div>
   );
 }

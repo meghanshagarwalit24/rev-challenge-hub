@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 import { Leaderboard } from "@/components/Leaderboard";
 import { getDailyLeaderboard, getGlobalLeaderboard, type LeaderEntry } from "@/lib/leaderboard";
 import heroWordmark from "@/assets/revital-hero-wordmark.png";
@@ -243,7 +242,6 @@ function Landing() {
           </div>
         </section>
       </main>
-      <Footer />
     </div>
   );
 }

@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 import { SignupGate } from "@/components/SignupGate";
 import { categorize, computeTotal, getCurrentScores, getUser, isLoggedIn, resetScores, saveUserRemote, type GameScores } from "@/lib/storage";
 import { buildShareCard } from "@/lib/shareCard";
@@ -172,7 +171,6 @@ function Result() {
           </Link>
         </motion.div>
       </main>
-      <Footer />
     </div>
   );
 }

@@ -1222,6 +1222,15 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="text-xl font-black">{children}</h2>;
 }
 
+function KpiCard({ title, value }: { title: string; value: string | number }) {
+  return (
+    <div className="bg-gradient-card border border-border rounded-2xl p-3 shadow-card">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{title}</p>
+      <p className="text-lg font-black mt-1 text-gradient-energy">{value}</p>
+    </div>
+  );
+}
+
 function Th({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
   return <th className={`py-2.5 px-3 font-semibold ${className}`}>{children}</th>;
 }

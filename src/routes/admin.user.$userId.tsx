@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { Shield, ArrowLeft } from "lucide-react";
@@ -15,6 +15,7 @@ function isComplete(scores: UserRecord["scores"]) {
 
 function AdminUserDetail() {
   const { userId } = Route.useParams();
+  const navigate = useNavigate();
 
   const [authenticated, setAuthenticated] = useState(
     () => sessionStorage.getItem("adminAuth") === "true",
@@ -160,10 +161,10 @@ function AdminUserDetail() {
           <p className="text-2xl font-black text-gradient-energy">User Not Found</p>
           <p className="text-sm text-muted-foreground mt-2">No user found with ID: {userId}</p>
           <button
-            onClick={() => window.close()}
+            onClick={() => navigate({ to: "/admin" })}
             className="mt-6 px-5 py-2 rounded-full border border-border text-sm hover:bg-muted/20"
           >
-            Close Tab
+            Back to Admin
           </button>
         </div>
       </div>
@@ -177,9 +178,9 @@ function AdminUserDetail() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <button
-            onClick={() => window.close()}
+            onClick={() => navigate({ to: "/admin" })}
             className="p-2 rounded-full border border-border hover:bg-muted/20 transition-colors"
-            title="Close tab"
+            title="Back to admin"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>

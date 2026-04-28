@@ -202,10 +202,7 @@ function exportExcel(rows: (string | number)[][], filename: string) {
 function Admin() {
   const matchRoute = useMatchRoute();
   const detailMatch = matchRoute({ to: "/admin/user/$userId", fuzzy: false });
-
-  if (detailMatch) {
-    return <Outlet />;
-  }
+  const isUserDetailRoute = Boolean(detailMatch);
 
   const navigate = useNavigate();
   const [authenticated, setAuthenticated] = useState(() => {
@@ -628,7 +625,7 @@ function Admin() {
               key={n.id}
               onClick={() => handleTabChange(n.id)}
               className={`mx-2 flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
-                tab === n.id
+                (isUserDetailRoute && n.id === "users") || tab === n.id
                   ? "bg-accent/20 text-accent"
                   : "hover:bg-muted/30 text-muted-foreground hover:text-foreground"
               }`}
@@ -654,569 +651,594 @@ function Admin() {
 
         {/* Main content */}
         <main className="flex-1 overflow-y-auto px-4 md:px-6 py-6 min-w-0">
-          {/* ── OVERVIEW ───────────────────────────────────────────────── */}
-          {tab === "overview" && (
-            <motion.div
-              key="overview"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <SectionTitle>Campaign Overview</SectionTitle>
+          {isUserDetailRoute ? (
+            <Outlet />
+          ) : (
+            <>
+              {/* ── OVERVIEW ───────────────────────────────────────────────── */}
+              {tab === "overview" && (
+                <motion.div
+                  key="overview"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <SectionTitle>Campaign Overview</SectionTitle>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3 mt-4">
-                <KpiCard title="Total Users" value={stats.total} />
-                <KpiCard title="Avg Score" value={`${stats.avg}/300`} />
-                <KpiCard title="Median Score" value={`${stats.median}/300`} />
-                <KpiCard title="Best Score" value={`${stats.bestScore}/300`} />
-                <KpiCard title="Completed All" value={stats.completed} />
-                <KpiCard title="Conversion" value={`${stats.completionRate}%`} />
-              </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3 mt-4">
+                    <KpiCard title="Total Users" value={stats.total} />
+                    <KpiCard title="Avg Score" value={`${stats.avg}/300`} />
+                    <KpiCard title="Median Score" value={`${stats.median}/300`} />
+                    <KpiCard title="Best Score" value={`${stats.bestScore}/300`} />
+                    <KpiCard title="Completed All" value={stats.completed} />
+                    <KpiCard title="Conversion" value={`${stats.completionRate}%`} />
+                  </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-                <KpiCard title="Total Referrals" value={stats.totalReferrals} />
-                <KpiCard title="Users Referred" value={stats.referredUsers} />
-                <KpiCard title="Avg Attempts / User" value={stats.attemptsPerUser} />
-                <KpiCard title="Returning Users" value={stats.returningUsers} />
-              </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                    <KpiCard title="Total Referrals" value={stats.totalReferrals} />
+                    <KpiCard title="Users Referred" value={stats.referredUsers} />
+                    <KpiCard title="Avg Attempts / User" value={stats.attemptsPerUser} />
+                    <KpiCard title="Returning Users" value={stats.returningUsers} />
+                  </div>
 
-              <div className="mt-5 grid md:grid-cols-2 gap-4">
-                <div className="bg-gradient-card border border-border rounded-3xl p-5 shadow-card">
-                  <h3 className="font-black text-sm mb-3">Score Distribution</h3>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={stats.dist} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" />
-                      <XAxis
-                        dataKey="label"
-                        tick={{ fontSize: 9 }}
-                        interval={0}
-                        angle={-20}
-                        textAnchor="end"
-                        height={44}
-                      />
-                      <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                      <Tooltip
-                        contentStyle={{
-                          background: "var(--background)",
-                          border: "1px solid var(--border)",
-                          borderRadius: 12,
-                        }}
-                      />
-                      <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                        {stats.dist.map((_, i) => (
-                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                  <div className="mt-5 grid md:grid-cols-2 gap-4">
+                    <div className="bg-gradient-card border border-border rounded-3xl p-5 shadow-card">
+                      <h3 className="font-black text-sm mb-3">Score Distribution</h3>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <BarChart
+                          data={stats.dist}
+                          margin={{ top: 4, right: 8, bottom: 4, left: 0 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" />
+                          <XAxis
+                            dataKey="label"
+                            tick={{ fontSize: 9 }}
+                            interval={0}
+                            angle={-20}
+                            textAnchor="end"
+                            height={44}
+                          />
+                          <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                          <Tooltip
+                            contentStyle={{
+                              background: "var(--background)",
+                              border: "1px solid var(--border)",
+                              borderRadius: 12,
+                            }}
+                          />
+                          <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                            {stats.dist.map((_, i) => (
+                              <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
 
-                <div className="bg-gradient-card border border-border rounded-3xl p-5 shadow-card">
-                  <h3 className="font-black text-sm mb-3">Game Participation</h3>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={stats.participation}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={70}
-                        label={({ name, value }: { name: string; value: number }) =>
-                          `${name}: ${value}`
-                        }
+                    <div className="bg-gradient-card border border-border rounded-3xl p-5 shadow-card">
+                      <h3 className="font-black text-sm mb-3">Game Participation</h3>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <PieChart>
+                          <Pie
+                            data={stats.participation}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={70}
+                            label={({ name, value }: { name: string; value: number }) =>
+                              `${name}: ${value}`
+                            }
+                          >
+                            {stats.participation.map((_, i) => (
+                              <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Legend />
+                          <Tooltip
+                            contentStyle={{
+                              background: "var(--background)",
+                              border: "1px solid var(--border)",
+                              borderRadius: 12,
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {stats.topReferrers.length > 0 && (
+                    <div className="mt-5 bg-gradient-card border border-border rounded-3xl p-5 shadow-card">
+                      <h3 className="font-black text-sm mb-3">🏆 Top Referrers</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm min-w-[400px]">
+                          <thead>
+                            <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
+                              <Th>Rank</Th>
+                              <Th>Contact</Th>
+                              <Th>Name</Th>
+                              <Th>Referrals</Th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {stats.topReferrers.map((u, i) => (
+                              <tr key={u.userId} className="border-b border-border/40">
+                                <Td className="font-bold text-accent">#{i + 1}</Td>
+                                <Td className="font-mono text-[11px]">{u.contact}</Td>
+                                <Td>{u.name || "—"}</Td>
+                                <Td className="font-bold text-gradient-energy">
+                                  {u.referCount ?? 0}
+                                </Td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {/* ── USERS TABLE ─────────────────────────────────────────────── */}
+              {tab === "users" && (
+                <motion.div
+                  key="users"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <SectionTitle>All Users</SectionTitle>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleExportCsv}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform text-xs"
                       >
-                        {stats.participation.map((_, i) => (
-                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Legend />
-                      <Tooltip
-                        contentStyle={{
-                          background: "var(--background)",
-                          border: "1px solid var(--border)",
-                          borderRadius: 12,
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
+                        <Download className="w-3.5 h-3.5" /> CSV
+                      </button>
+                      <button
+                        onClick={handleExportExcel}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-border hover:bg-muted/30 font-bold transition-colors text-xs"
+                      >
+                        <Download className="w-3.5 h-3.5" /> Excel
+                      </button>
+                    </div>
+                  </div>
 
-              {stats.topReferrers.length > 0 && (
-                <div className="mt-5 bg-gradient-card border border-border rounded-3xl p-5 shadow-card">
-                  <h3 className="font-black text-sm mb-3">🏆 Top Referrers</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm min-w-[400px]">
+                  <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search user…"
+                        className="pl-7 pr-3 py-1.5 bg-background/60 border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-ring text-xs"
+                      />
+                    </div>
+                    <select
+                      value={filterCat}
+                      onChange={(e) => setFilterCat(e.target.value)}
+                      className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
+                    >
+                      <option value="all">All categories</option>
+                      {CATEGORIES.map((c) => (
+                        <option key={c}>{c}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={filterGame}
+                      onChange={(e) => setFilterGame(e.target.value as GameFilter)}
+                      className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
+                    >
+                      <option value="all">All games</option>
+                      <option value="reflex">Reflex played</option>
+                      <option value="memory">Memory played</option>
+                      <option value="balance">Balance played</option>
+                    </select>
+                    <input
+                      type="date"
+                      value={from}
+                      onChange={(e) => setFrom(e.target.value)}
+                      className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
+                    />
+                    <span className="self-center text-muted-foreground text-xs">to</span>
+                    <input
+                      type="date"
+                      value={to}
+                      onChange={(e) => setTo(e.target.value)}
+                      className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
+                    />
+                    {(search || filterCat !== "all" || filterGame !== "all" || from || to) && (
+                      <button
+                        onClick={() => {
+                          setSearch("");
+                          setFilterCat("all");
+                          setFilterGame("all");
+                          setFrom("");
+                          setTo("");
+                        }}
+                        className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-full"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {filtered.length} of {users.length} users
+                  </p>
+
+                  <div className="mt-3 bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
+                    <table className="w-full text-sm min-w-[900px]">
                       <thead>
-                        <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
-                          <Th>Rank</Th>
+                        <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10">
+                          <Th>User ID</Th>
                           <Th>Contact</Th>
                           <Th>Name</Th>
-                          <Th>Referrals</Th>
+                          <Th>Reflex</Th>
+                          <Th>Memory</Th>
+                          <Th>Balance</Th>
+                          <Th>Total</Th>
+                          <Th>Category</Th>
+                          <Th>Refer Count</Th>
+                          <Th>Referred By (User ID)</Th>
+                          <Th>Timestamp</Th>
                         </tr>
                       </thead>
                       <tbody>
-                        {stats.topReferrers.map((u, i) => (
-                          <tr key={u.userId} className="border-b border-border/40">
-                            <Td className="font-bold text-accent">#{i + 1}</Td>
+                        {filtered.length === 0 && (
+                          <tr>
+                            <td
+                              colSpan={11}
+                              className="py-10 text-center text-muted-foreground text-sm"
+                            >
+                              No users match filters.
+                            </td>
+                          </tr>
+                        )}
+                        {filtered.map((u, i) => (
+                          <tr
+                            key={i}
+                            onClick={() =>
+                              navigate({ to: "/admin/user/$userId", params: { userId: u.userId } })
+                            }
+                            className="border-b border-border/40 hover:bg-muted/10 transition-colors cursor-pointer"
+                          >
+                            <Td className="font-mono text-[11px]">{u.userId}</Td>
                             <Td className="font-mono text-[11px]">{u.contact}</Td>
                             <Td>{u.name || "—"}</Td>
-                            <Td className="font-bold text-gradient-energy">{u.referCount ?? 0}</Td>
+                            <Td>{u.selectedScores.reflex ?? "—"}</Td>
+                            <Td>{u.selectedScores.memory ?? "—"}</Td>
+                            <Td>{u.selectedScores.balance ?? "—"}</Td>
+                            <Td className="font-bold text-gradient-energy">{u.selectedTotal}</Td>
+                            <Td>
+                              <CategoryBadge cat={u.selectedCategory} />
+                            </Td>
+                            <Td className="font-bold text-center">{u.referCount ?? 0}</Td>
+                            <Td className="font-mono text-[11px] text-muted-foreground uppercase">
+                              {u.referredBy || "—"}
+                            </Td>
+                            <Td className="text-muted-foreground text-[11px]">
+                              {new Date(u.selectedPlayedAt).toLocaleString()}
+                            </Td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
-                </div>
+                </motion.div>
               )}
-            </motion.div>
-          )}
 
-          {/* ── USERS TABLE ─────────────────────────────────────────────── */}
-          {tab === "users" && (
-            <motion.div key="users" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <SectionTitle>All Users</SectionTitle>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleExportCsv}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform text-xs"
-                  >
-                    <Download className="w-3.5 h-3.5" /> CSV
-                  </button>
-                  <button
-                    onClick={handleExportExcel}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-border hover:bg-muted/30 font-bold transition-colors text-xs"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Excel
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-3 flex flex-wrap gap-2 text-sm">
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search user…"
-                    className="pl-7 pr-3 py-1.5 bg-background/60 border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-ring text-xs"
-                  />
-                </div>
-                <select
-                  value={filterCat}
-                  onChange={(e) => setFilterCat(e.target.value)}
-                  className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
+              {/* ── DATE-WISE ───────────────────────────────────────────────── */}
+              {tab === "datewise" && (
+                <motion.div
+                  key="datewise"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
                 >
-                  <option value="all">All categories</option>
-                  {CATEGORIES.map((c) => (
-                    <option key={c}>{c}</option>
-                  ))}
-                </select>
-                <select
-                  value={filterGame}
-                  onChange={(e) => setFilterGame(e.target.value as GameFilter)}
-                  className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
-                >
-                  <option value="all">All games</option>
-                  <option value="reflex">Reflex played</option>
-                  <option value="memory">Memory played</option>
-                  <option value="balance">Balance played</option>
-                </select>
-                <input
-                  type="date"
-                  value={from}
-                  onChange={(e) => setFrom(e.target.value)}
-                  className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
-                />
-                <span className="self-center text-muted-foreground text-xs">to</span>
-                <input
-                  type="date"
-                  value={to}
-                  onChange={(e) => setTo(e.target.value)}
-                  className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
-                />
-                {(search || filterCat !== "all" || filterGame !== "all" || from || to) && (
-                  <button
-                    onClick={() => {
-                      setSearch("");
-                      setFilterCat("all");
-                      setFilterGame("all");
-                      setFrom("");
-                      setTo("");
-                    }}
-                    className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-full"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {filtered.length} of {users.length} users
-              </p>
+                  <SectionTitle>Date-wise Users</SectionTitle>
+                  <p className="text-xs text-muted-foreground mt-1 mb-3">
+                    Users grouped by the dates they played.
+                  </p>
 
-              <div className="mt-3 bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
-                <table className="w-full text-sm min-w-[900px]">
-                  <thead>
-                    <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10">
-                      <Th>User ID</Th>
-                      <Th>Contact</Th>
-                      <Th>Name</Th>
-                      <Th>Reflex</Th>
-                      <Th>Memory</Th>
-                      <Th>Balance</Th>
-                      <Th>Total</Th>
-                      <Th>Category</Th>
-                      <Th>Refer Count</Th>
-                      <Th>Referred By (User ID)</Th>
-                      <Th>Timestamp</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={11}
-                          className="py-10 text-center text-muted-foreground text-sm"
-                        >
-                          No users match filters.
-                        </td>
-                      </tr>
-                    )}
-                    {filtered.map((u, i) => (
-                      <tr
-                        key={i}
-                        onClick={() =>
-                          navigate({ to: "/admin/user/$userId", params: { userId: u.userId } })
-                        }
-                        className="border-b border-border/40 hover:bg-muted/10 transition-colors cursor-pointer"
-                      >
-                        <Td className="font-mono text-[11px]">{u.userId}</Td>
-                        <Td className="font-mono text-[11px]">{u.contact}</Td>
-                        <Td>{u.name || "—"}</Td>
-                        <Td>{u.selectedScores.reflex ?? "—"}</Td>
-                        <Td>{u.selectedScores.memory ?? "—"}</Td>
-                        <Td>{u.selectedScores.balance ?? "—"}</Td>
-                        <Td className="font-bold text-gradient-energy">{u.selectedTotal}</Td>
-                        <Td>
-                          <CategoryBadge cat={u.selectedCategory} />
-                        </Td>
-                        <Td className="font-bold text-center">{u.referCount ?? 0}</Td>
-                        <Td className="font-mono text-[11px] text-muted-foreground uppercase">
-                          {u.referredBy || "—"}
-                        </Td>
-                        <Td className="text-muted-foreground text-[11px]">
-                          {new Date(u.selectedPlayedAt).toLocaleString()}
-                        </Td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ── DATE-WISE ───────────────────────────────────────────────── */}
-          {tab === "datewise" && (
-            <motion.div
-              key="datewise"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <SectionTitle>Date-wise Users</SectionTitle>
-              <p className="text-xs text-muted-foreground mt-1 mb-3">
-                Users grouped by the dates they played.
-              </p>
-
-              <div className="relative mb-3">
-                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  value={dateWiseSearch}
-                  onChange={(e) => setDateWiseSearch(e.target.value)}
-                  placeholder="Search by date, user, contact…"
-                  className="pl-7 pr-3 py-1.5 bg-background/60 border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-ring text-xs w-full max-w-xs"
-                />
-              </div>
-
-              <div className="space-y-3">
-                {dateWise.length === 0 && (
-                  <p className="text-muted-foreground text-sm py-8 text-center">No data yet.</p>
-                )}
-                {dateWise.map((d) => {
-                  const isOpen = expandedDates.has(d.date);
-                  const toggle = () => {
-                    setExpandedDates((s) => {
-                      const ns = new Set(s);
-                      if (ns.has(d.date)) {
-                        ns.delete(d.date);
-                      } else {
-                        ns.add(d.date);
-                      }
-                      return ns;
-                    });
-                  };
-                  return (
-                    <div
-                      key={d.date}
-                      className="bg-gradient-card border border-border rounded-2xl overflow-hidden shadow-card"
-                    >
-                      <button
-                        onClick={toggle}
-                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/10 transition-colors text-left"
-                      >
-                        <div>
-                          <span className="font-bold text-sm">{d.date}</span>
-                          <span className="ml-3 text-xs text-muted-foreground">
-                            {d.users.length} user{d.users.length !== 1 ? "s" : ""}
-                          </span>
-                        </div>
-                        <ChevronDown
-                          className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
-                        />
-                      </button>
-                      {isOpen && (
-                        <div className="border-t border-border overflow-x-auto">
-                          <table className="w-full text-sm min-w-[600px]">
-                            <thead>
-                              <tr className="text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/10 text-left">
-                                <Th>User ID</Th>
-                                <Th>Contact</Th>
-                                <Th>Name</Th>
-                                <Th>Reflex</Th>
-                                <Th>Memory</Th>
-                                <Th>Balance</Th>
-                                <Th>Total</Th>
-                                <Th>Category</Th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {d.users.map((u, i) => (
-                                <tr
-                                  key={i}
-                                  className="border-b border-border/40 hover:bg-muted/10 transition-colors"
-                                >
-                                  <Td className="font-mono text-[11px]">{u.userId}</Td>
-                                  <Td className="font-mono text-[11px]">{u.contact}</Td>
-                                  <Td>{u.name || "—"}</Td>
-                                  <Td>{u.scores.reflex ?? "—"}</Td>
-                                  <Td>{u.scores.memory ?? "—"}</Td>
-                                  <Td>{u.scores.balance ?? "—"}</Td>
-                                  <Td className="font-bold text-gradient-energy">{u.total}</Td>
-                                  <Td>
-                                    <CategoryBadge cat={u.category} />
-                                  </Td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          )}
-
-          {/* ── STREAKS ────────────────────────────────────────────────── */}
-          {tab === "streaks" && (
-            <motion.div
-              key="streaks"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <SectionTitle>Consistent Players</SectionTitle>
-              <p className="text-xs text-muted-foreground mt-1 mb-4">
-                Users ranked by their current consecutive-day play streak.
-              </p>
-
-              <div className="bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
-                <table className="w-full text-sm min-w-[560px]">
-                  <thead>
-                    <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10 text-left">
-                      <Th>#</Th>
-                      <Th>User ID</Th>
-                      <Th>Contact</Th>
-                      <Th>Name</Th>
-                      <Th>🔥 Streak (days)</Th>
-                      <Th>Total Play Days</Th>
-                      <Th>Score</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {streaks.length === 0 && (
-                      <tr>
-                        <td colSpan={7} className="py-10 text-center text-muted-foreground text-sm">
-                          No users yet.
-                        </td>
-                      </tr>
-                    )}
-                    {streaks.map((u, i) => (
-                      <tr
-                        key={i}
-                        className="border-b border-border/40 hover:bg-muted/10 transition-colors"
-                      >
-                        <Td className="text-muted-foreground">{i + 1}</Td>
-                        <Td className="font-mono text-[11px]">{u.userId}</Td>
-                        <Td className="font-mono text-[11px]">{u.contact}</Td>
-                        <Td>{u.name || "—"}</Td>
-                        <Td>
-                          <span
-                            className={`font-black text-base ${
-                              u.streak >= 7
-                                ? "text-orange-400"
-                                : u.streak >= 3
-                                  ? "text-yellow-400"
-                                  : "text-foreground"
-                            }`}
-                          >
-                            {u.streak}
-                            {u.streak >= 7 ? " 🔥" : u.streak >= 3 ? " ⚡" : ""}
-                          </span>
-                        </Td>
-                        <Td className="text-muted-foreground">{(u.playDates ?? []).length}</Td>
-                        <Td className="font-bold text-gradient-energy">{u.total}</Td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ── LOGS ─────────────────────────────────────────────────────── */}
-          {tab === "logs" && (
-            <motion.div key="logs" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <SectionTitle>Admin Logs</SectionTitle>
-                <span className="text-xs text-muted-foreground bg-muted/20 border border-border px-3 py-1 rounded-full">
-                  Read-only · Lifetime retention · {logs.length} entries
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1 mb-3">
-                All admin actions are recorded here permanently. Deletion is disabled.
-              </p>
-
-              <div className="relative mb-3">
-                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  value={logSearch}
-                  onChange={(e) => setLogSearch(e.target.value)}
-                  placeholder="Search logs…"
-                  className="pl-7 pr-3 py-1.5 bg-background/60 border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-ring text-xs w-full max-w-xs"
-                />
-              </div>
-
-              <div className="bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
-                <table className="w-full text-sm min-w-[480px]">
-                  <thead>
-                    <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10 text-left">
-                      <Th>Timestamp</Th>
-                      <Th>Action</Th>
-                      <Th>Details</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredLogs.length === 0 && (
-                      <tr>
-                        <td colSpan={3} className="py-10 text-center text-muted-foreground text-sm">
-                          No logs yet.
-                        </td>
-                      </tr>
-                    )}
-                    {filteredLogs.map((l, i) => (
-                      <tr
-                        key={i}
-                        className="border-b border-border/40 hover:bg-muted/10 transition-colors"
-                      >
-                        <Td className="text-[11px] text-muted-foreground whitespace-nowrap">
-                          {new Date(l.timestamp).toLocaleString()}
-                        </Td>
-                        <Td>
-                          <span className="font-mono text-[11px] bg-accent/10 text-accent px-2 py-0.5 rounded">
-                            {l.action}
-                          </span>
-                        </Td>
-                        <Td className="text-[12px]">{l.details}</Td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ── SETTINGS ─────────────────────────────────────────────────── */}
-          {tab === "settings" && (
-            <motion.div
-              key="settings"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <SectionTitle>Tracking & Security Settings</SectionTitle>
-              <p className="text-xs text-muted-foreground mt-1 mb-5">
-                Settings are stored in the database and injected into all pages automatically.
-              </p>
-
-              <form onSubmit={saveSettings} className="space-y-4">
-                <SettingsSection title="Google Analytics (GA4)">
-                  <SettingsField
-                    label="Measurement ID"
-                    value={settings.ga4}
-                    onChange={(v) => setSettings((s) => ({ ...s, ga4: v }))}
-                    placeholder="G-XXXXXXXXXX"
-                    hint="Paste your GA4 Measurement ID. The gtag script will be injected automatically."
-                  />
-                </SettingsSection>
-
-                <SettingsSection title="Meta Pixel">
-                  <SettingsField
-                    label="Pixel ID"
-                    value={settings.metaPixel}
-                    onChange={(v) => setSettings((s) => ({ ...s, metaPixel: v }))}
-                    placeholder="123456789012345"
-                    hint="Found in Facebook Events Manager → Pixels → Your Pixel → Setup."
-                  />
-                </SettingsSection>
-
-                <SettingsSection title="Microsoft Clarity">
-                  <SettingsField
-                    label="Project ID"
-                    value={settings.clarity}
-                    onChange={(v) => setSettings((s) => ({ ...s, clarity: v }))}
-                    placeholder="abcdefghij"
-                    hint="Found in Clarity dashboard → Settings → Overview → Project ID."
-                  />
-                </SettingsSection>
-
-                <SettingsSection title="Google reCAPTCHA v2">
-                  <div className="grid md:grid-cols-2 gap-3">
-                    <SettingsField
-                      label="Site Key (public)"
-                      value={settings.recaptchaSite}
-                      onChange={(v) => setSettings((s) => ({ ...s, recaptchaSite: v }))}
-                      placeholder="6Lc…"
-                      hint="Used client-side on forms."
-                    />
-                    <SettingsField
-                      label="Secret Key (server)"
-                      value={settings.recaptchaSecret}
-                      onChange={(v) => setSettings((s) => ({ ...s, recaptchaSecret: v }))}
-                      placeholder="6Lc…"
-                      hint="Used server-side to verify tokens. Keep private."
-                      isSecret
+                  <div className="relative mb-3">
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      value={dateWiseSearch}
+                      onChange={(e) => setDateWiseSearch(e.target.value)}
+                      placeholder="Search by date, user, contact…"
+                      className="pl-7 pr-3 py-1.5 bg-background/60 border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-ring text-xs w-full max-w-xs"
                     />
                   </div>
-                </SettingsSection>
 
-                <div className="flex items-center gap-3 pt-2">
-                  <button className="px-6 py-2.5 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform text-sm">
-                    Save Settings
-                  </button>
-                  {savedFlash && <span className="text-sm text-accent">✓ Saved</span>}
-                </div>
-              </form>
-            </motion.div>
+                  <div className="space-y-3">
+                    {dateWise.length === 0 && (
+                      <p className="text-muted-foreground text-sm py-8 text-center">No data yet.</p>
+                    )}
+                    {dateWise.map((d) => {
+                      const isOpen = expandedDates.has(d.date);
+                      const toggle = () => {
+                        setExpandedDates((s) => {
+                          const ns = new Set(s);
+                          if (ns.has(d.date)) {
+                            ns.delete(d.date);
+                          } else {
+                            ns.add(d.date);
+                          }
+                          return ns;
+                        });
+                      };
+                      return (
+                        <div
+                          key={d.date}
+                          className="bg-gradient-card border border-border rounded-2xl overflow-hidden shadow-card"
+                        >
+                          <button
+                            onClick={toggle}
+                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/10 transition-colors text-left"
+                          >
+                            <div>
+                              <span className="font-bold text-sm">{d.date}</span>
+                              <span className="ml-3 text-xs text-muted-foreground">
+                                {d.users.length} user{d.users.length !== 1 ? "s" : ""}
+                              </span>
+                            </div>
+                            <ChevronDown
+                              className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
+                            />
+                          </button>
+                          {isOpen && (
+                            <div className="border-t border-border overflow-x-auto">
+                              <table className="w-full text-sm min-w-[600px]">
+                                <thead>
+                                  <tr className="text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/10 text-left">
+                                    <Th>User ID</Th>
+                                    <Th>Contact</Th>
+                                    <Th>Name</Th>
+                                    <Th>Reflex</Th>
+                                    <Th>Memory</Th>
+                                    <Th>Balance</Th>
+                                    <Th>Total</Th>
+                                    <Th>Category</Th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {d.users.map((u, i) => (
+                                    <tr
+                                      key={i}
+                                      className="border-b border-border/40 hover:bg-muted/10 transition-colors"
+                                    >
+                                      <Td className="font-mono text-[11px]">{u.userId}</Td>
+                                      <Td className="font-mono text-[11px]">{u.contact}</Td>
+                                      <Td>{u.name || "—"}</Td>
+                                      <Td>{u.scores.reflex ?? "—"}</Td>
+                                      <Td>{u.scores.memory ?? "—"}</Td>
+                                      <Td>{u.scores.balance ?? "—"}</Td>
+                                      <Td className="font-bold text-gradient-energy">{u.total}</Td>
+                                      <Td>
+                                        <CategoryBadge cat={u.category} />
+                                      </Td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── STREAKS ────────────────────────────────────────────────── */}
+              {tab === "streaks" && (
+                <motion.div
+                  key="streaks"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <SectionTitle>Consistent Players</SectionTitle>
+                  <p className="text-xs text-muted-foreground mt-1 mb-4">
+                    Users ranked by their current consecutive-day play streak.
+                  </p>
+
+                  <div className="bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
+                    <table className="w-full text-sm min-w-[560px]">
+                      <thead>
+                        <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10 text-left">
+                          <Th>#</Th>
+                          <Th>User ID</Th>
+                          <Th>Contact</Th>
+                          <Th>Name</Th>
+                          <Th>🔥 Streak (days)</Th>
+                          <Th>Total Play Days</Th>
+                          <Th>Score</Th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {streaks.length === 0 && (
+                          <tr>
+                            <td
+                              colSpan={7}
+                              className="py-10 text-center text-muted-foreground text-sm"
+                            >
+                              No users yet.
+                            </td>
+                          </tr>
+                        )}
+                        {streaks.map((u, i) => (
+                          <tr
+                            key={i}
+                            className="border-b border-border/40 hover:bg-muted/10 transition-colors"
+                          >
+                            <Td className="text-muted-foreground">{i + 1}</Td>
+                            <Td className="font-mono text-[11px]">{u.userId}</Td>
+                            <Td className="font-mono text-[11px]">{u.contact}</Td>
+                            <Td>{u.name || "—"}</Td>
+                            <Td>
+                              <span
+                                className={`font-black text-base ${
+                                  u.streak >= 7
+                                    ? "text-orange-400"
+                                    : u.streak >= 3
+                                      ? "text-yellow-400"
+                                      : "text-foreground"
+                                }`}
+                              >
+                                {u.streak}
+                                {u.streak >= 7 ? " 🔥" : u.streak >= 3 ? " ⚡" : ""}
+                              </span>
+                            </Td>
+                            <Td className="text-muted-foreground">{(u.playDates ?? []).length}</Td>
+                            <Td className="font-bold text-gradient-energy">{u.total}</Td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── LOGS ─────────────────────────────────────────────────────── */}
+              {tab === "logs" && (
+                <motion.div
+                  key="logs"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <SectionTitle>Admin Logs</SectionTitle>
+                    <span className="text-xs text-muted-foreground bg-muted/20 border border-border px-3 py-1 rounded-full">
+                      Read-only · Lifetime retention · {logs.length} entries
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 mb-3">
+                    All admin actions are recorded here permanently. Deletion is disabled.
+                  </p>
+
+                  <div className="relative mb-3">
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      value={logSearch}
+                      onChange={(e) => setLogSearch(e.target.value)}
+                      placeholder="Search logs…"
+                      className="pl-7 pr-3 py-1.5 bg-background/60 border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-ring text-xs w-full max-w-xs"
+                    />
+                  </div>
+
+                  <div className="bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
+                    <table className="w-full text-sm min-w-[480px]">
+                      <thead>
+                        <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10 text-left">
+                          <Th>Timestamp</Th>
+                          <Th>Action</Th>
+                          <Th>Details</Th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredLogs.length === 0 && (
+                          <tr>
+                            <td
+                              colSpan={3}
+                              className="py-10 text-center text-muted-foreground text-sm"
+                            >
+                              No logs yet.
+                            </td>
+                          </tr>
+                        )}
+                        {filteredLogs.map((l, i) => (
+                          <tr
+                            key={i}
+                            className="border-b border-border/40 hover:bg-muted/10 transition-colors"
+                          >
+                            <Td className="text-[11px] text-muted-foreground whitespace-nowrap">
+                              {new Date(l.timestamp).toLocaleString()}
+                            </Td>
+                            <Td>
+                              <span className="font-mono text-[11px] bg-accent/10 text-accent px-2 py-0.5 rounded">
+                                {l.action}
+                              </span>
+                            </Td>
+                            <Td className="text-[12px]">{l.details}</Td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── SETTINGS ─────────────────────────────────────────────────── */}
+              {tab === "settings" && (
+                <motion.div
+                  key="settings"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <SectionTitle>Tracking & Security Settings</SectionTitle>
+                  <p className="text-xs text-muted-foreground mt-1 mb-5">
+                    Settings are stored in the database and injected into all pages automatically.
+                  </p>
+
+                  <form onSubmit={saveSettings} className="space-y-4">
+                    <SettingsSection title="Google Analytics (GA4)">
+                      <SettingsField
+                        label="Measurement ID"
+                        value={settings.ga4}
+                        onChange={(v) => setSettings((s) => ({ ...s, ga4: v }))}
+                        placeholder="G-XXXXXXXXXX"
+                        hint="Paste your GA4 Measurement ID. The gtag script will be injected automatically."
+                      />
+                    </SettingsSection>
+
+                    <SettingsSection title="Meta Pixel">
+                      <SettingsField
+                        label="Pixel ID"
+                        value={settings.metaPixel}
+                        onChange={(v) => setSettings((s) => ({ ...s, metaPixel: v }))}
+                        placeholder="123456789012345"
+                        hint="Found in Facebook Events Manager → Pixels → Your Pixel → Setup."
+                      />
+                    </SettingsSection>
+
+                    <SettingsSection title="Microsoft Clarity">
+                      <SettingsField
+                        label="Project ID"
+                        value={settings.clarity}
+                        onChange={(v) => setSettings((s) => ({ ...s, clarity: v }))}
+                        placeholder="abcdefghij"
+                        hint="Found in Clarity dashboard → Settings → Overview → Project ID."
+                      />
+                    </SettingsSection>
+
+                    <SettingsSection title="Google reCAPTCHA v2">
+                      <div className="grid md:grid-cols-2 gap-3">
+                        <SettingsField
+                          label="Site Key (public)"
+                          value={settings.recaptchaSite}
+                          onChange={(v) => setSettings((s) => ({ ...s, recaptchaSite: v }))}
+                          placeholder="6Lc…"
+                          hint="Used client-side on forms."
+                        />
+                        <SettingsField
+                          label="Secret Key (server)"
+                          value={settings.recaptchaSecret}
+                          onChange={(v) => setSettings((s) => ({ ...s, recaptchaSecret: v }))}
+                          placeholder="6Lc…"
+                          hint="Used server-side to verify tokens. Keep private."
+                          isSecret
+                        />
+                      </div>
+                    </SettingsSection>
+
+                    <div className="flex items-center gap-3 pt-2">
+                      <button className="px-6 py-2.5 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform text-sm">
+                        Save Settings
+                      </button>
+                      {savedFlash && <span className="text-sm text-accent">✓ Saved</span>}
+                    </div>
+                  </form>
+                </motion.div>
+              )}
+            </>
           )}
         </main>
       </div>

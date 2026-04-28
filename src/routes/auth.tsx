@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import {
   categorize,
@@ -27,6 +27,16 @@ function Auth() {
   const [consent, setConsent] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const refFromUrl = new URLSearchParams(window.location.search).get("ref")?.trim();
+    if (!refFromUrl) return;
+
+    const normalizedRef = refFromUrl.toUpperCase();
+    window.localStorage.setItem("revital_referral_code", normalizedRef);
+    void nav({ to: "/", replace: true });
+  }, [nav]);
 
   const goToProfile = async () => {
     try {

@@ -38,7 +38,7 @@ function ReflexGame() {
     // Slightly wider random delay range to make anticipation harder.
     const delay = Math.floor(Math.random() * (MAX_DELAY - MIN_DELAY + 1)) + MIN_DELAY;
     timeoutRef.current = setTimeout(() => {
-      startRef.current = Date.now();
+      startRef.current = performance.now();
       setPhase("go");
     }, delay);
   };
@@ -70,7 +70,7 @@ function ReflexGame() {
     }
 
     if (phase === "go") {
-      const reflexMs = Date.now() - startRef.current;
+      const reflexMs = Math.round(performance.now() - startRef.current);
       setLastReactionMs(reflexMs);
       const next = [...times, reflexMs];
       const nextRound = round + 1;
@@ -88,7 +88,7 @@ function ReflexGame() {
 
   const label: Record<Phase, string> = {
     idle: "Tap to begin",
-    waiting: `Round ${round + 1} · Wait for logo...`,
+    waiting: `Round ${round + 1}`,
     go: "TAP NOW!",
     tooSoon: "Too early!",
     done: "Complete!",

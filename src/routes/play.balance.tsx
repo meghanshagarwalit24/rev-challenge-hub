@@ -75,8 +75,7 @@ function BalanceGame() {
   // Save score on done
   useEffect(() => {
     if (done) {
-      const pct = Math.min(1, hold / (DURATION * 1000));
-      const score = Math.round(pct * 100);
+      const score = Math.round((hold / 15000) * 1500);
       saveGameScore("balance", score);
       const t = setTimeout(() => nav({ to: "/result" }), 1500);
       return () => clearTimeout(t);
@@ -89,7 +88,6 @@ function BalanceGame() {
   };
 
   const inZone = Math.abs(y - TARGET_Y) < TARGET_BAND;
-  const score = Math.round(Math.min(1, hold / (DURATION * 1000)) * 100);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -100,7 +98,7 @@ function BalanceGame() {
           title="Tap Balance"
           lines={[
             "Tap rapidly to lift the ember.",
-            "Hold it inside the glowing sweet zone.",
+            "Hold it inside the glowing Revital Zone.",
             "The longer you stay in the zone, the higher your score!",
           ]}
           onStart={() => setShowStart(false)}
@@ -123,12 +121,13 @@ function BalanceGame() {
           className="mt-4 flex-1 min-h-[55vh] relative w-full rounded-3xl border border-border overflow-hidden bg-gradient-to-b from-[oklch(0.25_0.05_40)] to-[oklch(0.15_0.03_40)] active:scale-[0.99] transition-transform select-none"
           aria-label="Tap to lift ember"
         >
-          {/* target zone */}
+          {/* target zone — capsule shape */}
           <div
-            className={`absolute left-0 right-0 border-y-2 ${inZone ? "border-accent bg-accent/15" : "border-accent/40 bg-accent/5"} transition-colors`}
+            className={`absolute left-[8%] right-[8%] rounded-full border-2 flex items-center justify-center ${inZone ? "border-accent bg-accent/20" : "border-accent/40 bg-accent/5"} transition-colors`}
             style={{ top: `${TARGET_Y - TARGET_BAND}%`, height: `${TARGET_BAND * 2}%` }}
-          />
-          <div className="absolute top-2 left-2 right-2 text-center text-xs uppercase tracking-widest text-accent/80">⟶ Sweet Zone ⟵</div>
+          >
+            <span className="text-xs uppercase tracking-widest text-accent/80 pointer-events-none select-none">⟶ Revital Zone ⟵</span>
+          </div>
 
           {/* ember */}
           <motion.div

@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { ProgressDots } from "@/components/ProgressDots";
 import { StartOverlay } from "@/components/StartOverlay";
 import { saveGameScore } from "@/lib/storage";
+import logo from "@/assets/revital-logo.png";
 
 export const Route = createFileRoute("/play/reflex")({
   component: ReflexGame,
@@ -102,7 +103,7 @@ function ReflexGame() {
           title="Reflex Tap"
           lines={[
             "Play exactly 3 rounds.",
-            "When TAP NOW! appears, tap instantly.",
+            "Wait for the Revital logo, then tap it instantly.",
             "If you tap early, the round restarts.",
           ]}
           onStart={() => setShowStart(false)}
@@ -131,11 +132,21 @@ function ReflexGame() {
               exit={{ scale: 0.95, opacity: 0 }}
               className="absolute inset-0 flex flex-col items-center justify-center px-4"
             >
-              <p className="mt-6 text-2xl md:text-5xl font-black text-white drop-shadow-[0_3px_6px_rgba(0,0,0,0.35)]">
-                {label[phase]}
-              </p>
+              {phase === "go" ? (
+                <motion.img
+                  src={logo}
+                  alt="Revital Ginseng Plus"
+                  className="w-[130px] md:w-[180px] h-auto drop-shadow-[0_14px_26px_rgba(0,0,0,0.45)]"
+                  animate={{ scale: [1, 1.03, 1] }}
+                  transition={{ duration: 0.8, repeat: Infinity }}
+                />
+              ) : (
+                <p className="mt-6 text-2xl md:text-5xl font-black text-white drop-shadow-[0_3px_6px_rgba(0,0,0,0.35)]">
+                  {label[phase]}
+                </p>
+              )}
               {phase === "tooSoon" && (
-                <p className="mt-2 text-sm md:text-base text-white/85">Wait for TAP NOW! to appear.</p>
+                <p className="mt-2 text-sm md:text-base text-white/85">Wait for the logo to appear.</p>
               )}
               {lastReactionMs !== null && phase !== "done" && (
                 <p className="mt-3 text-sm md:text-base text-white/90">

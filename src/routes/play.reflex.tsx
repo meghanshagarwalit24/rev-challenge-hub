@@ -103,7 +103,7 @@ function ReflexGame() {
           title="Reflex Tap"
           lines={[
             "Play exactly 3 rounds.",
-            "Wait for the Revital logo, then tap instantly.",
+            "Wait for the Revital logo, then tap it instantly.",
             "If you tap early, the round restarts.",
           ]}
           onStart={() => setShowStart(false)}
@@ -132,7 +132,7 @@ function ReflexGame() {
               exit={{ scale: 0.95, opacity: 0 }}
               className="absolute inset-0 flex flex-col items-center justify-center px-4"
             >
-              {phase === "go" && (
+              {phase === "go" ? (
                 <motion.img
                   src={logo}
                   alt="Revital Ginseng Plus"
@@ -140,8 +140,7 @@ function ReflexGame() {
                   animate={{ scale: [1, 1.03, 1] }}
                   transition={{ duration: 0.8, repeat: Infinity }}
                 />
-              )}
-              {phase !== "go" && (
+              ) : (
                 <p className="mt-6 text-2xl md:text-5xl font-black text-white drop-shadow-[0_3px_6px_rgba(0,0,0,0.35)]">
                   {label[phase]}
                 </p>

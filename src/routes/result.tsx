@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { SignupGate } from "@/components/SignupGate";
 import { categorize, computeTotal, getCurrentScores, getUser, isLoggedIn, resetScores, saveUserRemote, type GameScores } from "@/lib/storage";
 import { buildShareCard } from "@/lib/shareCard";
@@ -104,10 +105,10 @@ function Result() {
 
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Header />
       {!unlocked && <SignupGate onSuccess={() => setUnlocked(true)} />}
-      <main className={`max-w-2xl mx-auto px-4 py-8 text-center ${!unlocked ? "blur-sm pointer-events-none select-none" : ""}`}>
+      <main className={`flex-1 max-w-2xl mx-auto px-4 py-8 text-center ${!unlocked ? "blur-sm pointer-events-none select-none" : ""}`}>
         <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="uppercase text-xs tracking-[0.3em] text-accent">Your Energy Score</motion.p>
 
         <motion.div
@@ -171,6 +172,7 @@ function Result() {
           </Link>
         </motion.div>
       </main>
+      <Footer />
     </div>
   );
 }

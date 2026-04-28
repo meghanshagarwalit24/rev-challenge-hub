@@ -22,6 +22,7 @@ function Profile() {
   const [address, setAddress] = useState("");
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
   const [referrerName, setReferrerName] = useState("");
   const [referralUsers, setReferralUsers] = useState<UserRecord[]>([]);
 
@@ -97,12 +98,33 @@ function Profile() {
   };
 
   const copyReferralUrl = async () => {
+    const fallbackCopy = () => {
+      const helper = document.createElement("textarea");
+      helper.value = referralUrl;
+      helper.setAttribute("readonly", "true");
+      helper.style.position = "fixed";
+      helper.style.opacity = "0";
+      helper.style.pointerEvents = "none";
+      document.body.appendChild(helper);
+      helper.focus();
+      helper.select();
+      const copiedWithFallback = document.execCommand("copy");
+      document.body.removeChild(helper);
+      return copiedWithFallback;
+    };
+
     try {
-      await navigator.clipboard.writeText(referralUrl);
+      if (window.isSecureContext && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(referralUrl);
+      } else if (!fallbackCopy()) {
+        throw new Error("Copy failed");
+      }
       setCopied(true);
+      setCopyError(false);
       setTimeout(() => setCopied(false), 1500);
     } catch {
       setCopied(false);
+      setCopyError(true);
     }
   };
 
@@ -147,7 +169,7 @@ function Profile() {
                   onClick={copyReferralUrl}
                   className="px-4 py-2 rounded-xl border border-border text-xs font-semibold hover:bg-muted/40 transition-colors"
                 >
-                  {copied ? "Copied!" : "Copy URL"}
+                  {copied ? "Copied!" : copyError ? "Copy failed" : "Copy URL"}
                 </button>
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground">

@@ -184,9 +184,10 @@ function exportExcel(rows: (string | number)[][], filename: string) {
 // ── Main Admin Component ───────────────────────────────────────────────────────
 function Admin() {
   const navigate = useNavigate();
-  const [authenticated, setAuthenticated] = useState(
-    () => sessionStorage.getItem("adminAuth") === "true",
-  );
+  const [authenticated, setAuthenticated] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.sessionStorage.getItem("adminAuth") === "true";
+  });
   const [passInput, setPassInput] = useState("");
   const [passError, setPassError] = useState(false);
   const [tab, setTab] = useState<Tab>("overview");

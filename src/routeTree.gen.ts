@@ -17,11 +17,11 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ChallengesRouteImport } from './routes/challenges'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
-import { Route as AdminUserUserIdRouteImport } from './routes/admin.user.$userId'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PlayReflexRouteImport } from './routes/play.reflex'
 import { Route as PlayMemoryRouteImport } from './routes/play.memory'
 import { Route as PlayBalanceRouteImport } from './routes/play.balance'
+import { Route as AdminUserUserIdRouteImport } from './routes/admin.user.$userId'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -63,11 +63,6 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminUserUserIdRoute = AdminUserUserIdRouteImport.update({
-  id: '/admin/user/$userId',
-  path: '/admin/user/$userId',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -88,11 +83,15 @@ const PlayBalanceRoute = PlayBalanceRouteImport.update({
   path: '/play/balance',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUserUserIdRoute = AdminUserUserIdRouteImport.update({
+  id: '/user/$userId',
+  path: '/user/$userId',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/admin/user/$userId': typeof AdminUserUserIdRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/challenges': typeof ChallengesRoute
   '/privacy': typeof PrivacyRoute
@@ -103,11 +102,11 @@ export interface FileRoutesByFullPath {
   '/play/balance': typeof PlayBalanceRoute
   '/play/memory': typeof PlayMemoryRoute
   '/play/reflex': typeof PlayReflexRoute
+  '/admin/user/$userId': typeof AdminUserUserIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/admin/user/$userId': typeof AdminUserUserIdRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/challenges': typeof ChallengesRoute
   '/privacy': typeof PrivacyRoute
@@ -118,12 +117,12 @@ export interface FileRoutesByTo {
   '/play/balance': typeof PlayBalanceRoute
   '/play/memory': typeof PlayMemoryRoute
   '/play/reflex': typeof PlayReflexRoute
+  '/admin/user/$userId': typeof AdminUserUserIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/admin/user/$userId': typeof AdminUserUserIdRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/challenges': typeof ChallengesRoute
   '/privacy': typeof PrivacyRoute
@@ -134,13 +133,13 @@ export interface FileRoutesById {
   '/play/balance': typeof PlayBalanceRoute
   '/play/memory': typeof PlayMemoryRoute
   '/play/reflex': typeof PlayReflexRoute
+  '/admin/user/$userId': typeof AdminUserUserIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin'
-    | '/admin/user/$userId'
     | '/auth'
     | '/challenges'
     | '/privacy'
@@ -151,11 +150,11 @@ export interface FileRouteTypes {
     | '/play/balance'
     | '/play/memory'
     | '/play/reflex'
+    | '/admin/user/$userId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
-    | '/admin/user/$userId'
     | '/auth'
     | '/challenges'
     | '/privacy'
@@ -166,11 +165,11 @@ export interface FileRouteTypes {
     | '/play/balance'
     | '/play/memory'
     | '/play/reflex'
+    | '/admin/user/$userId'
   id:
     | '__root__'
     | '/'
     | '/admin'
-    | '/admin/user/$userId'
     | '/auth'
     | '/challenges'
     | '/privacy'
@@ -181,12 +180,12 @@ export interface FileRouteTypes {
     | '/play/balance'
     | '/play/memory'
     | '/play/reflex'
+    | '/admin/user/$userId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
-  AdminUserUserIdRoute: typeof AdminUserUserIdRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
   ChallengesRoute: typeof ChallengesRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -257,13 +256,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/user/$userId': {
-      id: '/admin/user/$userId'
-      path: '/admin/user/$userId'
-      fullPath: '/admin/user/$userId'
-      preLoaderRoute: typeof AdminUserUserIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -292,13 +284,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlayBalanceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/user/$userId': {
+      id: '/admin/user/$userId'
+      path: '/user/$userId'
+      fullPath: '/admin/user/$userId'
+      preLoaderRoute: typeof AdminUserUserIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminUserUserIdRoute: typeof AdminUserUserIdRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminUserUserIdRoute: AdminUserUserIdRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
-  AdminUserUserIdRoute: AdminUserUserIdRoute,
+  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
   ChallengesRoute: ChallengesRoute,
   PrivacyRoute: PrivacyRoute,

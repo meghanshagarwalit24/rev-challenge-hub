@@ -147,7 +147,7 @@ function RootComponent() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="flex-1">
+      <div className="flex-1 pb-20 md:pb-0">
         <Outlet />
       </div>
       <Footer />

@@ -8,6 +8,7 @@ import {
   getAllUsersRemote,
   getUser,
   saveUserRemote,
+  totalToPercentage,
   type UserRecord,
 } from "@/lib/storage";
 
@@ -257,18 +258,15 @@ function Profile() {
         >
           <h2 className="font-black text-lg">Date-wise Score History</h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Your saved attempts grouped by play date and score components.
+            Your saved attempts grouped by play date and final percentage score.
           </p>
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-sm min-w-[640px]">
+            <table className="w-full text-sm min-w-[420px]">
               <thead>
                 <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
                   <th className="py-2 pr-3">Date</th>
                   <th className="py-2 pr-3">Time</th>
-                  <th className="py-2 pr-3">Reflex</th>
-                  <th className="py-2 pr-3">Memory</th>
-                  <th className="py-2 pr-3">Balance</th>
-                  <th className="py-2 pr-3">Total</th>
+                  <th className="py-2 pr-3">Final %</th>
                   <th className="py-2 pr-3">Category</th>
                 </tr>
               </thead>
@@ -279,10 +277,9 @@ function Profile() {
                     <td className="py-2 pr-3 text-muted-foreground text-xs">
                       {new Date(attempt.playedAt).toLocaleTimeString()}
                     </td>
-                    <td className="py-2 pr-3">{attempt.scores.reflex ?? "—"}</td>
-                    <td className="py-2 pr-3">{attempt.scores.memory ?? "—"}</td>
-                    <td className="py-2 pr-3">{attempt.scores.balance ?? "—"}</td>
-                    <td className="py-2 pr-3 font-bold text-gradient-energy">{attempt.total}</td>
+                    <td className="py-2 pr-3 font-bold text-gradient-energy">
+                      {totalToPercentage(attempt.total).toFixed(2)}%
+                    </td>
                     <td className="py-2 pr-3">{attempt.category}</td>
                   </tr>
                 ))}

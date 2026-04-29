@@ -132,7 +132,7 @@ function Result() {
       <Header />
       {!unlocked && <SignupGate onSuccess={() => setUnlocked(true)} />}
       <main className={`flex-1 max-w-2xl mx-auto px-4 py-8 text-center ${!unlocked ? "blur-sm pointer-events-none select-none" : ""}`}>
-        <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="uppercase text-xs tracking-[0.3em] text-accent">Your Energy Score</motion.p>
+        <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="inline-block uppercase text-xs md:text-sm tracking-[0.3em] text-garnet font-semibold drop-shadow-sm">Your Energy Score</motion.p>
 
         <motion.div
           initial={{ scale: 0.6, opacity: 0 }}

@@ -97,6 +97,10 @@ function MemoryGame() {
     if (deck.every((c) => c.matched) && !done) setDone(true);
   }, [deck, done]);
 
+  useEffect(() => {
+    if (capsulesLeft <= 0 && !done) setDone(true);
+  }, [capsulesLeft, done]);
+
   const matchedPairs = useMemo(
     () => deck.filter((c) => c.matched).length / 2,
     [deck],
@@ -111,7 +115,8 @@ function MemoryGame() {
     const accuracyScore =
       capsulesLeft >= 3 ? 200 : capsulesLeft === 2 ? 130 : capsulesLeft === 1 ? 60 : 0;
 
-    const finalScore = timeScore + pairScore + accuracyScore;
+    const rawScore = timeScore + pairScore + accuracyScore;
+    const finalScore = Math.round(Math.max(0, Math.min(1500, rawScore)));
 
     saveGameScore("memory", finalScore);
     const t = setTimeout(() => nav({ to: "/play/balance" }), 1500);
@@ -119,7 +124,7 @@ function MemoryGame() {
   }, [done, matchedPairs, seconds, capsulesLeft, nav]);
 
   const flip = (id: number) => {
-    if (showStart) return;
+    if (showStart || done) return;
     if (flipped.length === 2) return;
     if (flipped.includes(id)) return;
     if (deck.find((c) => c.id === id)?.matched) return;
@@ -185,7 +190,7 @@ function MemoryGame() {
                 key={`c-${card.id}-${idx}`}
                 onClick={() => flip(card.id)}
                 className="aspect-square perspective-card group"
-                disabled={card.matched}
+                disabled={card.matched || done || showStart}
                 aria-label="card"
               >
                 <div className={`relative w-full h-full preserve-3d transition-transform duration-500 ${isUp ? "[transform:rotateY(180deg)]" : ""}`}>

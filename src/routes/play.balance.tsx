@@ -75,7 +75,8 @@ function BalanceGame() {
   // Save score on done
   useEffect(() => {
     if (done) {
-      const score = Math.round((hold / 15000) * 1500);
+      const rawScore = (hold / 15000) * 1500;
+      const score = Math.round(Math.max(0, Math.min(1500, rawScore)));
       saveGameScore("balance", score);
       const t = setTimeout(() => nav({ to: "/result" }), 1500);
       return () => clearTimeout(t);

@@ -76,6 +76,7 @@ export const logout = () => {
   if (typeof window === "undefined") return;
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem(SCORES_KEY);
+  window.dispatchEvent(new Event("revital-auth-changed"));
 };
 
 const SCORES_KEY = "revital.currentScores";
@@ -149,11 +150,15 @@ export const resetScores = () => {
 export const computeTotal = (s: GameScores) =>
   Math.round(((s.reflex ?? 0) + (s.memory ?? 0) + (s.balance ?? 0)) / 3);
 
+export const totalToPercentage = (total: number): number =>
+  Math.max(0, Math.min(100, (total / 1500) * 100));
+
 export const categorize = (total: number) => {
-  if (total >= 80) return { label: "Peak Performer", tier: "S" };
-  if (total >= 60) return { label: "High Energy", tier: "A" };
-  if (total >= 40) return { label: "Charged Up", tier: "B" };
-  if (total >= 20) return { label: "Warming Up", tier: "C" };
+  const pct = totalToPercentage(total);
+  if (pct >= 80) return { label: "Peak Performer", tier: "S" };
+  if (pct >= 60) return { label: "High Energy", tier: "A" };
+  if (pct >= 40) return { label: "Charged Up", tier: "B" };
+  if (pct >= 20) return { label: "Warming Up", tier: "C" };
   return { label: "Recharge Needed", tier: "D" };
 };
 
@@ -182,6 +187,9 @@ export const saveUser = (u: UserRecord) => {
 
   localStorage.setItem(USER_KEY, JSON.stringify(u));
   localStorage.setItem(ALL_USERS_KEY, JSON.stringify(all));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("revital-auth-changed"));
+  }
 };
 
 /** Persist user to MongoDB (server) AND update localStorage cache. */

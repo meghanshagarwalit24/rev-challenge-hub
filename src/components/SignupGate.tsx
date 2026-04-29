@@ -7,6 +7,7 @@ import {
   generateUserId,
   getCurrentScores,
   MOCK_OTP,
+  saveUser,
   saveUserRemote,
 } from "@/lib/storage";
 
@@ -55,7 +56,7 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
     const existing = findUserByContact(contactValue.trim());
     const normalizedReferrer = existing?.referredBy || referrer?.trim().toUpperCase();
     try {
-      await saveUserRemote({
+      const payload = {
         userId: existing?.userId ?? generateUserId(),
         contact: contactValue.trim(),
         name: displayName.trim() || existing?.name,
@@ -67,7 +68,10 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
         createdAt: existing?.createdAt ?? new Date().toISOString(),
         referredBy: normalizedReferrer,
         referCount: existing?.referCount ?? 0,
-      });
+      };
+      // Persist local auth state immediately so Header updates to the account icon right away.
+      saveUser(payload);
+      await saveUserRemote(payload);
       onSuccess();
     } catch {
       setErr("Failed to save your score. Please try again.");

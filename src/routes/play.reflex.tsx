@@ -45,7 +45,8 @@ function ReflexGame() {
 
   const finish = (allTimes: number[]) => {
     const bestTime = Math.min(...allTimes);
-    const score = 1500 * (1 - bestTime / 15000);
+    const rawScore = 1500 * (1 - bestTime / 15000);
+    const score = Math.round(Math.max(0, Math.min(1500, rawScore)));
     saveGameScore("reflex", score);
     setPhase("done");
     setTimeout(() => nav({ to: "/play/memory" }), 1500);

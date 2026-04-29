@@ -21,6 +21,7 @@ import {
   Flame,
   ScrollText,
   Settings,
+  Trophy,
   Download,
   RefreshCw,
   Search,
@@ -36,7 +37,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 // ── Types ──────────────────────────────────────────────────────────────────────
-type Tab = "overview" | "users" | "datewise" | "streaks" | "logs" | "settings";
+type Tab = "overview" | "users" | "datewise" | "winners" | "streaks" | "logs" | "settings";
 type GameFilter = "all" | "reflex" | "memory" | "balance";
 
 interface DateWiseEntry {
@@ -129,21 +130,26 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
       category: u.category,
     });
   }
-  return [...map.entries()]
-    .sort(([a], [b]) => b.localeCompare(a))
-    .map(([date, userList]) => {
-      const winners = [...userList]
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 10)
-        .map((u) => ({
-          userId: u.userId,
-          contact: u.contact,
-          name: u.name,
-          total: u.total,
-          scores: u.scores,
-        }));
-      return { date, users: userList, winners };
-    });
+  const sortedEntries = [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
+  const priorWinnerIds = new Set<string>();
+  const withWinners = sortedEntries.map(([date, userList]) => {
+    const winners = [...userList]
+      .filter((u) => !priorWinnerIds.has(u.userId))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10)
+      .map((u) => ({
+        userId: u.userId,
+        contact: u.contact,
+        name: u.name,
+        total: u.total,
+        scores: u.scores,
+      }));
+
+    winners.forEach((winner) => priorWinnerIds.add(winner.userId));
+    return { date, users: userList, winners };
+  });
+
+  return withWinners.sort((a, b) => b.date.localeCompare(a.date));
 }
 
 async function downloadDailyWinnersImage(
@@ -506,6 +512,14 @@ function Admin() {
     );
   }, [logs, logSearch]);
 
+  const winnersByDate = useMemo(
+    () =>
+      dateWise
+        .map((d) => ({ date: d.date, winners: d.winners }))
+        .filter((d) => d.winners.length > 0),
+    [dateWise],
+  );
+
   const handleExportCsv = () => {
     const rows: (string | number)[][] = [
       [
@@ -645,6 +659,7 @@ function Admin() {
     { id: "overview", label: "Overview", icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: "users", label: "Users", icon: <Users className="w-4 h-4" /> },
     { id: "datewise", label: "Date-wise", icon: <CalendarDays className="w-4 h-4" /> },
+    { id: "winners", label: "Winners", icon: <Trophy className="w-4 h-4" /> },
     { id: "streaks", label: "Streaks", icon: <Flame className="w-4 h-4" /> },
     { id: "logs", label: "Admin Logs", icon: <ScrollText className="w-4 h-4" /> },
     { id: "settings", label: "Settings", icon: <Settings className="w-4 h-4" /> },
@@ -1146,6 +1161,53 @@ function Admin() {
                         </div>
                       );
                     })}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── WINNERS ────────────────────────────────────────────────── */}
+              {tab === "winners" && (
+                <motion.div
+                  key="winners"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <SectionTitle>Daily Top 10 Winners (Date-wise)</SectionTitle>
+                  <p className="text-xs text-muted-foreground mt-1 mb-3">
+                    Only selected winners are shown here, grouped by date.
+                  </p>
+                  <div className="space-y-3">
+                    {winnersByDate.length === 0 && (
+                      <p className="text-muted-foreground text-sm py-8 text-center">
+                        No winners selected yet.
+                      </p>
+                    )}
+                    {winnersByDate.map((d) => (
+                      <div
+                        key={`winners-${d.date}`}
+                        className="bg-gradient-card border border-border rounded-2xl p-4 shadow-card"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-bold text-sm">{d.date}</h3>
+                          <span className="text-xs text-muted-foreground">
+                            {d.winners.length} winner{d.winners.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {d.winners.map((winner, idx) => (
+                            <div
+                              key={`${d.date}-${winner.userId}-${idx}`}
+                              className="text-xs rounded-xl px-3 py-2 border border-accent/30 bg-accent/10 flex justify-between"
+                            >
+                              <span className="font-semibold">
+                                #{idx + 1} {winner.name || winner.contact}
+                              </span>
+                              <span className="font-bold text-accent">{winner.total}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </motion.div>
               )}

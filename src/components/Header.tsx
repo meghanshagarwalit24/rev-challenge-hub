@@ -46,8 +46,8 @@ export function Header() {
           {user ? (
             <div className="relative" ref={ref}>
               <button
-                onClick={() => setOpen((o) => !o)}
-                aria-label="Account menu"
+                onClick={() => nav({ to: "/profile" })}
+                aria-label="Go to profile"
                 className="w-10 h-10 rounded-full bg-gradient-energy text-white font-bold shadow-button hover:scale-105 active:scale-95 transition-transform flex items-center justify-center"
               >
                 {initial}
@@ -56,8 +56,7 @@ export function Header() {
                 <div className="absolute right-0 mt-2 w-72 bg-white border border-border rounded-2xl shadow-xl overflow-hidden z-50">
                   <div className="px-4 py-3 border-b border-border">
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Signed in as</div>
-                    <div className="text-sm font-semibold truncate">{user.name || user.contact}</div>
-                    <div className="text-[11px] text-muted-foreground truncate">{user.contact}</div>
+                    <div className="text-sm font-semibold truncate">{user.contact}</div>
                     <div className="mt-2 flex items-center justify-between gap-2 bg-muted/40 rounded-lg px-2 py-1.5">
                       <div className="min-w-0">
                         <div className="text-[9px] uppercase tracking-wider text-muted-foreground">User ID</div>

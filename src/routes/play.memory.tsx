@@ -21,7 +21,7 @@ const CARD_TYPES = [
 const MAX_DURATION = 15; // seconds
 const TOTAL_PAIRS = CARD_TYPES.length;
 const STARTING_CAPSULES = 3;
-const PREVIEW_DURATION_MS = 2500;
+const PREVIEW_DURATION_MS = 800;
 
 interface Card {
   id: number;

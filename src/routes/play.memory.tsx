@@ -111,7 +111,8 @@ function MemoryGame() {
     const accuracyScore =
       capsulesLeft >= 3 ? 200 : capsulesLeft === 2 ? 130 : capsulesLeft === 1 ? 60 : 0;
 
-    const finalScore = timeScore + pairScore + accuracyScore;
+    const rawScore = timeScore + pairScore + accuracyScore;
+    const finalScore = Math.round(Math.max(0, Math.min(1500, rawScore)));
 
     saveGameScore("memory", finalScore);
     const t = setTimeout(() => nav({ to: "/play/balance" }), 1500);

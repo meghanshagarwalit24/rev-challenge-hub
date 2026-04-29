@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { SignupGate } from "@/components/SignupGate";
-import { categorize, computeTotal, getCurrentScores, getUser, isLoggedIn, resetScores, saveUserRemote, type GameScores } from "@/lib/storage";
+import { categorize, computeTotal, getCurrentScores, getUser, isLoggedIn, resetScores, saveUserRemote, totalToPercentage, type GameScores } from "@/lib/storage";
 import { buildShareCard } from "@/lib/shareCard";
 
 export const Route = createFileRoute("/result")({
@@ -14,6 +14,7 @@ function Result() {
   const nav = useNavigate();
   const [scores, setScores] = useState<GameScores>({ reflex: null, memory: null, balance: null });
   const [animatedTotal, setAnimatedTotal] = useState(0);
+  const [animatedPct, setAnimatedPct] = useState(0);
   const [unlocked, setUnlocked] = useState(false);
 
   useEffect(() => {
@@ -30,18 +31,21 @@ function Result() {
     if (!unlocked) return;
     const total = computeTotal(scores);
     let cur = 0;
+    setAnimatedTotal(0);
+    setAnimatedPct(0);
     const step = Math.max(1, Math.round(total / 60));
     const t = setInterval(() => {
       cur += step;
       if (cur >= total) { cur = total; clearInterval(t); }
       setAnimatedTotal(cur);
+      setAnimatedPct(totalToPercentage(cur));
     }, 25);
     return () => clearInterval(t);
   }, [unlocked, scores]);
 
   const total = computeTotal(scores);
   const cat = categorize(total);
-  const pct = Math.min(100, total);
+  const pct = totalToPercentage(total);
 
   const shareText = `I scored ${total} — ${cat.label} on the Revital Energy Challenge ⚡ Tag @revitalofficial on Instagram & boost your chance to win! ${typeof window !== "undefined" ? window.location.origin : ""}`;
 
@@ -134,7 +138,8 @@ function Result() {
             </defs>
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="text-6xl md:text-7xl font-black text-gradient-energy tabular-nums">{animatedTotal}</div>
+            <div className="text-6xl md:text-7xl font-black text-gradient-energy tabular-nums">{animatedPct.toFixed(2)}%</div>
+            <div className="mt-2 text-sm text-muted-foreground">Final Score: {animatedTotal} / 1500</div>
           </div>
           <div className="absolute -inset-6 rounded-full bg-gradient-glow opacity-50 blur-2xl pointer-events-none" />
         </motion.div>

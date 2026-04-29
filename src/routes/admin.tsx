@@ -261,7 +261,6 @@ function pickBestAttempt(user: UserRecord, from?: string, to?: string) {
   });
   const source = inRange.length > 0 ? inRange : attempts;
   if (source.length === 0) {
-    if (!isComplete(user.scores)) return { best: null, countInRange: 0 };
     const fallbackDate = getSafeIsoDay(user.createdAt);
     if ((from && fallbackDate < from) || (to && fallbackDate > to)) {
       return { best: null, countInRange: 0 };
@@ -274,7 +273,7 @@ function pickBestAttempt(user: UserRecord, from?: string, to?: string) {
         total: user.total,
         category: user.category,
       },
-      countInRange: 1,
+      countInRange: isComplete(user.scores) ? 1 : 0,
     };
   }
   const best = source.reduce((top, cur) => (cur.total > top.total ? cur : top));

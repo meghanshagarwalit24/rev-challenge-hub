@@ -97,7 +97,7 @@ function MemoryGame() {
       }, 350);
     } else {
       setCapsulesLeft((n) => Math.max(0, n - 1));
-      setTimeout(() => setFlipped([]), 750);
+      setTimeout(() => setFlipped([]), 2000);
     }
   }, [flipped, deck]);
 

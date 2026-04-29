@@ -1,4 +1,4 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
 import appCss from "../styles.css?url";
 import { CookieConsent } from "@/components/CookieConsent";
@@ -92,6 +92,9 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
+
   useEffect(() => {
     // Persist referral code from URL so it can be auto-filled later in the signup popup
     // even after route changes during gameplay.
@@ -150,7 +153,7 @@ function RootComponent() {
       <div className="flex-1 pb-20 md:pb-0">
         <Outlet />
       </div>
-      <Footer />
+      {!isAdminRoute && <Footer />}
       <CookieConsent />
     </div>
   );

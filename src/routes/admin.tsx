@@ -42,7 +42,16 @@ export const Route = createFileRoute("/admin")({
 // ── Types ──────────────────────────────────────────────────────────────────────
 type Tab = "overview" | "users" | "datewise" | "winners" | "streaks" | "logs" | "settings";
 type GameFilter = "all" | "reflex" | "memory" | "balance";
-type UserSortKey = "userId" | "contact" | "email" | "name" | "reflex" | "memory" | "balance" | "total" | "category" | "referCount" | "referredBy" | "timestamp";
+type UserSortKey =
+  | "userId"
+  | "contact"
+  | "email"
+  | "name"
+  | "referCount"
+  | "referredBy"
+  | "joinedOn"
+  | "completeDays"
+  | "all3Completed";
 type SortDir = "asc" | "desc";
 
 interface DateWiseEntry {
@@ -75,6 +84,7 @@ interface AdminUserRow extends UserRecord {
   joinedDays: number | null;
   currentStreak: number;
   completedAll3Plays: number;
+  completedAll3Days: number;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -104,6 +114,23 @@ function getJoinedDays(value?: string) {
   const now = new Date();
   const msPerDay = 24 * 60 * 60 * 1000;
   return Math.max(0, Math.floor((now.getTime() - joinedDate.getTime()) / msPerDay));
+}
+
+function getCompletedAll3Days(user: UserRecord) {
+  const completedAttempts = dedupeAttempts(user.playAttempts ?? []).filter((attempt) =>
+    isComplete(attempt.scores),
+  );
+  const completedDays = new Set(
+    completedAttempts
+      .map((attempt) => getSafeIsoDay(attempt.playedAt || attempt.date))
+      .filter((day) => day !== FALLBACK_DATE),
+  );
+
+  if (completedDays.size === 0 && isComplete(user.scores)) {
+    completedDays.add(getSafeIsoDay(user.createdAt));
+  }
+
+  return completedDays.size;
 }
 
 function groupByDate(users: UserRecord[]): DateWiseEntry[] {
@@ -331,7 +358,10 @@ function Admin() {
   const [logSearch, setLogSearch] = useState("");
   const [dateWiseSearch, setDateWiseSearch] = useState("");
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
-  const [userSort, setUserSort] = useState<{ key: UserSortKey; dir: SortDir }>({ key: "timestamp", dir: "desc" });
+  const [userSort, setUserSort] = useState<{ key: UserSortKey; dir: SortDir }>({
+    key: "joinedOn",
+    dir: "desc",
+  });
 
   const addLog = useCallback(async (action: string, details: string) => {
     try {
@@ -406,6 +436,7 @@ function Admin() {
                 .length,
               isComplete(u.scores) ? 1 : 0,
             ),
+            completedAll3Days: getCompletedAll3Days(u),
           } as AdminUserRow;
         })
         .filter((u): u is AdminUserRow => !!u)
@@ -428,22 +459,27 @@ function Admin() {
     [users, filterCat, filterGame, from, to, search],
   );
 
-
   const sortedFiltered = useMemo(() => {
     const valueFor = (u: AdminUserRow, key: UserSortKey): string | number => {
       switch (key) {
-        case "userId": return u.userId;
-        case "contact": return u.contact;
-        case "email": return u.email || "";
-        case "name": return u.name || "";
-        case "reflex": return u.selectedScores.reflex ?? -1;
-        case "memory": return u.selectedScores.memory ?? -1;
-        case "balance": return u.selectedScores.balance ?? -1;
-        case "total": return u.selectedTotal;
-        case "category": return u.selectedCategory;
-        case "referCount": return u.referCount ?? 0;
-        case "referredBy": return u.referredBy || "";
-        case "timestamp": return getSafeDate(u.selectedPlayedAt)?.getTime() ?? 0;
+        case "userId":
+          return u.userId;
+        case "contact":
+          return u.contact;
+        case "email":
+          return u.email || "";
+        case "name":
+          return u.name || "";
+        case "referCount":
+          return u.referCount ?? 0;
+        case "referredBy":
+          return u.referredBy || "";
+        case "joinedOn":
+          return getSafeDate(u.joinedAtIso)?.getTime() ?? 0;
+        case "completeDays":
+          return u.completedAll3Days;
+        case "all3Completed":
+          return u.completedAll3Plays;
       }
     };
 
@@ -452,13 +488,19 @@ function Admin() {
       const bv = valueFor(b, userSort.key);
       let cmp = 0;
       if (typeof av === "number" && typeof bv === "number") cmp = av - bv;
-      else cmp = String(av).localeCompare(String(bv), undefined, { sensitivity: "base", numeric: true });
+      else
+        cmp = String(av).localeCompare(String(bv), undefined, {
+          sensitivity: "base",
+          numeric: true,
+        });
       return userSort.dir === "asc" ? cmp : -cmp;
     });
   }, [filtered, userSort]);
 
   const toggleUserSort = (key: UserSortKey) => {
-    setUserSort((prev) => prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
+    setUserSort((prev) =>
+      prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" },
+    );
   };
 
   // ── Stats ────────────────────────────────────────────────────────────────────
@@ -1018,34 +1060,67 @@ function Admin() {
                     <table className="w-full text-sm min-w-[900px]">
                       <thead>
                         <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10">
-                          <SortableTh label="User ID" sortKey="userId" sort={userSort} onSort={toggleUserSort} />
-                          <SortableTh label="Contact" sortKey="contact" sort={userSort} onSort={toggleUserSort} />
-                          <SortableTh label="Email" sortKey="email" sort={userSort} onSort={toggleUserSort} />
-                          <SortableTh label="Name" sortKey="name" sort={userSort} onSort={toggleUserSort} />
-                          <SortableTh label="Reflex" sortKey="reflex" sort={userSort} onSort={toggleUserSort} />
-                          <SortableTh label="Memory" sortKey="memory" sort={userSort} onSort={toggleUserSort} />
-                          <SortableTh label="Balance" sortKey="balance" sort={userSort} onSort={toggleUserSort} />
-                          <SortableTh label="Total" sortKey="total" sort={userSort} onSort={toggleUserSort} />
-                          <SortableTh label="Category" sortKey="category" sort={userSort} onSort={toggleUserSort} />
-                          <SortableTh label="Refer Count" sortKey="referCount" sort={userSort} onSort={toggleUserSort} />
-                          <SortableTh label="Referred By (User ID)" sortKey="referredBy" sort={userSort} onSort={toggleUserSort} />
-                          <SortableTh label="Timestamp" sortKey="timestamp" sort={userSort} onSort={toggleUserSort} />
-                          <Th>User ID</Th>
-                          <Th>Contact</Th>
-                          <Th>Email</Th>
-                          <Th>Name</Th>
-                          <Th>Refer Count</Th>
-                          <Th>Joined On</Th>
-                          <Th>Joined Days</Th>
-                          <Th>Streak (Days)</Th>
-                          <Th>All 3 Completed</Th>
+                          <SortableTh
+                            label="User ID"
+                            sortKey="userId"
+                            sort={userSort}
+                            onSort={toggleUserSort}
+                          />
+                          <SortableTh
+                            label="Phone Number"
+                            sortKey="contact"
+                            sort={userSort}
+                            onSort={toggleUserSort}
+                          />
+                          <SortableTh
+                            label="Email"
+                            sortKey="email"
+                            sort={userSort}
+                            onSort={toggleUserSort}
+                          />
+                          <SortableTh
+                            label="Name"
+                            sortKey="name"
+                            sort={userSort}
+                            onSort={toggleUserSort}
+                          />
+                          <SortableTh
+                            label="Refer Count"
+                            sortKey="referCount"
+                            sort={userSort}
+                            onSort={toggleUserSort}
+                          />
+                          <SortableTh
+                            label="Referred By (User ID)"
+                            sortKey="referredBy"
+                            sort={userSort}
+                            onSort={toggleUserSort}
+                          />
+                          <SortableTh
+                            label="Joining Date"
+                            sortKey="joinedOn"
+                            sort={userSort}
+                            onSort={toggleUserSort}
+                          />
+                          <SortableTh
+                            label="Number of Days (All 3 Games)"
+                            sortKey="completeDays"
+                            sort={userSort}
+                            onSort={toggleUserSort}
+                          />
+                          <SortableTh
+                            label="Number of Times Completed All 3"
+                            sortKey="all3Completed"
+                            sort={userSort}
+                            onSort={toggleUserSort}
+                          />
                         </tr>
                       </thead>
                       <tbody>
                         {filtered.length === 0 && (
                           <tr>
                             <td
-                              colSpan={10}
+                              colSpan={9}
                               className="py-10 text-center text-muted-foreground text-sm"
                             >
                               No users match filters.
@@ -1065,11 +1140,11 @@ function Admin() {
                             <Td className="font-mono text-[11px]">{u.email || "—"}</Td>
                             <Td>{u.name || "—"}</Td>
                             <Td className="font-bold text-center">{u.referCount ?? 0}</Td>
+                            <Td className="font-mono text-[11px]">{u.referredBy || "—"}</Td>
                             <Td className="text-muted-foreground text-[11px]">
                               {u.joinedAtIso ? new Date(u.joinedAtIso).toLocaleDateString() : "—"}
                             </Td>
-                            <Td className="font-medium">{u.joinedDays ?? "—"}</Td>
-                            <Td className="font-medium">{u.currentStreak}</Td>
+                            <Td className="font-medium text-center">{u.completedAll3Days}</Td>
                             <Td className="font-bold text-center">{u.completedAll3Plays}</Td>
                           </tr>
                         ))}
@@ -1159,44 +1234,46 @@ function Admin() {
                                 </div>
                               </div>
                               <div className="overflow-x-auto">
-                              <table className="w-full text-sm min-w-[600px]">
-                                <thead>
-                                  <tr className="text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/10 text-left">
-                                    <Th>User ID</Th>
-                                    <Th>Contact</Th>
-                                    <Th>Email</Th>
-                                    <Th>Name</Th>
-                                    <Th>Reflex</Th>
-                                    <Th>Memory</Th>
-                                    <Th>Balance</Th>
-                                    <Th>Total</Th>
-                                    <Th>Category</Th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {d.users.map((u, i) => (
-                                    <tr
-                                      key={i}
-                                      className={`border-b border-border/40 hover:bg-muted/10 transition-colors ${
-                                        winnerIds.has(u.userId) ? "bg-accent/10" : ""
-                                      }`}
-                                    >
-                                      <Td className="font-mono text-[11px]">{u.userId}</Td>
-                                      <Td className="font-mono text-[11px]">{u.contact}</Td>
-                                      <Td className="font-mono text-[11px]">{u.email || "—"}</Td>
-                                      <Td>{u.name || "—"}</Td>
-                                      <Td>{u.scores.reflex ?? "—"}</Td>
-                                      <Td>{u.scores.memory ?? "—"}</Td>
-                                      <Td>{u.scores.balance ?? "—"}</Td>
-                                      <Td className="font-bold text-gradient-energy">{u.total}</Td>
-                                      <Td>
-                                        <CategoryBadge cat={u.category} />
-                                      </Td>
+                                <table className="w-full text-sm min-w-[600px]">
+                                  <thead>
+                                    <tr className="text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/10 text-left">
+                                      <Th>User ID</Th>
+                                      <Th>Contact</Th>
+                                      <Th>Email</Th>
+                                      <Th>Name</Th>
+                                      <Th>Reflex</Th>
+                                      <Th>Memory</Th>
+                                      <Th>Balance</Th>
+                                      <Th>Total</Th>
+                                      <Th>Category</Th>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
+                                  </thead>
+                                  <tbody>
+                                    {d.users.map((u, i) => (
+                                      <tr
+                                        key={i}
+                                        className={`border-b border-border/40 hover:bg-muted/10 transition-colors ${
+                                          winnerIds.has(u.userId) ? "bg-accent/10" : ""
+                                        }`}
+                                      >
+                                        <Td className="font-mono text-[11px]">{u.userId}</Td>
+                                        <Td className="font-mono text-[11px]">{u.contact}</Td>
+                                        <Td className="font-mono text-[11px]">{u.email || "—"}</Td>
+                                        <Td>{u.name || "—"}</Td>
+                                        <Td>{u.scores.reflex ?? "—"}</Td>
+                                        <Td>{u.scores.memory ?? "—"}</Td>
+                                        <Td>{u.scores.balance ?? "—"}</Td>
+                                        <Td className="font-bold text-gradient-energy">
+                                          {u.total}
+                                        </Td>
+                                        <Td>
+                                          <CategoryBadge cat={u.category} />
+                                        </Td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -1501,13 +1578,35 @@ function Td({ children, className = "" }: { children?: React.ReactNode; classNam
   return <td className={`py-2 px-3 ${className}`}>{children}</td>;
 }
 
-function SortableTh({ label, sortKey, sort, onSort }: { label: string; sortKey: UserSortKey; sort: { key: UserSortKey; dir: SortDir }; onSort: (key: UserSortKey) => void; }) {
+function SortableTh({
+  label,
+  sortKey,
+  sort,
+  onSort,
+}: {
+  label: string;
+  sortKey: UserSortKey;
+  sort: { key: UserSortKey; dir: SortDir };
+  onSort: (key: UserSortKey) => void;
+}) {
   const active = sort.key === sortKey;
   return (
     <Th>
-      <button type="button" onClick={() => onSort(sortKey)} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+      >
         <span>{label}</span>
-        {active ? (sort.dir === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-60" />}
+        {active ? (
+          sort.dir === "asc" ? (
+            <ArrowUp className="w-3 h-3" />
+          ) : (
+            <ArrowDown className="w-3 h-3" />
+          )
+        ) : (
+          <ArrowUpDown className="w-3 h-3 opacity-60" />
+        )}
       </button>
     </Th>
   );

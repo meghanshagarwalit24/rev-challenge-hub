@@ -103,7 +103,7 @@ function Landing() {
           >
             {[
               { n: "3", label: "Quick games" },
-              { n: "20s", label: "Per challenge" },
+              { n: "15s", label: "Per challenge" },
               { n: "Daily", label: "Leaderboard" },
             ].map((s) => (
               <div
@@ -150,7 +150,7 @@ function Landing() {
                 step: "02",
                 emoji: "🎯",
                 title: "Play 3 Quick Games",
-                desc: "Complete the Reflex, Balance, and Memory challenges. Each game takes about 20 seconds. Score as high as you can!",
+                desc: "Complete the Reflex, Balance, and Memory challenges. Each game takes about 15 seconds. Score as high as you can!",
               },
               {
                 step: "03",

@@ -109,7 +109,7 @@ function ReflexGame() {
           emoji="⚡"
           title="Reflex Tap"
           lines={[
-            "Tap the screen as soon as the signal appears.",
+            "Tap the screen as soon as the logo appears.",
             "The faster you react, the higher your score.",
             "Don’t tap too early!",
           ]}

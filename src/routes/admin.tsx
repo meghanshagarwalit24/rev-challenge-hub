@@ -41,7 +41,6 @@ export const Route = createFileRoute("/admin")({
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type Tab = "overview" | "users" | "datewise" | "winners" | "streaks" | "logs" | "settings";
-type GameFilter = "all" | "reflex" | "memory" | "balance";
 type UserSortKey =
   | "userId"
   | "contact"
@@ -261,7 +260,6 @@ function pickBestAttempt(user: UserRecord, from?: string, to?: string) {
   });
   const source = inRange.length > 0 ? inRange : attempts;
   if (source.length === 0) {
-    if (!isComplete(user.scores)) return { best: null, countInRange: 0 };
     const fallbackDate = getSafeIsoDay(user.createdAt);
     if ((from && fallbackDate < from) || (to && fallbackDate > to)) {
       return { best: null, countInRange: 0 };
@@ -274,7 +272,7 @@ function pickBestAttempt(user: UserRecord, from?: string, to?: string) {
         total: user.total,
         category: user.category,
       },
-      countInRange: 1,
+      countInRange: isComplete(user.scores) ? 1 : 0,
     };
   }
   const best = source.reduce((top, cur) => (cur.total > top.total ? cur : top));
@@ -322,6 +320,55 @@ function exportExcel(rows: (string | number)[][], filename: string) {
   URL.revokeObjectURL(url);
 }
 
+function exportPdf(rows: (string | number)[][], filename: string) {
+  const [header, ...body] = rows;
+  const escaped = (value: string | number) =>
+    String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+  const html = `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>${escaped(filename)}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; color: #111; }
+          h1 { margin: 0 0 12px 0; font-size: 18px; }
+          p { margin: 0 0 12px 0; font-size: 12px; color: #444; }
+          table { border-collapse: collapse; width: 100%; font-size: 11px; }
+          th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+          th { background: #f5f5f5; }
+        </style>
+      </head>
+      <body>
+        <h1>Revital Users Export</h1>
+        <p>Generated at: ${escaped(new Date().toLocaleString())}</p>
+        <table>
+          <thead>
+            <tr>${header.map((cell) => `<th>${escaped(cell)}</th>`).join("")}</tr>
+          </thead>
+          <tbody>
+            ${body
+              .map((row) => `<tr>${row.map((cell) => `<td>${escaped(cell)}</td>`).join("")}</tr>`)
+              .join("")}
+          </tbody>
+        </table>
+      </body>
+    </html>
+  `;
+
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) return;
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
+
 // ── Main Admin Component ───────────────────────────────────────────────────────
 function Admin() {
   const matchRoute = useMatchRoute();
@@ -351,7 +398,6 @@ function Admin() {
 
   // Filters
   const [filterCat, setFilterCat] = useState("all");
-  const [filterGame, setFilterGame] = useState<GameFilter>("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [search, setSearch] = useState("");
@@ -442,7 +488,6 @@ function Admin() {
         .filter((u): u is AdminUserRow => !!u)
         .filter((u) => {
           if (filterCat !== "all" && u.selectedCategory !== filterCat) return false;
-          if (filterGame !== "all" && u.selectedScores[filterGame] === null) return false;
           const selectedDate = getSafeDate(u.selectedPlayedAt);
           if (from && selectedDate && selectedDate < new Date(from)) return false;
           if (to && selectedDate && selectedDate > new Date(to + "T23:59:59")) return false;
@@ -456,7 +501,7 @@ function Admin() {
             return false;
           return true;
         }),
-    [users, filterCat, filterGame, from, to, search],
+    [users, filterCat, from, to, search],
   );
 
   const sortedFiltered = useMemo(() => {
@@ -677,6 +722,35 @@ function Admin() {
     ];
     exportExcel(rows, `revital-users-${Date.now()}.xls`);
     addLog("EXPORT_EXCEL", `Exported ${filtered.length} users as Excel`);
+  };
+
+  const handleExportPdf = () => {
+    const rows: (string | number)[][] = [
+      [
+        "User ID",
+        "Contact",
+        "Email",
+        "Name",
+        "Refer Count",
+        "Joined On",
+        "Joined Days",
+        "Streak (Days)",
+        "All 3 Games Completed",
+      ],
+      ...filtered.map((u) => [
+        u.userId,
+        u.contact,
+        u.email || "",
+        u.name || "",
+        u.referCount ?? 0,
+        u.joinedAtIso,
+        u.joinedDays ?? "",
+        u.currentStreak,
+        u.completedAll3Plays,
+      ]),
+    ];
+    exportPdf(rows, `revital-users-${Date.now()}.pdf`);
+    addLog("EXPORT_PDF", `Exported ${filtered.length} users as PDF`);
   };
 
   const saveSettings = async (e: React.FormEvent) => {
@@ -1003,6 +1077,12 @@ function Admin() {
                       >
                         <Download className="w-3.5 h-3.5" /> Excel
                       </button>
+                      <button
+                        onClick={handleExportPdf}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-border hover:bg-muted/30 font-bold transition-colors text-xs"
+                      >
+                        <Download className="w-3.5 h-3.5" /> PDF
+                      </button>
                     </div>
                   </div>
 
@@ -1026,16 +1106,6 @@ function Admin() {
                         <option key={c}>{c}</option>
                       ))}
                     </select>
-                    <select
-                      value={filterGame}
-                      onChange={(e) => setFilterGame(e.target.value as GameFilter)}
-                      className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
-                    >
-                      <option value="all">All games</option>
-                      <option value="reflex">Reflex played</option>
-                      <option value="memory">Memory played</option>
-                      <option value="balance">Balance played</option>
-                    </select>
                     <input
                       type="date"
                       value={from}
@@ -1049,12 +1119,11 @@ function Admin() {
                       onChange={(e) => setTo(e.target.value)}
                       className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
                     />
-                    {(search || filterCat !== "all" || filterGame !== "all" || from || to) && (
+                    {(search || filterCat !== "all" || from || to) && (
                       <button
                         onClick={() => {
                           setSearch("");
                           setFilterCat("all");
-                          setFilterGame("all");
                           setFrom("");
                           setTo("");
                         }}

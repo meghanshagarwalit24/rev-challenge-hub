@@ -28,6 +28,9 @@ import {
   ChevronDown,
   Shield,
   LogOut,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { getAllUsersRemote, calcStreak, dedupeAttempts, type UserRecord } from "@/lib/storage";
 import type { AdminLog, PlatformSettings } from "@/server/adminFns";
@@ -39,6 +42,8 @@ export const Route = createFileRoute("/admin")({
 // ── Types ──────────────────────────────────────────────────────────────────────
 type Tab = "overview" | "users" | "datewise" | "winners" | "streaks" | "logs" | "settings";
 type GameFilter = "all" | "reflex" | "memory" | "balance";
+type UserSortKey = "userId" | "contact" | "email" | "name" | "reflex" | "memory" | "balance" | "total" | "category" | "referCount" | "referredBy" | "timestamp";
+type SortDir = "asc" | "desc";
 
 interface DateWiseEntry {
   date: string;
@@ -314,6 +319,7 @@ function Admin() {
   const [logSearch, setLogSearch] = useState("");
   const [dateWiseSearch, setDateWiseSearch] = useState("");
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  const [userSort, setUserSort] = useState<{ key: UserSortKey; dir: SortDir }>({ key: "timestamp", dir: "desc" });
 
   const addLog = useCallback(async (action: string, details: string) => {
     try {
@@ -401,6 +407,39 @@ function Admin() {
         }),
     [users, filterCat, filterGame, from, to, search],
   );
+
+
+  const sortedFiltered = useMemo(() => {
+    const valueFor = (u: AdminUserRow, key: UserSortKey): string | number => {
+      switch (key) {
+        case "userId": return u.userId;
+        case "contact": return u.contact;
+        case "email": return u.email || "";
+        case "name": return u.name || "";
+        case "reflex": return u.selectedScores.reflex ?? -1;
+        case "memory": return u.selectedScores.memory ?? -1;
+        case "balance": return u.selectedScores.balance ?? -1;
+        case "total": return u.selectedTotal;
+        case "category": return u.selectedCategory;
+        case "referCount": return u.referCount ?? 0;
+        case "referredBy": return u.referredBy || "";
+        case "timestamp": return getSafeDate(u.selectedPlayedAt)?.getTime() ?? 0;
+      }
+    };
+
+    return [...filtered].sort((a, b) => {
+      const av = valueFor(a, userSort.key);
+      const bv = valueFor(b, userSort.key);
+      let cmp = 0;
+      if (typeof av === "number" && typeof bv === "number") cmp = av - bv;
+      else cmp = String(av).localeCompare(String(bv), undefined, { sensitivity: "base", numeric: true });
+      return userSort.dir === "asc" ? cmp : -cmp;
+    });
+  }, [filtered, userSort]);
+
+  const toggleUserSort = (key: UserSortKey) => {
+    setUserSort((prev) => prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
+  };
 
   // ── Stats ────────────────────────────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -971,18 +1010,18 @@ function Admin() {
                     <table className="w-full text-sm min-w-[900px]">
                       <thead>
                         <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10">
-                          <Th>User ID</Th>
-                          <Th>Contact</Th>
-                          <Th>Email</Th>
-                          <Th>Name</Th>
-                          <Th>Reflex</Th>
-                          <Th>Memory</Th>
-                          <Th>Balance</Th>
-                          <Th>Total</Th>
-                          <Th>Category</Th>
-                          <Th>Refer Count</Th>
-                          <Th>Referred By (User ID)</Th>
-                          <Th>Timestamp</Th>
+                          <SortableTh label="User ID" sortKey="userId" sort={userSort} onSort={toggleUserSort} />
+                          <SortableTh label="Contact" sortKey="contact" sort={userSort} onSort={toggleUserSort} />
+                          <SortableTh label="Email" sortKey="email" sort={userSort} onSort={toggleUserSort} />
+                          <SortableTh label="Name" sortKey="name" sort={userSort} onSort={toggleUserSort} />
+                          <SortableTh label="Reflex" sortKey="reflex" sort={userSort} onSort={toggleUserSort} />
+                          <SortableTh label="Memory" sortKey="memory" sort={userSort} onSort={toggleUserSort} />
+                          <SortableTh label="Balance" sortKey="balance" sort={userSort} onSort={toggleUserSort} />
+                          <SortableTh label="Total" sortKey="total" sort={userSort} onSort={toggleUserSort} />
+                          <SortableTh label="Category" sortKey="category" sort={userSort} onSort={toggleUserSort} />
+                          <SortableTh label="Refer Count" sortKey="referCount" sort={userSort} onSort={toggleUserSort} />
+                          <SortableTh label="Referred By (User ID)" sortKey="referredBy" sort={userSort} onSort={toggleUserSort} />
+                          <SortableTh label="Timestamp" sortKey="timestamp" sort={userSort} onSort={toggleUserSort} />
                         </tr>
                       </thead>
                       <tbody>
@@ -996,7 +1035,7 @@ function Admin() {
                             </td>
                           </tr>
                         )}
-                        {filtered.map((u, i) => (
+                        {sortedFiltered.map((u, i) => (
                           <tr
                             key={i}
                             onClick={() =>
@@ -1450,6 +1489,18 @@ function Th({ children, className = "" }: { children?: React.ReactNode; classNam
 
 function Td({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
   return <td className={`py-2 px-3 ${className}`}>{children}</td>;
+}
+
+function SortableTh({ label, sortKey, sort, onSort }: { label: string; sortKey: UserSortKey; sort: { key: UserSortKey; dir: SortDir }; onSort: (key: UserSortKey) => void; }) {
+  const active = sort.key === sortKey;
+  return (
+    <Th>
+      <button type="button" onClick={() => onSort(sortKey)} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+        <span>{label}</span>
+        {active ? (sort.dir === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-60" />}
+      </button>
+    </Th>
+  );
 }
 
 const catColors: Record<string, string> = {

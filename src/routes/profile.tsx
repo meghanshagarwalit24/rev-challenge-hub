@@ -9,6 +9,7 @@ import {
   getUser,
   saveUserRemote,
   totalToPercentage,
+  resetScores,
   type UserRecord,
 } from "@/lib/storage";
 
@@ -290,12 +291,16 @@ function Profile() {
         </motion.div>
 
         <div className="mt-6 flex gap-2">
-          <Link
-            to="/challenges"
+          <button
+            type="button"
+            onClick={() => {
+              resetScores();
+              nav({ to: "/challenges" });
+            }}
             className="flex-1 text-center py-3 rounded-full bg-card border border-border font-semibold hover:bg-muted/50 transition-colors"
           >
             Play Again
-          </Link>
+          </button>
           <Link
             to="/"
             className="flex-1 text-center py-3 rounded-full bg-card border border-border font-semibold hover:bg-muted/50 transition-colors"

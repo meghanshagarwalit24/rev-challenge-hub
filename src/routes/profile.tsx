@@ -166,9 +166,9 @@ function Profile() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col overflow-x-hidden">
       <Header />
-      <main className="flex-1 max-w-xl mx-auto px-4 py-8">
+      <main className="flex-1 w-full max-w-xl mx-auto px-4 py-8">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <div className="bg-gradient-card border border-border rounded-3xl p-6 shadow-card text-center">
             <div className="text-5xl">🏆</div>

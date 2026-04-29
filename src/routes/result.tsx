@@ -139,7 +139,6 @@ function Result() {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <div className="text-6xl md:text-7xl font-black text-gradient-energy tabular-nums">{animatedPct.toFixed(2)}%</div>
-            <div className="mt-2 text-sm text-muted-foreground">Final Score: {animatedTotal} / 1500</div>
           </div>
           <div className="absolute -inset-6 rounded-full bg-gradient-glow opacity-50 blur-2xl pointer-events-none" />
         </motion.div>

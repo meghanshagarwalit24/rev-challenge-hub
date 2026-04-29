@@ -71,15 +71,16 @@ export async function buildShareCard(data: ShareCardData): Promise<Blob> {
   grad.addColorStop(0.5, "#ff8a2a");
   grad.addColorStop(1, "#e8421f");
   ctx.strokeStyle = grad;
-  const pct = Math.min(1, data.total / 100);
+  const pct = Math.max(0, Math.min(1, data.total / 1500));
   ctx.beginPath();
   ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct);
   ctx.stroke();
 
-  // Score number
+  // Percentage number
+  const percentage = Math.max(0, Math.min(100, (data.total / 1500) * 100));
   ctx.fillStyle = "#fff";
-  ctx.font = "900 200px system-ui, -apple-system, sans-serif";
-  ctx.fillText(String(data.total), cx, cy + 50);
+  ctx.font = "900 132px system-ui, -apple-system, sans-serif";
+  ctx.fillText(`${percentage.toFixed(2)}%`, cx, cy + 35);
 
   // Category pill
   ctx.font = "800 48px system-ui, -apple-system, sans-serif";

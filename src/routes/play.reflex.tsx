@@ -109,7 +109,7 @@ function ReflexGame() {
           emoji="⚡"
           title="Reflex Tap"
           lines={[
-            "Tap the screen as soon as the signal appears.",
+            "Tap the screen as soon as the logo appears.",
             "The faster you react, the higher your score.",
             "Don’t tap too early!",
           ]}
@@ -126,9 +126,8 @@ function ReflexGame() {
         <button
           onClick={handleTap}
           disabled={showStart || phase === "done"}
-          className="mt-6 flex-1 min-h-[60vh] w-full rounded-3xl border border-white/25 overflow-hidden relative active:scale-[0.99] transition-transform select-none"
+          className="mt-6 flex-1 min-h-[60vh] w-full rounded-3xl border border-white/25 overflow-hidden relative active:scale-[0.99] transition-transform select-none bg-gradient-energy"
           aria-label="Reflex tap area"
-          style={{ backgroundColor: "#722A29" }}
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),transparent_55%)]" />
           <AnimatePresence mode="sync">

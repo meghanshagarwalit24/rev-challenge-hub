@@ -9,6 +9,7 @@ import {
   getUser,
   saveUserRemote,
   totalToPercentage,
+  resetScores,
   type UserRecord,
 } from "@/lib/storage";
 
@@ -26,6 +27,7 @@ function Profile() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
+  const [copiedUserId, setCopiedUserId] = useState(false);
   const [referrerName, setReferrerName] = useState("");
   const [referralUsers, setReferralUsers] = useState<UserRecord[]>([]);
 
@@ -116,10 +118,10 @@ function Profile() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const copyReferralUrl = async () => {
+  const copyToClipboard = async (value: string): Promise<boolean> => {
     const fallbackCopy = () => {
       const helper = document.createElement("textarea");
-      helper.value = referralUrl;
+      helper.value = value;
       helper.setAttribute("readonly", "true");
       helper.style.position = "fixed";
       helper.style.opacity = "0";
@@ -132,18 +134,34 @@ function Profile() {
       return copiedWithFallback;
     };
 
+    if (window.isSecureContext && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+    return fallbackCopy();
+  };
+
+  const copyReferralUrl = async () => {
     try {
-      if (window.isSecureContext && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(referralUrl);
-      } else if (!fallbackCopy()) {
-        throw new Error("Copy failed");
-      }
+      const success = await copyToClipboard(referralUrl);
+      if (!success) throw new Error("Copy failed");
       setCopied(true);
       setCopyError(false);
       setTimeout(() => setCopied(false), 1500);
     } catch {
       setCopied(false);
       setCopyError(true);
+    }
+  };
+
+  const copyUserId = async () => {
+    try {
+      const success = await copyToClipboard(user.userId);
+      if (!success) throw new Error("Copy failed");
+      setCopiedUserId(true);
+      setTimeout(() => setCopiedUserId(false), 1500);
+    } catch {
+      setCopiedUserId(false);
     }
   };
 
@@ -160,7 +178,19 @@ function Profile() {
             </p>
 
             <div className="mt-5 bg-background/40 rounded-2xl p-4 text-left space-y-2">
-              <Row label="User ID" value={user.userId} mono />
+              <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <span className="text-[11px] uppercase tracking-wider text-muted-foreground shrink-0">
+                  User ID
+                </span>
+                <button
+                  type="button"
+                  onClick={copyUserId}
+                  className="w-full text-left sm:text-right text-sm font-semibold font-mono break-all hover:text-primary transition-colors"
+                  title="Copy User ID"
+                >
+                  {copiedUserId ? "Copied!" : user.userId}
+                </button>
+              </div>
               <Row label="Mobile" value={user.contact} />
               {user.email && <Row label="Email" value={user.email} />}
               {user.name && <Row label="Name" value={user.name} />}
@@ -182,7 +212,7 @@ function Profile() {
                 <input
                   readOnly
                   value={referralUrl}
-                  className="flex-1 bg-background/60 border border-border rounded-xl px-3 py-2 text-xs font-mono"
+                  className="flex-1 min-w-0 bg-background/60 border border-border rounded-xl px-3 py-2 text-[11px] font-mono break-all"
                 />
                 <button
                   type="button"
@@ -289,13 +319,17 @@ function Profile() {
           </div>
         </motion.div>
 
-        <div className="mt-6 flex gap-2">
-          <Link
-            to="/challenges"
+        <div className="mt-6 flex flex-col sm:flex-row gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              resetScores();
+              nav({ to: "/challenges" });
+            }}
             className="flex-1 text-center py-3 rounded-full bg-card border border-border font-semibold hover:bg-muted/50 transition-colors"
           >
             Play Again
-          </Link>
+          </button>
           <Link
             to="/"
             className="flex-1 text-center py-3 rounded-full bg-card border border-border font-semibold hover:bg-muted/50 transition-colors"
@@ -319,11 +353,11 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
       <span className="text-[11px] uppercase tracking-wider text-muted-foreground shrink-0">
         {label}
       </span>
-      <span className={`text-sm font-semibold truncate ${mono ? "font-mono" : ""}`}>{value}</span>
+      <span className={`w-full text-sm font-semibold sm:text-right ${mono ? "font-mono break-all" : "break-words"}`}>{value}</span>
     </div>
   );
 }

@@ -47,7 +47,7 @@ function Result() {
   const cat = categorize(total);
   const pct = totalToPercentage(total);
 
-  const shareText = `I scored ${total} — ${cat.label} on the Revital Energy Challenge ⚡ Tag @revitalofficial on Instagram & boost your chance to win! ${typeof window !== "undefined" ? window.location.origin : ""}`;
+  const shareText = `I scored ${total} — ${cat.label} on the Revital Energy Challenge ⚡ Tag @revital.uae on Instagram & boost your chance to win! ${typeof window !== "undefined" ? window.location.origin : ""}`;
 
   const generateAndShare = async (openInstagram = false) => {
     try {
@@ -76,7 +76,7 @@ function Result() {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       try { await navigator.clipboard.writeText(shareText); } catch {}
       if (openInstagram) {
-        alert("Branded score card downloaded! Upload it to your Instagram story and tag @revitalofficial 🔥");
+        alert("Branded score card downloaded! Upload it to your Instagram story and tag @revital.uae 🔥");
         window.open("https://www.instagram.com/", "_blank");
       } else {
         alert("Branded score card downloaded! Caption copied to clipboard 🔥");
@@ -156,7 +156,7 @@ function Result() {
               <h3 className="font-black text-lg text-gradient-energy">Boost Your Chance to Win!</h3>
             </div>
             <p className="text-sm text-muted-foreground mt-2">
-              Share your score on Instagram and tag <span className="text-accent font-semibold">@revitalofficial</span> in your story to multiply your chances of winning the daily prize 🏆
+              Share your score on Instagram and tag <span className="text-garnet font-semibold">@revital.uae</span> in your story to multiply your chances of winning the daily prize 🏆
             </p>
             <button onClick={shareInstagram} className="mt-4 w-full py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button glow-pulse hover:scale-[1.02] active:scale-[0.98] transition-transform">
               Share on Instagram →

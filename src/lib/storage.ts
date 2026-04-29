@@ -38,6 +38,14 @@ export const dedupeAttempts = (attempts: PlayAttempt[]): PlayAttempt[] => {
   return deduped;
 };
 
+export const getBestAttemptForDate = (attempts: PlayAttempt[], date: string): PlayAttempt | null =>
+  attempts
+    .filter((attempt) => attempt.date === date)
+    .reduce<PlayAttempt | null>((best, current) => {
+      if (!best) return current;
+      return current.total > best.total ? current : best;
+    }, null);
+
 export interface UserRecord {
   userId: string; // generated unique id
   contact: string; // mobile number used for OTP login
@@ -223,18 +231,18 @@ export const saveUserRemote = async (u: UserRecord): Promise<void> => {
     : priorAttempts;
   const dedupedAttempts = dedupeAttempts(nextAttempts);
 
-  const bestAttempt = dedupedAttempts.reduce<PlayAttempt | null>(
-    (best, curr) => (!best || curr.total > best.total ? curr : best),
-    null,
-  );
+  const targetDate = shouldAppendAttempt ? completedDate : today;
+  const bestAttemptForDate = getBestAttemptForDate(dedupedAttempts, targetDate);
 
   const withDate: UserRecord = {
     ...u,
     playDates: mergedDates,
     playAttempts: dedupedAttempts,
-    scores: bestAttempt?.scores ?? u.scores,
-    total: bestAttempt?.total ?? u.total,
-    category: bestAttempt?.category ?? u.category,
+    // winner selection should use the best completed run for the selected day,
+    // while still preserving every attempt in playAttempts.
+    scores: bestAttemptForDate?.scores ?? u.scores,
+    total: bestAttemptForDate?.total ?? u.total,
+    category: bestAttemptForDate?.category ?? u.category,
   };
 
   // Keep a local copy when possible so OTP verification is not blocked by transient server/db issues.

@@ -41,7 +41,6 @@ export const Route = createFileRoute("/admin")({
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type Tab = "overview" | "users" | "datewise" | "winners" | "streaks" | "logs" | "settings";
-type GameFilter = "all" | "reflex" | "memory" | "balance";
 type UserSortKey =
   | "userId"
   | "contact"
@@ -399,7 +398,6 @@ function Admin() {
 
   // Filters
   const [filterCat, setFilterCat] = useState("all");
-  const [filterGame, setFilterGame] = useState<GameFilter>("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [search, setSearch] = useState("");
@@ -490,7 +488,6 @@ function Admin() {
         .filter((u): u is AdminUserRow => !!u)
         .filter((u) => {
           if (filterCat !== "all" && u.selectedCategory !== filterCat) return false;
-          if (filterGame !== "all" && u.selectedScores[filterGame] === null) return false;
           const selectedDate = getSafeDate(u.selectedPlayedAt);
           if (from && selectedDate && selectedDate < new Date(from)) return false;
           if (to && selectedDate && selectedDate > new Date(to + "T23:59:59")) return false;
@@ -504,7 +501,7 @@ function Admin() {
             return false;
           return true;
         }),
-    [users, filterCat, filterGame, from, to, search],
+    [users, filterCat, from, to, search],
   );
 
   const sortedFiltered = useMemo(() => {
@@ -1109,16 +1106,6 @@ function Admin() {
                         <option key={c}>{c}</option>
                       ))}
                     </select>
-                    <select
-                      value={filterGame}
-                      onChange={(e) => setFilterGame(e.target.value as GameFilter)}
-                      className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
-                    >
-                      <option value="all">All games</option>
-                      <option value="reflex">Reflex played</option>
-                      <option value="memory">Memory played</option>
-                      <option value="balance">Balance played</option>
-                    </select>
                     <input
                       type="date"
                       value={from}
@@ -1132,12 +1119,11 @@ function Admin() {
                       onChange={(e) => setTo(e.target.value)}
                       className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
                     />
-                    {(search || filterCat !== "all" || filterGame !== "all" || from || to) && (
+                    {(search || filterCat !== "all" || from || to) && (
                       <button
                         onClick={() => {
                           setSearch("");
                           setFilterCat("all");
-                          setFilterGame("all");
                           setFrom("");
                           setTo("");
                         }}

@@ -6,7 +6,7 @@ import { getUser, logout, type UserRecord } from "@/lib/storage";
 export function Header() {
   const nav = useNavigate();
   const routerState = useRouterState();
-  const [user, setUser] = useState<UserRecord | null>(null);
+  const [user, setUser] = useState<UserRecord | null>(getUser());
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -15,6 +15,12 @@ export function Header() {
   useEffect(() => {
     setUser(getUser());
   }, [routerState.location.pathname]);
+
+  useEffect(() => {
+    const syncAuth = () => setUser(getUser());
+    window.addEventListener("revital-auth-changed", syncAuth);
+    return () => window.removeEventListener("revital-auth-changed", syncAuth);
+  }, []);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {

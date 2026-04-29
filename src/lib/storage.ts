@@ -76,6 +76,7 @@ export const logout = () => {
   if (typeof window === "undefined") return;
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem(SCORES_KEY);
+  window.dispatchEvent(new Event("revital-auth-changed"));
 };
 
 const SCORES_KEY = "revital.currentScores";
@@ -186,6 +187,9 @@ export const saveUser = (u: UserRecord) => {
 
   localStorage.setItem(USER_KEY, JSON.stringify(u));
   localStorage.setItem(ALL_USERS_KEY, JSON.stringify(all));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("revital-auth-changed"));
+  }
 };
 
 /** Persist user to MongoDB (server) AND update localStorage cache. */

@@ -96,6 +96,12 @@ function Profile() {
       : `/auth?ref=${encodeURIComponent(user.userId)}`;
   const hasSavedEmail = Boolean(user.email?.trim());
   const finalPercentage = totalToPercentage(user.total).toFixed(2);
+  const hasPlayedBefore = Boolean(
+    (user.playAttempts?.length ?? 0) > 0 ||
+    user.scores.reflex !== null ||
+    user.scores.memory !== null ||
+    user.scores.balance !== null,
+  );
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -328,7 +334,7 @@ function Profile() {
             }}
             className="flex-1 text-center py-3 rounded-full bg-card border border-border font-semibold hover:bg-muted/50 transition-colors"
           >
-            Play Again
+            {hasPlayedBefore ? "Play Again" : "Play"}
           </button>
           <Link
             to="/"

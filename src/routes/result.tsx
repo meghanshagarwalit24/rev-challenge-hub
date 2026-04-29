@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { SignupGate } from "@/components/SignupGate";
 import { categorize, computeTotal, getCurrentScores, getUser, isLoggedIn, resetScores, saveUserRemote, totalToPercentage, type GameScores } from "@/lib/storage";
@@ -16,6 +16,8 @@ function Result() {
   const [animatedTotal, setAnimatedTotal] = useState(0);
   const [animatedPct, setAnimatedPct] = useState(0);
   const [unlocked, setUnlocked] = useState(false);
+  const [shareNotice, setShareNotice] = useState<string | null>(null);
+  const noticeTimeout = useRef<number | null>(null);
 
   useEffect(() => {
     const s = getCurrentScores();
@@ -48,6 +50,16 @@ function Result() {
   const pct = totalToPercentage(total);
 
   const shareText = `I scored ${total} — ${cat.label} on the Revital Energy Challenge ⚡ Tag @revital.uae on Instagram & boost your chance to win! ${typeof window !== "undefined" ? window.location.origin : ""}`;
+  const showShareNotice = (message: string) => {
+    setShareNotice(message);
+    if (noticeTimeout.current) {
+      window.clearTimeout(noticeTimeout.current);
+    }
+    noticeTimeout.current = window.setTimeout(() => {
+      setShareNotice(null);
+      noticeTimeout.current = null;
+    }, 2200);
+  };
 
   const generateAndShare = async (openInstagram = false) => {
     try {
@@ -76,14 +88,14 @@ function Result() {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       try { await navigator.clipboard.writeText(shareText); } catch {}
       if (openInstagram) {
-        alert("Branded score card downloaded! Upload it to your Instagram story and tag @revital.uae 🔥");
+        showShareNotice("Caption copied and download started.");
         window.open("https://www.instagram.com/", "_blank");
       } else {
-        alert("Branded score card downloaded! Caption copied to clipboard 🔥");
+        showShareNotice("Caption copied and download started.");
       }
     } catch (e) {
       console.error(e);
-      alert("Could not generate share card. Please try again.");
+      showShareNotice("Could not generate share card. Please try again.");
     }
   };
 
@@ -105,6 +117,14 @@ function Result() {
       consent: true,
     });
   }, [unlocked, scores]);
+
+  useEffect(() => {
+    return () => {
+      if (noticeTimeout.current) {
+        window.clearTimeout(noticeTimeout.current);
+      }
+    };
+  }, []);
 
 
   return (
@@ -170,6 +190,11 @@ function Result() {
               Play Again
             </button>
           </div>
+          {shareNotice && (
+            <div className="mx-auto max-w-md rounded-xl border border-accent/30 bg-card/95 px-4 py-2 text-sm font-medium text-foreground shadow-lg">
+              {shareNotice}
+            </div>
+          )}
           <Link to="/profile" className="block text-xs text-muted-foreground hover:text-foreground transition-colors pt-2">
             View your profile →
           </Link>

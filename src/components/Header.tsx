@@ -37,7 +37,9 @@ export function Header() {
     nav({ to: "/" });
   };
 
-  const initial = (user?.name || user?.contact || "U").charAt(0).toUpperCase();
+  const initialSource = user?.name?.trim() || user?.contact?.trim() || "U";
+  const initialMatch = initialSource.match(/[A-Za-z0-9]/);
+  const initial = (initialMatch?.[0] || "U").toUpperCase();
 
   return (
     <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 border-b border-[var(--garnet)]/10">

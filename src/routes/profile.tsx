@@ -91,19 +91,21 @@ function Profile() {
     typeof window !== "undefined"
       ? `${window.location.origin}/auth?ref=${encodeURIComponent(user.userId)}`
       : `/auth?ref=${encodeURIComponent(user.userId)}`;
+  const hasSavedEmail = Boolean(user.email?.trim());
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     const normalizedEmail = email.trim().toLowerCase();
-    if (normalizedEmail && !/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+    if (!hasSavedEmail && normalizedEmail && !/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
       setError("Please enter a valid email address.");
       return;
     }
+    const emailToPersist = hasSavedEmail ? user.email : normalizedEmail || undefined;
     const updated = {
       ...user,
       name: name.trim(),
-      email: normalizedEmail || undefined,
+      email: emailToPersist,
       address: address.trim(),
     };
     await saveUserRemote(updated);
@@ -217,20 +219,19 @@ function Profile() {
               className="mt-2 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
-          <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">
-              Gmail / Email
-            </label>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="yourname@gmail.com"
-              className="mt-2 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Email is saved to your profile and shown in admin dashboard. No OTP verification.
-            </p>
-          </div>
+          {!hasSavedEmail && (
+            <div>
+              <label className="text-xs uppercase tracking-wider text-muted-foreground">
+                Gmail / Email
+              </label>
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="yourname@gmail.com"
+                className="mt-2 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          )}
           <div>
             <label className="text-xs uppercase tracking-wider text-muted-foreground">
               Address (for prize delivery)

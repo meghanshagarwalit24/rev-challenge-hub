@@ -209,7 +209,7 @@ function AdminUserDetail() {
             <InfoRow label="Contact" value={user.contact} mono />
             {user.email && <InfoRow label="Email" value={user.email} mono />}
             {user.name && <InfoRow label="Name" value={user.name} />}
-            {user.address && <InfoRow label="Address" value={user.address} />}
+            <InfoRow label="Address" value={user.address || "—"} />
             <InfoRow label="Joined" value={new Date(user.createdAt).toLocaleString()} />
             <InfoRow label="Category" value={user.category} />
             <InfoRow label="Total (Best)" value={String(user.total)} />

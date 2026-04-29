@@ -183,7 +183,7 @@ function Profile() {
                 <input
                   readOnly
                   value={referralUrl}
-                  className="flex-1 bg-background/60 border border-border rounded-xl px-3 py-2 text-xs font-mono"
+                  className="flex-1 min-w-0 bg-background/60 border border-border rounded-xl px-3 py-2 text-[11px] font-mono break-all"
                 />
                 <button
                   type="button"
@@ -290,7 +290,7 @@ function Profile() {
           </div>
         </motion.div>
 
-        <div className="mt-6 flex gap-2">
+        <div className="mt-6 flex flex-col sm:flex-row gap-2">
           <button
             type="button"
             onClick={() => {
@@ -324,11 +324,11 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
       <span className="text-[11px] uppercase tracking-wider text-muted-foreground shrink-0">
         {label}
       </span>
-      <span className={`text-sm font-semibold truncate ${mono ? "font-mono" : ""}`}>{value}</span>
+      <span className={`w-full text-sm font-semibold sm:text-right ${mono ? "font-mono break-all" : "break-words"}`}>{value}</span>
     </div>
   );
 }

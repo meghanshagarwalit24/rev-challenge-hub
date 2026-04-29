@@ -15,6 +15,16 @@ function RulesPage() {
 
         <div className="prose prose-sm md:prose-base mt-8 space-y-5 text-garnet/85">
           <section>
+            <h2 className="text-xl font-bold text-garnet">General Energy Rank Bands (All Games)</h2>
+            <ul>
+              <li>S / Peak Performer: ≥ 80%</li>
+              <li>A / High Energy: ≥ 60%</li>
+              <li>B / Charged Up: ≥ 40%</li>
+              <li>C / Warming Up: ≥ 20%</li>
+              <li>D / Recharge Needed: &lt; 20%</li>
+            </ul>
+          </section>
+          <section>
             <h2 className="text-xl font-bold text-garnet">1. Focus Reflex Test</h2>
             <ul>
               <li>Objective: Tap/click as quickly as possible when the logo appears.</li>

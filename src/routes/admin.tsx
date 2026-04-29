@@ -768,9 +768,9 @@ function Admin() {
 
                   <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3 mt-4">
                     <KpiCard title="Total Users" value={stats.total} />
-                    <KpiCard title="Avg Score" value={`${stats.avg}/300`} />
-                    <KpiCard title="Median Score" value={`${stats.median}/300`} />
-                    <KpiCard title="Best Score" value={`${stats.bestScore}/300`} />
+                    <KpiCard title="Avg Score" value={`${stats.avg}/1500`} />
+                    <KpiCard title="Median Score" value={`${stats.median}/1500`} />
+                    <KpiCard title="Best Score" value={`${stats.bestScore}/1500`} />
                     <KpiCard title="Completed All" value={stats.completed} />
                     <KpiCard title="Conversion" value={`${stats.completionRate}%`} />
                   </div>

@@ -176,7 +176,7 @@ function Auth() {
                 </label>
                 {err && <p className="text-sm text-destructive">{err}</p>}
                 <button
-                  disabled={loading}
+                  disabled={loading || !consent}
                   className="w-full py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-60"
                 >
                   {loading ? "Sending..." : "Send OTP"}

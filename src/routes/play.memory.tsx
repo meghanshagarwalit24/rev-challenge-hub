@@ -21,6 +21,7 @@ const CARD_TYPES = [
 const MAX_DURATION = 15; // seconds
 const TOTAL_PAIRS = CARD_TYPES.length;
 const STARTING_CAPSULES = 3;
+const PREVIEW_DURATION_MS = 2500;
 
 interface Card {
   id: number;
@@ -56,13 +57,14 @@ function MemoryGame() {
   const [seconds, setSeconds] = useState(0);
   const [done, setDone] = useState(false);
   const [capsulesLeft, setCapsulesLeft] = useState(STARTING_CAPSULES);
+  const [isPreviewing, setIsPreviewing] = useState(false);
 
   useEffect(() => {
     if (!isGameUnlocked("memory")) nav({ to: "/challenges" });
   }, [nav]);
 
   useEffect(() => {
-    if (done || showStart) return;
+    if (done || showStart || isPreviewing) return;
     const t = setInterval(() =>
       setSeconds((s) => {
         const next = s + 1;
@@ -70,7 +72,13 @@ function MemoryGame() {
         return next;
       }), 1000);
     return () => clearInterval(t);
-  }, [done, showStart]);
+  }, [done, showStart, isPreviewing]);
+
+  useEffect(() => {
+    if (!isPreviewing) return;
+    const t = setTimeout(() => setIsPreviewing(false), PREVIEW_DURATION_MS);
+    return () => clearTimeout(t);
+  }, [isPreviewing]);
 
   useEffect(() => {
     if (flipped.length !== 2) return;
@@ -124,7 +132,7 @@ function MemoryGame() {
   }, [done, matchedPairs, seconds, capsulesLeft, nav]);
 
   const flip = (id: number) => {
-    if (showStart || done) return;
+    if (showStart || done || isPreviewing) return;
     if (flipped.length === 2) return;
     if (flipped.includes(id)) return;
     if (deck.find((c) => c.id === id)?.matched) return;
@@ -150,13 +158,17 @@ function MemoryGame() {
             "Match all pairs within 15 seconds.",
             "Be careful, you only have 3 lives!",
           ]}
-          onStart={() => setShowStart(false)}
+          onStart={() => {
+            setShowStart(false);
+            setIsPreviewing(true);
+          }}
         />
       )}
       <main className="max-w-2xl mx-auto px-4 py-6">
         <div className="text-center">
           <h1 className="text-2xl md:text-4xl font-black">🧠 Memory Match</h1>
           <p className="text-sm text-muted-foreground mt-1">Match all {TOTAL_PAIRS} pairs · {Math.max(0, MAX_DURATION - seconds)}s left</p>
+          {isPreviewing && <p className="text-xs text-garnet mt-1">Memorize the cards… they flip in {PREVIEW_DURATION_MS / 1000}s</p>}
           <ProgressDots current="memory" />
         </div>
 
@@ -184,13 +196,13 @@ function MemoryGame() {
               );
             }
             const card = cell;
-            const isUp = flipped.includes(card.id) || card.matched;
+            const isUp = isPreviewing || flipped.includes(card.id) || card.matched;
             return (
               <button
                 key={`c-${card.id}-${idx}`}
                 onClick={() => flip(card.id)}
                 className="aspect-square perspective-card group"
-                disabled={card.matched || done || showStart}
+                disabled={card.matched || done || showStart || isPreviewing}
                 aria-label="card"
               >
                 <div className={`relative w-full h-full preserve-3d transition-transform duration-500 ${isUp ? "[transform:rotateY(180deg)]" : ""}`}>

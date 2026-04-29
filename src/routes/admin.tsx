@@ -129,21 +129,26 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
       category: u.category,
     });
   }
-  return [...map.entries()]
-    .sort(([a], [b]) => b.localeCompare(a))
-    .map(([date, userList]) => {
-      const winners = [...userList]
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 10)
-        .map((u) => ({
-          userId: u.userId,
-          contact: u.contact,
-          name: u.name,
-          total: u.total,
-          scores: u.scores,
-        }));
-      return { date, users: userList, winners };
-    });
+  const sortedEntries = [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
+  const priorWinnerIds = new Set<string>();
+  const withWinners = sortedEntries.map(([date, userList]) => {
+    const winners = [...userList]
+      .filter((u) => !priorWinnerIds.has(u.userId))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10)
+      .map((u) => ({
+        userId: u.userId,
+        contact: u.contact,
+        name: u.name,
+        total: u.total,
+        scores: u.scores,
+      }));
+
+    winners.forEach((winner) => priorWinnerIds.add(winner.userId));
+    return { date, users: userList, winners };
+  });
+
+  return withWinners.sort((a, b) => b.date.localeCompare(a.date));
 }
 
 async function downloadDailyWinnersImage(

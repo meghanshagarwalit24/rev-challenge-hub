@@ -25,10 +25,12 @@ function ReflexGame() {
   const [lastReactionMs, setLastReactionMs] = useState<number | null>(null);
   const startRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(
     () => () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     },
     [],
   );
@@ -38,8 +40,11 @@ function ReflexGame() {
     // Slightly wider random delay range to make anticipation harder.
     const delay = Math.floor(Math.random() * (MAX_DELAY - MIN_DELAY + 1)) + MIN_DELAY;
     timeoutRef.current = setTimeout(() => {
-      startRef.current = performance.now();
       setPhase("go");
+      rafRef.current = requestAnimationFrame(() => {
+        startRef.current = performance.now();
+        rafRef.current = null;
+      });
     }, delay);
   };
 
@@ -62,6 +67,7 @@ function ReflexGame() {
 
     if (phase === "waiting") {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       setPhase("tooSoon");
       timeoutRef.current = setTimeout(() => {
         setPhase("idle");
@@ -125,7 +131,7 @@ function ReflexGame() {
           style={{ backgroundColor: "#722A29" }}
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),transparent_55%)]" />
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="sync">
             <motion.div
               key={phase}
               initial={phase === "go" ? { opacity: 1, scale: 1 } : { scale: 0.9, opacity: 0 }}

@@ -93,6 +93,7 @@ function Profile() {
       ? `${window.location.origin}/auth?ref=${encodeURIComponent(user.userId)}`
       : `/auth?ref=${encodeURIComponent(user.userId)}`;
   const hasSavedEmail = Boolean(user.email?.trim());
+  const finalPercentage = totalToPercentage(user.total).toFixed(2);
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,7 +169,7 @@ function Profile() {
             </div>
 
             <div className="mt-4 grid grid-cols-3 gap-3">
-              <Stat label="Score" value={`${user.total}`} />
+              <Stat label="Final %" value={`${finalPercentage}%`} />
               <Stat label="Tier" value={user.category.split(" ")[0]} />
               <Stat label="Eligible" value="✓" />
             </div>

@@ -1092,17 +1092,9 @@ function Admin() {
                           {isOpen && (
                             <div className="border-t border-border">
                               <div className="p-4 border-b border-border/50 bg-muted/10">
-                                <div className="flex items-center justify-between flex-wrap gap-2">
-                                  <p className="text-xs text-muted-foreground">
-                                    Top 10 winners are auto-selected daily by highest total score.
-                                  </p>
-                                  <button
-                                    onClick={() => downloadDailyWinnersImage(d.date, d.winners)}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform text-xs"
-                                  >
-                                    <Download className="w-3.5 h-3.5" /> Download winners image
-                                  </button>
-                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  Top 10 winners are auto-selected daily by highest total score.
+                                </p>
                                 <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
                                   {d.winners.map((winner, idx) => (
                                     <div
@@ -1187,11 +1179,19 @@ function Admin() {
                         key={`winners-${d.date}`}
                         className="bg-gradient-card border border-border rounded-2xl p-4 shadow-card"
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-bold text-sm">{d.date}</h3>
-                          <span className="text-xs text-muted-foreground">
-                            {d.winners.length} winner{d.winners.length !== 1 ? "s" : ""}
-                          </span>
+                        <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                          <div className="flex items-center gap-3">
+                            <h3 className="font-bold text-sm">{d.date}</h3>
+                            <span className="text-xs text-muted-foreground">
+                              {d.winners.length} winner{d.winners.length !== 1 ? "s" : ""}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => downloadDailyWinnersImage(d.date, d.winners)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform text-xs"
+                          >
+                            <Download className="w-3.5 h-3.5" /> Download winners image
+                          </button>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {d.winners.map((winner, idx) => (

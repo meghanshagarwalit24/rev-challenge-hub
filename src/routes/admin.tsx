@@ -321,6 +321,55 @@ function exportExcel(rows: (string | number)[][], filename: string) {
   URL.revokeObjectURL(url);
 }
 
+function exportPdf(rows: (string | number)[][], filename: string) {
+  const [header, ...body] = rows;
+  const escaped = (value: string | number) =>
+    String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+  const html = `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>${escaped(filename)}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; color: #111; }
+          h1 { margin: 0 0 12px 0; font-size: 18px; }
+          p { margin: 0 0 12px 0; font-size: 12px; color: #444; }
+          table { border-collapse: collapse; width: 100%; font-size: 11px; }
+          th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+          th { background: #f5f5f5; }
+        </style>
+      </head>
+      <body>
+        <h1>Revital Users Export</h1>
+        <p>Generated at: ${escaped(new Date().toLocaleString())}</p>
+        <table>
+          <thead>
+            <tr>${header.map((cell) => `<th>${escaped(cell)}</th>`).join("")}</tr>
+          </thead>
+          <tbody>
+            ${body
+              .map((row) => `<tr>${row.map((cell) => `<td>${escaped(cell)}</td>`).join("")}</tr>`)
+              .join("")}
+          </tbody>
+        </table>
+      </body>
+    </html>
+  `;
+
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) return;
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
+
 // ── Main Admin Component ───────────────────────────────────────────────────────
 function Admin() {
   const matchRoute = useMatchRoute();
@@ -678,6 +727,35 @@ function Admin() {
     addLog("EXPORT_EXCEL", `Exported ${filtered.length} users as Excel`);
   };
 
+  const handleExportPdf = () => {
+    const rows: (string | number)[][] = [
+      [
+        "User ID",
+        "Contact",
+        "Email",
+        "Name",
+        "Refer Count",
+        "Joined On",
+        "Joined Days",
+        "Streak (Days)",
+        "All 3 Games Completed",
+      ],
+      ...filtered.map((u) => [
+        u.userId,
+        u.contact,
+        u.email || "",
+        u.name || "",
+        u.referCount ?? 0,
+        u.joinedAtIso,
+        u.joinedDays ?? "",
+        u.currentStreak,
+        u.completedAll3Plays,
+      ]),
+    ];
+    exportPdf(rows, `revital-users-${Date.now()}.pdf`);
+    addLog("EXPORT_PDF", `Exported ${filtered.length} users as PDF`);
+  };
+
   const saveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -1001,6 +1079,12 @@ function Admin() {
                         className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-border hover:bg-muted/30 font-bold transition-colors text-xs"
                       >
                         <Download className="w-3.5 h-3.5" /> Excel
+                      </button>
+                      <button
+                        onClick={handleExportPdf}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-border hover:bg-muted/30 font-bold transition-colors text-xs"
+                      >
+                        <Download className="w-3.5 h-3.5" /> PDF
                       </button>
                     </div>
                   </div>

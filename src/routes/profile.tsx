@@ -289,7 +289,7 @@ function Profile() {
         >
           <h2 className="font-black text-lg">Date-wise Score History</h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Your saved attempts grouped by play date and final percentage score.
+            Your saved attempts grouped by play date and final percentage.
           </p>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm min-w-[420px]">

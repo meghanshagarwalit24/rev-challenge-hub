@@ -100,9 +100,9 @@ export async function buildShareCard(data: ShareCardData): Promise<Blob> {
   ctx.fillText(label, W / 2, pillY + 60);
 
   // Footer
-  ctx.fillStyle = "rgba(255,220,170,0.85)";
+  ctx.fillStyle = "#6b1f12";
   ctx.font = "600 36px system-ui, -apple-system, sans-serif";
-  ctx.fillText("Tag @revitalofficial to win 🏆", W / 2, 1200);
+  ctx.fillText("Tag @revital.uae to win 🏆", W / 2, 1200);
   ctx.fillStyle = "rgba(255,255,255,0.5)";
   ctx.font = "500 28px system-ui, -apple-system, sans-serif";
   ctx.fillText("Take the challenge at revital.com", W / 2, 1260);

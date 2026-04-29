@@ -27,6 +27,7 @@ function Profile() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
+  const [copiedUserId, setCopiedUserId] = useState(false);
   const [referrerName, setReferrerName] = useState("");
   const [referralUsers, setReferralUsers] = useState<UserRecord[]>([]);
 
@@ -117,10 +118,10 @@ function Profile() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const copyReferralUrl = async () => {
+  const copyToClipboard = async (value: string): Promise<boolean> => {
     const fallbackCopy = () => {
       const helper = document.createElement("textarea");
-      helper.value = referralUrl;
+      helper.value = value;
       helper.setAttribute("readonly", "true");
       helper.style.position = "fixed";
       helper.style.opacity = "0";
@@ -133,18 +134,34 @@ function Profile() {
       return copiedWithFallback;
     };
 
+    if (window.isSecureContext && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+    return fallbackCopy();
+  };
+
+  const copyReferralUrl = async () => {
     try {
-      if (window.isSecureContext && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(referralUrl);
-      } else if (!fallbackCopy()) {
-        throw new Error("Copy failed");
-      }
+      const success = await copyToClipboard(referralUrl);
+      if (!success) throw new Error("Copy failed");
       setCopied(true);
       setCopyError(false);
       setTimeout(() => setCopied(false), 1500);
     } catch {
       setCopied(false);
       setCopyError(true);
+    }
+  };
+
+  const copyUserId = async () => {
+    try {
+      const success = await copyToClipboard(user.userId);
+      if (!success) throw new Error("Copy failed");
+      setCopiedUserId(true);
+      setTimeout(() => setCopiedUserId(false), 1500);
+    } catch {
+      setCopiedUserId(false);
     }
   };
 
@@ -161,7 +178,19 @@ function Profile() {
             </p>
 
             <div className="mt-5 bg-background/40 rounded-2xl p-4 text-left space-y-2">
-              <Row label="User ID" value={user.userId} mono />
+              <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <span className="text-[11px] uppercase tracking-wider text-muted-foreground shrink-0">
+                  User ID
+                </span>
+                <button
+                  type="button"
+                  onClick={copyUserId}
+                  className="w-full text-left sm:text-right text-sm font-semibold font-mono break-all hover:text-primary transition-colors"
+                  title="Copy User ID"
+                >
+                  {copiedUserId ? "Copied!" : user.userId}
+                </button>
+              </div>
               <Row label="Mobile" value={user.contact} />
               {user.email && <Row label="Email" value={user.email} />}
               {user.name && <Row label="Name" value={user.name} />}

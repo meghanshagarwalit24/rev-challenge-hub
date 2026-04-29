@@ -15,7 +15,19 @@ function RulesPage() {
 
         <div className="prose prose-sm md:prose-base mt-8 space-y-5 text-garnet/85">
           <section>
-            <h2 className="text-xl font-bold text-garnet">1. Memory Match Game (3x3 Grid)</h2>
+            <h2 className="text-xl font-bold text-garnet">1. Focus Reflex Test</h2>
+            <ul>
+              <li>Objective: Tap/click as quickly as possible when the logo appears.</li>
+              <li>Reaction time is measured in milliseconds (ms).</li>
+              <li>The faster the reaction, the higher the score.</li>
+              <li>Maximum Score: 1500 points for fastest response.</li>
+              <li>Minimum Score: 0 points for slowest response (up to 15 seconds).</li>
+              <li>Multiple attempts may be allowed; best score is considered.</li>
+              <li>Early clicks (before signal) may result in penalty or retry.</li>
+            </ul>
+          </section>
+          <section>
+            <h2 className="text-xl font-bold text-garnet">2. Memory Match Game (3x3 Grid)</h2>
             <ul>
               <li>Objective: Match all card pairs within 15 seconds.</li>
               <li>Grid Size: 3x3 grid (4 pairs + 1 dummy card).</li>
@@ -26,18 +38,6 @@ function RulesPage() {
               <li>Game ends when all pairs are matched OR lives are exhausted OR time runs out.</li>
               <li>Score is based on speed, number of correct matches, and remaining lives.</li>
               <li>Faster completion with fewer mistakes results in higher score.</li>
-            </ul>
-          </section>
-          <section>
-            <h2 className="text-xl font-bold text-garnet">2. Focus Reflex Test</h2>
-            <ul>
-              <li>Objective: Tap/click as quickly as possible when the signal appears.</li>
-              <li>Reaction time is measured in milliseconds (ms).</li>
-              <li>The faster the reaction, the higher the score.</li>
-              <li>Maximum Score: 1500 points for fastest response.</li>
-              <li>Minimum Score: 0 points for slowest response (up to 15 seconds).</li>
-              <li>Multiple attempts may be allowed; best score is considered.</li>
-              <li>Early clicks (before signal) may result in penalty or retry.</li>
             </ul>
           </section>
           <section>

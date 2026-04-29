@@ -814,13 +814,25 @@ function Admin() {
               <button
                 key={n.id}
                 onClick={() => handleTabChange(n.id)}
-                className={`mx-2 flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
+                className={`group mx-2 flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold border transition-all duration-200 ${
                   isActive
-                    ? "bg-accent/20 text-accent border-accent/40 shadow-sm"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30 hover:border-border/80"
+                    ? "bg-gradient-to-r from-accent/30 via-accent/20 to-accent/10 text-foreground border-accent/60 shadow-[0_6px_20px_rgba(243,116,33,0.2)]"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-accent/10 hover:border-accent/35 hover:shadow-[0_4px_14px_rgba(243,116,33,0.12)]"
                 }`}
               >
-                {n.icon} {n.label}
+                <span
+                  className={`h-4 w-1 rounded-full transition-all ${
+                    isActive
+                      ? "bg-accent opacity-100"
+                      : "bg-accent/60 opacity-0 group-hover:opacity-70"
+                  }`}
+                />
+                <span
+                  className={`${isActive ? "text-accent" : "text-inherit group-hover:text-accent"}`}
+                >
+                  {n.icon}
+                </span>
+                <span>{n.label}</span>
               </button>
             );
           })}

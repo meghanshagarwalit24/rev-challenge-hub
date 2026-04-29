@@ -29,12 +29,13 @@ function Auth() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const refFromUrl = new URLSearchParams(window.location.search).get("ref")?.trim();
-    if (!refFromUrl) return;
-
-    const normalizedRef = refFromUrl.toUpperCase();
+    const params = new URLSearchParams(window.location.search);
+    const refFromUrl = params.get("ref")?.trim();
+    const storedRef = window.localStorage.getItem("revital_referral_code")?.trim();
+    const normalizedRef = (refFromUrl || storedRef || "").toUpperCase();
+    if (!normalizedRef) return;
     window.localStorage.setItem("revital_referral_code", normalizedRef);
-    void nav({ to: "/", replace: true });
+    setReferredBy(normalizedRef);
   }, [nav]);
 
   const goToProfile = async () => {

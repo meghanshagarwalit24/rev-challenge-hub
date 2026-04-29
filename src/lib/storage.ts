@@ -102,8 +102,23 @@ export const saveGameScore = (game: GameKey, score: number) => {
   }
 };
 
-/** Returns today's date as YYYY-MM-DD. */
-export const todayDateString = (): string => new Date().toISOString().slice(0, 10);
+const toLocalDateString = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+const toLocalDateTimeString = (d: Date): string => {
+  const date = toLocalDateString(d);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  return `${date}T${hh}:${mm}:${ss}`;
+};
+
+/** Returns today's local date as YYYY-MM-DD. */
+export const todayDateString = (): string => toLocalDateString(new Date());
 
 const MS_PER_DAY = 86_400_000; // milliseconds in one day
 
@@ -112,7 +127,7 @@ export const calcStreak = (playDates: string[]): number => {
   if (!playDates || playDates.length === 0) return 0;
   const sorted = [...new Set(playDates)].sort().reverse(); // most recent first
   const today = todayDateString();
-  const yesterday = new Date(Date.now() - MS_PER_DAY).toISOString().slice(0, 10);
+  const yesterday = toLocalDateString(new Date(Date.now() - MS_PER_DAY));
   // streak must include today or yesterday to be "active"
   if (sorted[0] !== today && sorted[0] !== yesterday) return 0;
   let streak = 1;
@@ -183,9 +198,10 @@ export const saveUserRemote = async (u: UserRecord): Promise<void> => {
   const priorAttempts = existingLocal?.playAttempts ?? u.playAttempts ?? [];
   const completedAtFromStorage =
     typeof window !== "undefined" ? localStorage.getItem(RUN_COMPLETED_AT_KEY) : null;
-  const completedAt = completedAtFromStorage || new Date().toISOString();
+  const shouldAppendAttempt = completeRun && !!completedAtFromStorage;
+  const completedAt = completedAtFromStorage || toLocalDateTimeString(new Date());
   const completedDate = completedAt.slice(0, 10);
-  const nextAttempts = completeRun
+  const nextAttempts = shouldAppendAttempt
     ? [
         ...priorAttempts,
         {
@@ -225,6 +241,10 @@ export const saveUserRemote = async (u: UserRecord): Promise<void> => {
     await saveUserFn({ data: withDate });
   } catch (e) {
     console.warn("Remote save failed; user was saved locally", e);
+  } finally {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(RUN_COMPLETED_AT_KEY);
+    }
   }
 };
 

@@ -71,6 +71,10 @@ interface AdminUserRow extends UserRecord {
   selectedCategory: string;
   selectedPlayedAt: string;
   attemptsInRange: number;
+  joinedAtIso: string;
+  joinedDays: number | null;
+  currentStreak: number;
+  completedAll3Plays: number;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -92,6 +96,14 @@ function getSafeIsoTimestamp(value?: string) {
 function getSafeIsoDay(value?: string) {
   const iso = getSafeIsoTimestamp(value);
   return iso ? iso.slice(0, 10) : FALLBACK_DATE;
+}
+
+function getJoinedDays(value?: string) {
+  const joinedDate = getSafeDate(value);
+  if (!joinedDate) return null;
+  const now = new Date();
+  const msPerDay = 24 * 60 * 60 * 1000;
+  return Math.max(0, Math.floor((now.getTime() - joinedDate.getTime()) / msPerDay));
 }
 
 function groupByDate(users: UserRecord[]): DateWiseEntry[] {
@@ -386,6 +398,14 @@ function Admin() {
             selectedCategory: picked.best.category,
             selectedPlayedAt: picked.best.playedAt,
             attemptsInRange: picked.countInRange,
+            joinedAtIso: getSafeIsoTimestamp(u.createdAt),
+            joinedDays: getJoinedDays(u.createdAt),
+            currentStreak: calcStreak(u.playDates ?? []),
+            completedAll3Plays: Math.max(
+              dedupeAttempts(u.playAttempts ?? []).filter((attempt) => isComplete(attempt.scores))
+                .length,
+              isComplete(u.scores) ? 1 : 0,
+            ),
           } as AdminUserRow;
         })
         .filter((u): u is AdminUserRow => !!u)
@@ -566,28 +586,22 @@ function Admin() {
         "Contact",
         "Email",
         "Name",
-        "Reflex",
-        "Memory",
-        "Balance",
-        "Total",
-        "Category",
         "Refer Count",
-        "Referred By (User ID)",
-        "Created",
+        "Joined On",
+        "Joined Days",
+        "Streak (Days)",
+        "All 3 Games Completed",
       ],
       ...filtered.map((u) => [
         u.userId,
         u.contact,
         u.email || "",
         u.name || "",
-        u.selectedScores.reflex ?? "",
-        u.selectedScores.memory ?? "",
-        u.selectedScores.balance ?? "",
-        u.selectedTotal,
-        u.selectedCategory,
         u.referCount ?? 0,
-        u.referredBy || "",
-        getSafeIsoTimestamp(u.selectedPlayedAt),
+        u.joinedAtIso,
+        u.joinedDays ?? "",
+        u.currentStreak,
+        u.completedAll3Plays,
       ]),
     ];
     exportCsv(rows, `revital-users-${Date.now()}.csv`);
@@ -601,28 +615,22 @@ function Admin() {
         "Contact",
         "Email",
         "Name",
-        "Reflex",
-        "Memory",
-        "Balance",
-        "Total",
-        "Category",
         "Refer Count",
-        "Referred By (User ID)",
-        "Created",
+        "Joined On",
+        "Joined Days",
+        "Streak (Days)",
+        "All 3 Games Completed",
       ],
       ...filtered.map((u) => [
         u.userId,
         u.contact,
         u.email || "",
         u.name || "",
-        u.selectedScores.reflex ?? "",
-        u.selectedScores.memory ?? "",
-        u.selectedScores.balance ?? "",
-        u.selectedTotal,
-        u.selectedCategory,
         u.referCount ?? 0,
-        u.referredBy || "",
-        getSafeIsoTimestamp(u.selectedPlayedAt),
+        u.joinedAtIso,
+        u.joinedDays ?? "",
+        u.currentStreak,
+        u.completedAll3Plays,
       ]),
     ];
     exportExcel(rows, `revital-users-${Date.now()}.xls`);
@@ -1022,13 +1030,22 @@ function Admin() {
                           <SortableTh label="Refer Count" sortKey="referCount" sort={userSort} onSort={toggleUserSort} />
                           <SortableTh label="Referred By (User ID)" sortKey="referredBy" sort={userSort} onSort={toggleUserSort} />
                           <SortableTh label="Timestamp" sortKey="timestamp" sort={userSort} onSort={toggleUserSort} />
+                          <Th>User ID</Th>
+                          <Th>Contact</Th>
+                          <Th>Email</Th>
+                          <Th>Name</Th>
+                          <Th>Refer Count</Th>
+                          <Th>Joined On</Th>
+                          <Th>Joined Days</Th>
+                          <Th>Streak (Days)</Th>
+                          <Th>All 3 Completed</Th>
                         </tr>
                       </thead>
                       <tbody>
                         {filtered.length === 0 && (
                           <tr>
                             <td
-                              colSpan={12}
+                              colSpan={10}
                               className="py-10 text-center text-muted-foreground text-sm"
                             >
                               No users match filters.
@@ -1047,20 +1064,13 @@ function Admin() {
                             <Td className="font-mono text-[11px]">{u.contact}</Td>
                             <Td className="font-mono text-[11px]">{u.email || "—"}</Td>
                             <Td>{u.name || "—"}</Td>
-                            <Td>{u.selectedScores.reflex ?? "—"}</Td>
-                            <Td>{u.selectedScores.memory ?? "—"}</Td>
-                            <Td>{u.selectedScores.balance ?? "—"}</Td>
-                            <Td className="font-bold text-gradient-energy">{u.selectedTotal}</Td>
-                            <Td>
-                              <CategoryBadge cat={u.selectedCategory} />
-                            </Td>
                             <Td className="font-bold text-center">{u.referCount ?? 0}</Td>
-                            <Td className="font-mono text-[11px] text-muted-foreground uppercase">
-                              {u.referredBy || "—"}
-                            </Td>
                             <Td className="text-muted-foreground text-[11px]">
-                              {new Date(u.selectedPlayedAt).toLocaleString()}
+                              {u.joinedAtIso ? new Date(u.joinedAtIso).toLocaleDateString() : "—"}
                             </Td>
+                            <Td className="font-medium">{u.joinedDays ?? "—"}</Td>
+                            <Td className="font-medium">{u.currentStreak}</Td>
+                            <Td className="font-bold text-center">{u.completedAll3Plays}</Td>
                           </tr>
                         ))}
                       </tbody>

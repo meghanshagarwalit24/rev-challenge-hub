@@ -158,7 +158,7 @@ function Result() {
             </defs>
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="text-6xl md:text-7xl font-black text-gradient-energy tabular-nums">{animatedPct.toFixed(2)}%</div>
+            <div className="text-6xl md:text-7xl font-black text-[var(--tiger)] drop-shadow-[0_2px_8px_rgba(255,255,255,0.55)] tabular-nums">{animatedPct.toFixed(2)}%</div>
           </div>
           <div className="absolute -inset-6 rounded-full bg-gradient-glow opacity-50 blur-2xl pointer-events-none" />
         </motion.div>

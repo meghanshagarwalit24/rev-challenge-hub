@@ -50,6 +50,13 @@ interface DateWiseEntry {
     total: number;
     category: string;
   }[];
+  winners: {
+    userId: string;
+    contact: string;
+    name?: string;
+    total: number;
+    scores: UserRecord["scores"];
+  }[];
 }
 
 interface AdminUserRow extends UserRecord {
@@ -124,7 +131,71 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
   }
   return [...map.entries()]
     .sort(([a], [b]) => b.localeCompare(a))
-    .map(([date, userList]) => ({ date, users: userList }));
+    .map(([date, userList]) => {
+      const winners = [...userList]
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 10)
+        .map((u) => ({
+          userId: u.userId,
+          contact: u.contact,
+          name: u.name,
+          total: u.total,
+          scores: u.scores,
+        }));
+      return { date, users: userList, winners };
+    });
+}
+
+async function downloadDailyWinnersImage(
+  date: string,
+  winners: DateWiseEntry["winners"],
+): Promise<void> {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1200;
+  canvas.height = 1600;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const bg = ctx.createLinearGradient(0, 0, 1200, 1600);
+  bg.addColorStop(0, "#FFE882");
+  bg.addColorStop(0.45, "#F7C452");
+  bg.addColorStop(1, "#E9972E");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "#7A1F1F";
+  ctx.font = "bold 88px Arial";
+  ctx.fillText("REVITAL ENERGY", 90, 170);
+  ctx.font = "bold 64px Arial";
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillText("Daily Top 10 Winners", 90, 250);
+
+  ctx.fillStyle = "rgba(122,31,31,0.18)";
+  ctx.fillRect(80, 300, 1040, 1180);
+
+  ctx.fillStyle = "#7A1F1F";
+  ctx.font = "bold 36px Arial";
+  ctx.fillText(`Date: ${date}`, 110, 355);
+
+  winners.forEach((winner, index) => {
+    const y = 420 + index * 100;
+    ctx.fillStyle = index < 3 ? "#7A1F1F" : "#4C2A16";
+    ctx.font = index < 3 ? "bold 34px Arial" : "bold 30px Arial";
+    const displayName = winner.name?.trim() || winner.contact;
+    ctx.fillText(`${index + 1}. ${displayName}`, 120, y);
+    ctx.font = "bold 26px Arial";
+    ctx.fillText(`Score: ${winner.total}`, 830, y);
+  });
+
+  ctx.fillStyle = "#7A1F1F";
+  ctx.font = "bold 30px Arial";
+  ctx.fillText("Powered by Revital Ginseng Plus", 90, 1530);
+
+  const dataUrl = canvas.toDataURL("image/png");
+  const a = document.createElement("a");
+  a.href = dataUrl;
+  a.download = `revital-daily-winners-${date}.png`;
+  a.click();
 }
 
 function isComplete(scores: UserRecord["scores"]) {
@@ -972,6 +1043,7 @@ function Admin() {
                     )}
                     {dateWise.map((d) => {
                       const isOpen = expandedDates.has(d.date);
+                      const winnerIds = new Set(d.winners.map((w) => w.userId));
                       const toggle = () => {
                         setExpandedDates((s) => {
                           const ns = new Set(s);
@@ -1003,7 +1075,34 @@ function Admin() {
                             />
                           </button>
                           {isOpen && (
-                            <div className="border-t border-border overflow-x-auto">
+                            <div className="border-t border-border">
+                              <div className="p-4 border-b border-border/50 bg-muted/10">
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                  <p className="text-xs text-muted-foreground">
+                                    Top 10 winners are auto-selected daily by highest total score.
+                                  </p>
+                                  <button
+                                    onClick={() => downloadDailyWinnersImage(d.date, d.winners)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform text-xs"
+                                  >
+                                    <Download className="w-3.5 h-3.5" /> Download winners image
+                                  </button>
+                                </div>
+                                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  {d.winners.map((winner, idx) => (
+                                    <div
+                                      key={`${d.date}-${winner.userId}-${idx}`}
+                                      className="text-xs rounded-xl px-3 py-2 border border-accent/30 bg-accent/10 flex justify-between"
+                                    >
+                                      <span className="font-semibold">
+                                        #{idx + 1} {winner.name || winner.contact}
+                                      </span>
+                                      <span className="font-bold text-accent">{winner.total}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="overflow-x-auto">
                               <table className="w-full text-sm min-w-[600px]">
                                 <thead>
                                   <tr className="text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/10 text-left">
@@ -1022,7 +1121,9 @@ function Admin() {
                                   {d.users.map((u, i) => (
                                     <tr
                                       key={i}
-                                      className="border-b border-border/40 hover:bg-muted/10 transition-colors"
+                                      className={`border-b border-border/40 hover:bg-muted/10 transition-colors ${
+                                        winnerIds.has(u.userId) ? "bg-accent/10" : ""
+                                      }`}
                                     >
                                       <Td className="font-mono text-[11px]">{u.userId}</Td>
                                       <Td className="font-mono text-[11px]">{u.contact}</Td>
@@ -1039,6 +1140,7 @@ function Admin() {
                                   ))}
                                 </tbody>
                               </table>
+                            </div>
                             </div>
                           )}
                         </div>

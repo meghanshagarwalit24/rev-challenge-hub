@@ -141,9 +141,9 @@ function MemoryGame() {
           emoji="🧠"
           title="Memory Match"
           lines={[
-            "Flip cards to find matching pairs.",
-            "The Revital Ginseng Plus logo stays in the center as your guide.",
-            "Match all 4 pairs before time runs out!",
+            "Flip two cards at a time to find matching pairs.",
+            "Match all pairs within 15 seconds.",
+            "Be careful, you only have 3 lives!",
           ]}
           onStart={() => setShowStart(false)}
         />

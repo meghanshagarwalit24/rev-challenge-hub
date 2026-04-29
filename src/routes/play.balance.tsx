@@ -97,9 +97,9 @@ function BalanceGame() {
           emoji="🔥"
           title="Tap Balance"
           lines={[
-            "Tap rapidly to lift the ember.",
-            "Hold it inside the glowing Revital Zone.",
-            "The longer you stay in the zone, the higher your score!",
+            "Keep the ball inside the box for as long as possible.",
+            "Control it carefully for the full 15 seconds.",
+            "The longer it stays in, the higher your score!",
           ]}
           onStart={() => setShowStart(false)}
         />

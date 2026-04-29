@@ -102,9 +102,9 @@ function ReflexGame() {
           emoji="⚡"
           title="Reflex Tap"
           lines={[
-            "Play exactly 3 rounds.",
-            "Wait for the Revital logo, then tap it instantly.",
-            "If you tap early, the round restarts.",
+            "Tap the screen as soon as the signal appears.",
+            "The faster you react, the higher your score.",
+            "Don’t tap too early!",
           ]}
           onStart={() => setShowStart(false)}
         />

@@ -431,6 +431,8 @@ function Admin() {
     key: "joinedOn",
     dir: "desc",
   });
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersPerPage, setUsersPerPage] = useState(10);
 
   const addLog = useCallback(async (action: string, details: string) => {
     try {
@@ -581,6 +583,23 @@ function Admin() {
       return userSort.dir === "asc" ? cmp : -cmp;
     });
   }, [filtered, userSort]);
+
+  const paginatedUsers = useMemo(() => {
+    const start = (usersPage - 1) * usersPerPage;
+    return sortedFiltered.slice(start, start + usersPerPage);
+  }, [sortedFiltered, usersPage, usersPerPage]);
+
+  const totalUserPages = Math.max(1, Math.ceil(sortedFiltered.length / usersPerPage));
+
+  useEffect(() => {
+    setUsersPage(1);
+  }, [search, filterCat, from, to, userSort, usersPerPage]);
+
+  useEffect(() => {
+    if (usersPage > totalUserPages) {
+      setUsersPage(totalUserPages);
+    }
+  }, [usersPage, totalUserPages]);
 
   const toggleUserSort = (key: UserSortKey) => {
     setUserSort((prev) =>
@@ -1206,6 +1225,31 @@ function Admin() {
                   <p className="text-xs text-muted-foreground mt-1">
                     {filtered.length} of {users.length} users
                   </p>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs text-muted-foreground">
+                      Showing{" "}
+                      {sortedFiltered.length === 0 ? 0 : (usersPage - 1) * usersPerPage + 1}-
+                      {Math.min(usersPage * usersPerPage, sortedFiltered.length)} of{" "}
+                      {sortedFiltered.length}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <label htmlFor="users-per-page" className="text-xs text-muted-foreground">
+                        Rows per page
+                      </label>
+                      <select
+                        id="users-per-page"
+                        value={usersPerPage}
+                        onChange={(e) => setUsersPerPage(Number(e.target.value))}
+                        className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
+                      >
+                        {[10, 25, 50, 100].map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
 
                   <div className="mt-3 bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
                     <table className="w-full text-sm min-w-[900px]">
@@ -1308,9 +1352,9 @@ function Admin() {
                             </td>
                           </tr>
                         )}
-                        {sortedFiltered.map((u, i) => (
+                        {paginatedUsers.map((u, i) => (
                           <tr
-                            key={i}
+                            key={u.userId}
                             onClick={() =>
                               navigate({ to: "/admin/user/$userId", params: { userId: u.userId } })
                             }
@@ -1336,6 +1380,27 @@ function Admin() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setUsersPage((p) => Math.max(1, p - 1))}
+                      disabled={usersPage === 1}
+                      className="px-3 py-1.5 rounded-full border border-border text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted/20"
+                    >
+                      Prev
+                    </button>
+                    <span className="text-xs text-muted-foreground">
+                      Page {usersPage} of {totalUserPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setUsersPage((p) => Math.min(totalUserPages, p + 1))}
+                      disabled={usersPage === totalUserPages}
+                      className="px-3 py-1.5 rounded-full border border-border text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted/20"
+                    >
+                      Next
+                    </button>
                   </div>
                 </motion.div>
               )}

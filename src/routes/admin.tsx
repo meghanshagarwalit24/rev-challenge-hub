@@ -872,7 +872,7 @@ function Admin() {
 
   const buildDateWiseExportRows = () => {
     const rows: (string | number)[][] = [
-      ["Date", "User ID", "Contact", "Email", "Name", "Reflex", "Memory", "Balance", "Total", "Category"],
+      ["Date", "User ID", "Contact", "Email", "Name", "Reflex", "Memory", "Balance", "Total", "Category", "UTM Source", "UTM Medium", "UTM Campaign", "UTM Term", "UTM Content"],
       ...dateWise.flatMap((d) =>
         d.users.map((u) => [
           d.date,
@@ -885,6 +885,11 @@ function Admin() {
           u.scores.balance ?? "",
           u.total,
           u.category,
+          u.utmSource || "",
+          u.utmMedium || "",
+          u.utmCampaign || "",
+          u.utmTerm || "",
+          u.utmContent || "",
         ]),
       ),
     ];

@@ -677,24 +677,24 @@ function Admin() {
     const rows: (string | number)[][] = [
       [
         "User ID",
-        "Contact",
-        "Email",
+        "Joined Date",
+        "Phone Number",
         "Name",
+        "Email",
         "Refer Count",
-        "Joined On",
-        "Joined Days",
-        "Streak (Days)",
-        "All 3 Games Completed",
+        "Referral By",
+        "Number of Days (All 3 Games)",
+        "Number of Times Completed All 3",
       ],
       ...filtered.map((u) => [
         u.userId,
+        u.joinedAtIso ? new Date(u.joinedAtIso).toLocaleDateString() : "",
         u.contact,
-        u.email || "",
         u.name || "",
+        u.email || "",
         u.referCount ?? 0,
-        u.joinedAtIso,
-        u.joinedDays ?? "",
-        u.currentStreak,
+        u.referredBy || "",
+        u.completedAll3Days,
         u.completedAll3Plays,
       ]),
     ];
@@ -706,24 +706,24 @@ function Admin() {
     const rows: (string | number)[][] = [
       [
         "User ID",
-        "Contact",
-        "Email",
+        "Joined Date",
+        "Phone Number",
         "Name",
+        "Email",
         "Refer Count",
-        "Joined On",
-        "Joined Days",
-        "Streak (Days)",
-        "All 3 Games Completed",
+        "Referral By",
+        "Number of Days (All 3 Games)",
+        "Number of Times Completed All 3",
       ],
       ...filtered.map((u) => [
         u.userId,
+        u.joinedAtIso ? new Date(u.joinedAtIso).toLocaleDateString() : "",
         u.contact,
-        u.email || "",
         u.name || "",
+        u.email || "",
         u.referCount ?? 0,
-        u.joinedAtIso,
-        u.joinedDays ?? "",
-        u.currentStreak,
+        u.referredBy || "",
+        u.completedAll3Days,
         u.completedAll3Plays,
       ]),
     ];
@@ -735,24 +735,24 @@ function Admin() {
     const rows: (string | number)[][] = [
       [
         "User ID",
-        "Contact",
-        "Email",
+        "Joined Date",
+        "Phone Number",
         "Name",
+        "Email",
         "Refer Count",
-        "Joined On",
-        "Joined Days",
-        "Streak (Days)",
-        "All 3 Games Completed",
+        "Referral By",
+        "Number of Days (All 3 Games)",
+        "Number of Times Completed All 3",
       ],
       ...filtered.map((u) => [
         u.userId,
+        u.joinedAtIso ? new Date(u.joinedAtIso).toLocaleDateString() : "",
         u.contact,
-        u.email || "",
         u.name || "",
+        u.email || "",
         u.referCount ?? 0,
-        u.joinedAtIso,
-        u.joinedDays ?? "",
-        u.currentStreak,
+        u.referredBy || "",
+        u.completedAll3Days,
         u.completedAll3Plays,
       ]),
     ];
@@ -1155,20 +1155,26 @@ function Admin() {
                             onSort={toggleUserSort}
                           />
                           <SortableTh
+                            label="Joining Date"
+                            sortKey="joinedOn"
+                            sort={userSort}
+                            onSort={toggleUserSort}
+                          />
+                          <SortableTh
                             label="Phone Number"
                             sortKey="contact"
                             sort={userSort}
                             onSort={toggleUserSort}
                           />
                           <SortableTh
-                            label="Email"
-                            sortKey="email"
+                            label="Name"
+                            sortKey="name"
                             sort={userSort}
                             onSort={toggleUserSort}
                           />
                           <SortableTh
-                            label="Name"
-                            sortKey="name"
+                            label="Email"
+                            sortKey="email"
                             sort={userSort}
                             onSort={toggleUserSort}
                           />
@@ -1181,12 +1187,6 @@ function Admin() {
                           <SortableTh
                             label="Referred By (User ID)"
                             sortKey="referredBy"
-                            sort={userSort}
-                            onSort={toggleUserSort}
-                          />
-                          <SortableTh
-                            label="Joining Date"
-                            sortKey="joinedOn"
                             sort={userSort}
                             onSort={toggleUserSort}
                           />
@@ -1224,14 +1224,14 @@ function Admin() {
                             className="border-b border-border/40 hover:bg-muted/10 transition-colors cursor-pointer"
                           >
                             <Td className="font-mono text-[11px]">{u.userId}</Td>
-                            <Td className="font-mono text-[11px]">{u.contact}</Td>
-                            <Td className="font-mono text-[11px]">{u.email || "—"}</Td>
-                            <Td>{u.name || "—"}</Td>
-                            <Td className="font-bold text-center">{u.referCount ?? 0}</Td>
-                            <Td className="font-mono text-[11px]">{u.referredBy || "—"}</Td>
                             <Td className="text-muted-foreground text-[11px]">
                               {u.joinedAtIso ? new Date(u.joinedAtIso).toLocaleDateString() : "—"}
                             </Td>
+                            <Td className="font-mono text-[11px]">{u.contact}</Td>
+                            <Td>{u.name || "—"}</Td>
+                            <Td className="font-mono text-[11px]">{u.email || "—"}</Td>
+                            <Td className="font-bold text-center">{u.referCount ?? 0}</Td>
+                            <Td className="font-mono text-[11px]">{u.referredBy || "—"}</Td>
                             <Td className="font-medium text-center">{u.completedAll3Days}</Td>
                             <Td className="font-bold text-center">{u.completedAll3Plays}</Td>
                           </tr>

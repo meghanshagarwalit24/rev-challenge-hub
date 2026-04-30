@@ -142,7 +142,11 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
       const bestByDate = new Map<string, (typeof completedAttempts)[number]>();
       for (const attempt of completedAttempts) {
         const current = bestByDate.get(attempt.date);
-        if (!current || attempt.total > current.total) {
+        if (
+          !current ||
+          attempt.total > current.total ||
+          (attempt.total === current.total && attempt.playedAt > current.playedAt)
+        ) {
           bestByDate.set(attempt.date, attempt);
         }
       }
@@ -176,6 +180,7 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
   const sortedEntries = [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
   const priorWinnerIds = new Set<string>();
   const withWinners = sortedEntries.map(([date, userList]) => {
+    const sortedUsers = [...userList].sort((a, b) => b.total - a.total);
     const winners = [...userList]
       .filter((u) => !priorWinnerIds.has(u.userId))
       .sort((a, b) => b.total - a.total)
@@ -189,7 +194,7 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
       }));
 
     winners.forEach((winner) => priorWinnerIds.add(winner.userId));
-    return { date, users: userList, winners };
+    return { date, users: sortedUsers, winners };
   });
 
   return withWinners.sort((a, b) => b.date.localeCompare(a.date));

@@ -115,7 +115,7 @@ function Landing() {
               <span className="absolute inset-0 rounded-full shimmer opacity-0 group-hover:opacity-100" />
             </Link>
             <Link
-              to="/retrieve"
+              to="/auth"
               className="px-6 py-4 rounded-full border-2 border-[var(--garnet)]/20 bg-white/80 backdrop-blur text-garnet hover:bg-white hover:border-[var(--tiger)] transition-colors font-semibold"
             >
               View My Score

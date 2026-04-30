@@ -164,7 +164,7 @@ function MemoryGame() {
           }}
         />
       )}
-      <main className="max-w-2xl mx-auto px-4 py-6">
+      <main className="max-w-2xl mx-auto px-4 py-4 md:py-3">
         <div className="text-center">
           <h1 className="text-2xl md:text-4xl font-black">🧠 Memory Match</h1>
           <p className="text-sm text-muted-foreground mt-1">Match all {TOTAL_PAIRS} pairs · {Math.max(0, MAX_DURATION - seconds)}s left</p>
@@ -179,7 +179,7 @@ function MemoryGame() {
           <Stat label="Pairs" value={`${matchedPairs}/${TOTAL_PAIRS}`} />
         </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-2 md:gap-3">
+        <div className="mt-4 md:mt-3 grid grid-cols-3 gap-2 md:gap-2.5 w-full max-w-[30rem] mx-auto">
           {grid.map((cell, idx) => {
             if (cell === "center") {
               return (
@@ -226,7 +226,7 @@ function MemoryGame() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[90] flex items-center justify-center bg-background/85 backdrop-blur-md px-4">
               <div className="bg-gradient-card border border-border rounded-3xl p-8 text-center shadow-card max-w-sm w-full">
                 <div className="text-5xl mb-3">🧠</div>
-                <h2 className="text-2xl font-black text-gradient-energy">Nice work!</h2>
+                <h2 className="text-2xl font-black text-gradient-energy">You can do better</h2>
                 <p className="mt-3 text-sm text-muted-foreground">Loading next challenge…</p>
               </div>
             </motion.div>

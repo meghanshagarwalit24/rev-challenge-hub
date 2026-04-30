@@ -10,11 +10,11 @@ export const Route = createFileRoute("/play/balance")({
   component: BalanceGame,
 });
 
-const DURATION = 15; // seconds
-const GRAVITY = 0.55;
-const TAP_BOOST = -8;
+const DURATION = 20; // seconds (aligned with demo)
+const GRAVITY = 0.35;
+const TAP_BOOST = -6.5;
 const TARGET_Y = 50; // % from top — sweet zone center
-const TARGET_BAND = 18; // % half-width
+const TARGET_BAND = 15; // % half-width (35% to 65% zone)
 
 function BalanceGame() {
   const nav = useNavigate();
@@ -44,7 +44,8 @@ function BalanceGame() {
   useEffect(() => {
     if (!running) return;
     const tick = (t: number) => {
-      const dt = Math.min(48, t - lastFrame.current) / 16.67;
+      const frameMs = Math.min(48, t - lastFrame.current);
+      const dt = frameMs / 16.67;
       lastFrame.current = t;
       vRef.current += GRAVITY * dt;
       yRef.current += vRef.current * dt;
@@ -53,8 +54,7 @@ function BalanceGame() {
       setY(yRef.current);
 
       if (Math.abs(yRef.current - TARGET_Y) < TARGET_BAND) {
-        setHold(h => h + (t - (lastFrame.current - (t - lastFrame.current))));
-        setHold(h => h + 16);
+        setHold((h) => h + frameMs);
       }
 
       const elapsed = (t - startedAt.current) / 1000;

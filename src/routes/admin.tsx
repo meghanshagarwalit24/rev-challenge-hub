@@ -430,6 +430,9 @@ function Admin() {
   const [dateWiseTo, setDateWiseTo] = useState("");
   const [dateWisePage, setDateWisePage] = useState(1);
   const [dateWisePerPage, setDateWisePerPage] = useState(10);
+  const [dateWiseExportFormat, setDateWiseExportFormat] = useState<"csv" | "excel" | "pdf">(
+    "csv",
+  );
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [userSort, setUserSort] = useState<{ key: UserSortKey; dir: SortDir }>({
     key: "joinedOn",
@@ -837,7 +840,7 @@ function Admin() {
     addLog("EXPORT_PDF", `Exported ${filtered.length} users as PDF`);
   };
 
-  const handleDateWiseExportCsv = () => {
+  const buildDateWiseExportRows = () => {
     const rows: (string | number)[][] = [
       ["Date", "User ID", "Contact", "Email", "Name", "Reflex", "Memory", "Balance", "Total", "Category"],
       ...dateWise.flatMap((d) =>
@@ -855,7 +858,24 @@ function Admin() {
         ]),
       ),
     ];
+    return rows;
+  };
+
+  const handleDateWiseExport = () => {
+    const rows = buildDateWiseExportRows();
+    const stamp = Date.now();
+    if (dateWiseExportFormat === "excel") {
+      exportExcel(rows, `datewise-users-${stamp}.xls`);
+      addLog("DATEWISE_EXPORT_EXCEL", `Exported ${rows.length - 1} date-wise rows as Excel`);
+      return;
+    }
+    if (dateWiseExportFormat === "pdf") {
+      exportPdf(rows, `datewise-users-${stamp}.pdf`);
+      addLog("DATEWISE_EXPORT_PDF", `Exported ${rows.length - 1} date-wise rows as PDF`);
+      return;
+    }
     downloadCsv("datewise-users.csv", rows);
+    addLog("DATEWISE_EXPORT_CSV", `Exported ${rows.length - 1} date-wise rows as CSV`);
   };
 
   const saveSettings = async (e: React.FormEvent) => {
@@ -1497,13 +1517,26 @@ function Admin() {
                         </option>
                       ))}
                     </select>
-                    <button
-                      type="button"
-                      onClick={handleDateWiseExportCsv}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border hover:bg-muted/30 font-bold transition-colors text-xs"
-                    >
-                      <Download className="w-3.5 h-3.5" /> Export CSV
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={dateWiseExportFormat}
+                        onChange={(e) =>
+                          setDateWiseExportFormat(e.target.value as "csv" | "excel" | "pdf")
+                        }
+                        className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
+                      >
+                        <option value="csv">CSV</option>
+                        <option value="excel">Excel</option>
+                        <option value="pdf">PDF</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={handleDateWiseExport}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border hover:bg-muted/30 font-bold transition-colors text-xs"
+                      >
+                        <Download className="w-3.5 h-3.5" /> Export {dateWiseExportFormat.toUpperCase()}
+                      </button>
+                    </div>
                     {(dateWiseSearch || dateWiseFrom || dateWiseTo) && (
                       <button
                         onClick={() => {
@@ -1988,7 +2021,7 @@ function KpiCard({
   info: string;
 }) {
   return (
-    <div className="bg-gradient-card border border-border rounded-2xl p-3 shadow-card">
+    <div className="relative overflow-visible bg-gradient-card border border-border rounded-2xl p-3 shadow-card hover:z-30">
       <div className="flex items-start justify-between gap-2">
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{title}</p>
         <div className="relative group/info">
@@ -1998,7 +2031,7 @@ function KpiCard({
           >
             <CircleHelp className="w-3.5 h-3.5" />
           </span>
-          <div className="pointer-events-none absolute right-0 top-6 z-20 hidden w-56 rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
+          <div className="pointer-events-none absolute right-0 top-6 z-50 hidden w-56 rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
             {info}
           </div>
         </div>

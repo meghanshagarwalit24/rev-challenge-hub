@@ -164,7 +164,7 @@ function MemoryGame() {
           }}
         />
       )}
-      <main className="max-w-2xl mx-auto px-4 py-6">
+      <main className="max-w-2xl mx-auto px-4 py-4 md:py-3">
         <div className="text-center">
           <h1 className="text-2xl md:text-4xl font-black">🧠 Memory Match</h1>
           <p className="text-sm text-muted-foreground mt-1">Match all {TOTAL_PAIRS} pairs · {Math.max(0, MAX_DURATION - seconds)}s left</p>
@@ -179,7 +179,7 @@ function MemoryGame() {
           <Stat label="Pairs" value={`${matchedPairs}/${TOTAL_PAIRS}`} />
         </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-2 md:gap-3">
+        <div className="mt-4 md:mt-3 grid grid-cols-3 gap-2 md:gap-2.5 w-full max-w-[30rem] mx-auto">
           {grid.map((cell, idx) => {
             if (cell === "center") {
               return (

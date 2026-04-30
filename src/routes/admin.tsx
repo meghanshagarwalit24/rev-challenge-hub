@@ -426,6 +426,10 @@ function Admin() {
   const [search, setSearch] = useState("");
   const [logSearch, setLogSearch] = useState("");
   const [dateWiseSearch, setDateWiseSearch] = useState("");
+  const [dateWiseFrom, setDateWiseFrom] = useState("");
+  const [dateWiseTo, setDateWiseTo] = useState("");
+  const [dateWisePage, setDateWisePage] = useState(1);
+  const [dateWisePerPage, setDateWisePerPage] = useState(10);
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [userSort, setUserSort] = useState<{ key: UserSortKey; dir: SortDir }>({
     key: "joinedOn",
@@ -683,9 +687,14 @@ function Admin() {
   // ── Date-wise ───────────────────────────────────────────────────────────────
   const dateWise = useMemo(() => {
     const all = groupByDate(users);
-    if (!dateWiseSearch) return all;
+    const ranged = all.filter((d) => {
+      if (dateWiseFrom && d.date < dateWiseFrom) return false;
+      if (dateWiseTo && d.date > dateWiseTo) return false;
+      return true;
+    });
+    if (!dateWiseSearch) return ranged;
     const q = dateWiseSearch.toLowerCase();
-    return all
+    return ranged
       .map((d) => ({
         ...d,
         users: d.users.filter(
@@ -697,7 +706,23 @@ function Admin() {
         ),
       }))
       .filter((d) => d.date.includes(q) || d.users.length > 0);
-  }, [users, dateWiseSearch]);
+  }, [users, dateWiseSearch, dateWiseFrom, dateWiseTo]);
+
+  const dateWiseTotalPages = Math.max(1, Math.ceil(dateWise.length / dateWisePerPage));
+  const paginatedDateWise = useMemo(() => {
+    const start = (dateWisePage - 1) * dateWisePerPage;
+    return dateWise.slice(start, start + dateWisePerPage);
+  }, [dateWise, dateWisePage, dateWisePerPage]);
+
+  useEffect(() => {
+    setDateWisePage(1);
+  }, [dateWiseSearch, dateWiseFrom, dateWiseTo, dateWisePerPage]);
+
+  useEffect(() => {
+    if (dateWisePage > dateWiseTotalPages) {
+      setDateWisePage(dateWiseTotalPages);
+    }
+  }, [dateWisePage, dateWiseTotalPages]);
 
   // ── Streaks ─────────────────────────────────────────────────────────────────
   const streaks = useMemo(
@@ -810,6 +835,27 @@ function Admin() {
     ];
     exportPdf(rows, `revital-users-${Date.now()}.pdf`);
     addLog("EXPORT_PDF", `Exported ${filtered.length} users as PDF`);
+  };
+
+  const handleDateWiseExportCsv = () => {
+    const rows: (string | number)[][] = [
+      ["Date", "User ID", "Contact", "Email", "Name", "Reflex", "Memory", "Balance", "Total", "Category"],
+      ...dateWise.flatMap((d) =>
+        d.users.map((u) => [
+          d.date,
+          u.userId,
+          u.contact,
+          u.email || "",
+          u.name || "",
+          u.scores.reflex ?? "",
+          u.scores.memory ?? "",
+          u.scores.balance ?? "",
+          u.total,
+          u.category,
+        ]),
+      ),
+    ];
+    downloadCsv("datewise-users.csv", rows);
   };
 
   const saveSettings = async (e: React.FormEvent) => {
@@ -1417,21 +1463,66 @@ function Admin() {
                     Users grouped by the dates they played.
                   </p>
 
-                  <div className="relative mb-3">
-                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <input
+                        value={dateWiseSearch}
+                        onChange={(e) => setDateWiseSearch(e.target.value)}
+                        placeholder="Search by date, user, contact…"
+                        className="pl-7 pr-3 py-1.5 bg-background/60 border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-ring text-xs w-full min-w-[240px]"
+                      />
+                    </div>
                     <input
-                      value={dateWiseSearch}
-                      onChange={(e) => setDateWiseSearch(e.target.value)}
-                      placeholder="Search by date, user, contact…"
-                      className="pl-7 pr-3 py-1.5 bg-background/60 border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-ring text-xs w-full max-w-xs"
+                      type="date"
+                      value={dateWiseFrom}
+                      onChange={(e) => setDateWiseFrom(e.target.value)}
+                      className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
                     />
+                    <span className="text-xs text-muted-foreground">to</span>
+                    <input
+                      type="date"
+                      value={dateWiseTo}
+                      onChange={(e) => setDateWiseTo(e.target.value)}
+                      className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
+                    />
+                    <select
+                      value={dateWisePerPage}
+                      onChange={(e) => setDateWisePerPage(Number(e.target.value))}
+                      className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
+                    >
+                      {[10, 25, 50, 100].map((size) => (
+                        <option key={size} value={size}>
+                          {size}/page
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleDateWiseExportCsv}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border hover:bg-muted/30 font-bold transition-colors text-xs"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Export CSV
+                    </button>
+                    {(dateWiseSearch || dateWiseFrom || dateWiseTo) && (
+                      <button
+                        onClick={() => {
+                          setDateWiseSearch("");
+                          setDateWiseFrom("");
+                          setDateWiseTo("");
+                        }}
+                        className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-full"
+                      >
+                        Clear
+                      </button>
+                    )}
                   </div>
 
                   <div className="space-y-3">
                     {dateWise.length === 0 && (
                       <p className="text-muted-foreground text-sm py-8 text-center">No data yet.</p>
                     )}
-                    {dateWise.map((d) => {
+                    {paginatedDateWise.map((d) => {
                       const isOpen = expandedDates.has(d.date);
                       const winnerIds = new Set(d.winners.map((w) => w.userId));
                       const toggle = () => {
@@ -1530,6 +1621,33 @@ function Admin() {
                         </div>
                       );
                     })}
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs text-muted-foreground">
+                      Showing {dateWise.length === 0 ? 0 : (dateWisePage - 1) * dateWisePerPage + 1}-
+                      {Math.min(dateWisePage * dateWisePerPage, dateWise.length)} of {dateWise.length} dates
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDateWisePage((p) => Math.max(1, p - 1))}
+                        disabled={dateWisePage === 1}
+                        className="px-3 py-1.5 rounded-full border border-border text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted/20"
+                      >
+                        Prev
+                      </button>
+                      <span className="text-xs text-muted-foreground">
+                        Page {dateWisePage} of {dateWiseTotalPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setDateWisePage((p) => Math.min(dateWiseTotalPages, p + 1))}
+                        disabled={dateWisePage === dateWiseTotalPages}
+                        className="px-3 py-1.5 rounded-full border border-border text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted/20"
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               )}

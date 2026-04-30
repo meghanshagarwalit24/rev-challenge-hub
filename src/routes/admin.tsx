@@ -33,6 +33,8 @@ import {
   ArrowDown,
   CircleHelp,
 } from "lucide-react";
+import { Leaderboard } from "@/components/Leaderboard";
+import { getDailyLeaderboard, getGlobalLeaderboard, type LeaderEntry } from "@/lib/leaderboard";
 import { getAllUsersRemote, calcStreak, dedupeAttempts, type UserRecord } from "@/lib/storage";
 import type { AdminLog, PlatformSettings } from "@/server/adminFns";
 
@@ -396,6 +398,8 @@ function Admin() {
   const [tab, setTab] = useState<Tab>("overview");
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [logs, setLogs] = useState<AdminLog[]>([]);
+  const [dailyLeaders, setDailyLeaders] = useState<LeaderEntry[]>([]);
+  const [globalLeaders, setGlobalLeaders] = useState<LeaderEntry[]>([]);
   const [settings, setSettings] = useState<PlatformSettings>({
     ga4: "",
     metaPixel: "",
@@ -422,11 +426,17 @@ function Admin() {
   const [search, setSearch] = useState("");
   const [logSearch, setLogSearch] = useState("");
   const [dateWiseSearch, setDateWiseSearch] = useState("");
+  const [dateWiseFrom, setDateWiseFrom] = useState("");
+  const [dateWiseTo, setDateWiseTo] = useState("");
+  const [dateWisePage, setDateWisePage] = useState(1);
+  const [dateWisePerPage, setDateWisePerPage] = useState(10);
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [userSort, setUserSort] = useState<{ key: UserSortKey; dir: SortDir }>({
     key: "joinedOn",
     dir: "desc",
   });
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersPerPage, setUsersPerPage] = useState(10);
 
   const addLog = useCallback(async (action: string, details: string) => {
     try {
@@ -440,8 +450,15 @@ function Admin() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [u, adminMod] = await Promise.all([getAllUsersRemote(), import("@/server/adminFns")]);
+      const [u, adminMod, daily, global] = await Promise.all([
+        getAllUsersRemote(),
+        import("@/server/adminFns"),
+        getDailyLeaderboard(),
+        getGlobalLeaderboard(),
+      ]);
       setUsers(u);
+      setDailyLeaders(daily);
+      setGlobalLeaders(global);
       const [l, s] = await Promise.all([
         adminMod.getAdminLogsFn(),
         adminMod.getPlatformSettingsFn(),
@@ -571,6 +588,23 @@ function Admin() {
     });
   }, [filtered, userSort]);
 
+  const paginatedUsers = useMemo(() => {
+    const start = (usersPage - 1) * usersPerPage;
+    return sortedFiltered.slice(start, start + usersPerPage);
+  }, [sortedFiltered, usersPage, usersPerPage]);
+
+  const totalUserPages = Math.max(1, Math.ceil(sortedFiltered.length / usersPerPage));
+
+  useEffect(() => {
+    setUsersPage(1);
+  }, [search, filterCat, from, to, userSort, usersPerPage]);
+
+  useEffect(() => {
+    if (usersPage > totalUserPages) {
+      setUsersPage(totalUserPages);
+    }
+  }, [usersPage, totalUserPages]);
+
   const toggleUserSort = (key: UserSortKey) => {
     setUserSort((prev) =>
       prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" },
@@ -653,9 +687,14 @@ function Admin() {
   // ── Date-wise ───────────────────────────────────────────────────────────────
   const dateWise = useMemo(() => {
     const all = groupByDate(users);
-    if (!dateWiseSearch) return all;
+    const ranged = all.filter((d) => {
+      if (dateWiseFrom && d.date < dateWiseFrom) return false;
+      if (dateWiseTo && d.date > dateWiseTo) return false;
+      return true;
+    });
+    if (!dateWiseSearch) return ranged;
     const q = dateWiseSearch.toLowerCase();
-    return all
+    return ranged
       .map((d) => ({
         ...d,
         users: d.users.filter(
@@ -667,7 +706,23 @@ function Admin() {
         ),
       }))
       .filter((d) => d.date.includes(q) || d.users.length > 0);
-  }, [users, dateWiseSearch]);
+  }, [users, dateWiseSearch, dateWiseFrom, dateWiseTo]);
+
+  const dateWiseTotalPages = Math.max(1, Math.ceil(dateWise.length / dateWisePerPage));
+  const paginatedDateWise = useMemo(() => {
+    const start = (dateWisePage - 1) * dateWisePerPage;
+    return dateWise.slice(start, start + dateWisePerPage);
+  }, [dateWise, dateWisePage, dateWisePerPage]);
+
+  useEffect(() => {
+    setDateWisePage(1);
+  }, [dateWiseSearch, dateWiseFrom, dateWiseTo, dateWisePerPage]);
+
+  useEffect(() => {
+    if (dateWisePage > dateWiseTotalPages) {
+      setDateWisePage(dateWiseTotalPages);
+    }
+  }, [dateWisePage, dateWiseTotalPages]);
 
   // ── Streaks ─────────────────────────────────────────────────────────────────
   const streaks = useMemo(
@@ -780,6 +835,27 @@ function Admin() {
     ];
     exportPdf(rows, `revital-users-${Date.now()}.pdf`);
     addLog("EXPORT_PDF", `Exported ${filtered.length} users as PDF`);
+  };
+
+  const handleDateWiseExportCsv = () => {
+    const rows: (string | number)[][] = [
+      ["Date", "User ID", "Contact", "Email", "Name", "Reflex", "Memory", "Balance", "Total", "Category"],
+      ...dateWise.flatMap((d) =>
+        d.users.map((u) => [
+          d.date,
+          u.userId,
+          u.contact,
+          u.email || "",
+          u.name || "",
+          u.scores.reflex ?? "",
+          u.scores.memory ?? "",
+          u.scores.balance ?? "",
+          u.total,
+          u.category,
+        ]),
+      ),
+    ];
+    downloadCsv("datewise-users.csv", rows);
   };
 
   const saveSettings = async (e: React.FormEvent) => {
@@ -992,9 +1068,9 @@ function Admin() {
                       info="Completed All divided by Total Users, shown as a percentage."
                     />
                     <KpiCard
-                      title="User Registered Using Referral"
-                      value={stats.referredUsers}
-                      info="Users who signed up with a referral code (referredBy is present)."
+                      title="Total Referrals"
+                      value={stats.totalReferrals}
+                      info="Total successful referrals generated by users (sum of each user's referral count)."
                     />
                   </div>
 
@@ -1062,6 +1138,24 @@ function Admin() {
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                    <Leaderboard
+                      title="Today's Leaders"
+                      subtitle="Daily Reward Pool"
+                      emoji="🔥"
+                      entries={dailyLeaders}
+                      accent="tiger"
+                    />
+                    <Leaderboard
+                      title="Global Leaderboard"
+                      subtitle="All-Time Top 10"
+                      emoji="👑"
+                      entries={globalLeaders}
+                      accent="marigold"
+                      highlightWinner={false}
+                    />
                   </div>
 
                   {stats.topReferrers.length > 0 && (
@@ -1177,6 +1271,31 @@ function Admin() {
                   <p className="text-xs text-muted-foreground mt-1">
                     {filtered.length} of {users.length} users
                   </p>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs text-muted-foreground">
+                      Showing{" "}
+                      {sortedFiltered.length === 0 ? 0 : (usersPage - 1) * usersPerPage + 1}-
+                      {Math.min(usersPage * usersPerPage, sortedFiltered.length)} of{" "}
+                      {sortedFiltered.length}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <label htmlFor="users-per-page" className="text-xs text-muted-foreground">
+                        Rows per page
+                      </label>
+                      <select
+                        id="users-per-page"
+                        value={usersPerPage}
+                        onChange={(e) => setUsersPerPage(Number(e.target.value))}
+                        className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
+                      >
+                        {[10, 25, 50, 100].map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
 
                   <div className="mt-3 bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
                     <table className="w-full text-sm min-w-[900px]">
@@ -1279,9 +1398,9 @@ function Admin() {
                             </td>
                           </tr>
                         )}
-                        {sortedFiltered.map((u, i) => (
+                        {paginatedUsers.map((u, i) => (
                           <tr
-                            key={i}
+                            key={u.userId}
                             onClick={() =>
                               navigate({ to: "/admin/user/$userId", params: { userId: u.userId } })
                             }
@@ -1308,6 +1427,27 @@ function Admin() {
                       </tbody>
                     </table>
                   </div>
+                  <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setUsersPage((p) => Math.max(1, p - 1))}
+                      disabled={usersPage === 1}
+                      className="px-3 py-1.5 rounded-full border border-border text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted/20"
+                    >
+                      Prev
+                    </button>
+                    <span className="text-xs text-muted-foreground">
+                      Page {usersPage} of {totalUserPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setUsersPage((p) => Math.min(totalUserPages, p + 1))}
+                      disabled={usersPage === totalUserPages}
+                      className="px-3 py-1.5 rounded-full border border-border text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted/20"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </motion.div>
               )}
 
@@ -1323,21 +1463,66 @@ function Admin() {
                     Users grouped by the dates they played.
                   </p>
 
-                  <div className="relative mb-3">
-                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <input
+                        value={dateWiseSearch}
+                        onChange={(e) => setDateWiseSearch(e.target.value)}
+                        placeholder="Search by date, user, contact…"
+                        className="pl-7 pr-3 py-1.5 bg-background/60 border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-ring text-xs w-full min-w-[240px]"
+                      />
+                    </div>
                     <input
-                      value={dateWiseSearch}
-                      onChange={(e) => setDateWiseSearch(e.target.value)}
-                      placeholder="Search by date, user, contact…"
-                      className="pl-7 pr-3 py-1.5 bg-background/60 border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-ring text-xs w-full max-w-xs"
+                      type="date"
+                      value={dateWiseFrom}
+                      onChange={(e) => setDateWiseFrom(e.target.value)}
+                      className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
                     />
+                    <span className="text-xs text-muted-foreground">to</span>
+                    <input
+                      type="date"
+                      value={dateWiseTo}
+                      onChange={(e) => setDateWiseTo(e.target.value)}
+                      className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
+                    />
+                    <select
+                      value={dateWisePerPage}
+                      onChange={(e) => setDateWisePerPage(Number(e.target.value))}
+                      className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
+                    >
+                      {[10, 25, 50, 100].map((size) => (
+                        <option key={size} value={size}>
+                          {size}/page
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleDateWiseExportCsv}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border hover:bg-muted/30 font-bold transition-colors text-xs"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Export CSV
+                    </button>
+                    {(dateWiseSearch || dateWiseFrom || dateWiseTo) && (
+                      <button
+                        onClick={() => {
+                          setDateWiseSearch("");
+                          setDateWiseFrom("");
+                          setDateWiseTo("");
+                        }}
+                        className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-full"
+                      >
+                        Clear
+                      </button>
+                    )}
                   </div>
 
                   <div className="space-y-3">
                     {dateWise.length === 0 && (
                       <p className="text-muted-foreground text-sm py-8 text-center">No data yet.</p>
                     )}
-                    {dateWise.map((d) => {
+                    {paginatedDateWise.map((d) => {
                       const isOpen = expandedDates.has(d.date);
                       const winnerIds = new Set(d.winners.map((w) => w.userId));
                       const toggle = () => {
@@ -1436,6 +1621,33 @@ function Admin() {
                         </div>
                       );
                     })}
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs text-muted-foreground">
+                      Showing {dateWise.length === 0 ? 0 : (dateWisePage - 1) * dateWisePerPage + 1}-
+                      {Math.min(dateWisePage * dateWisePerPage, dateWise.length)} of {dateWise.length} dates
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDateWisePage((p) => Math.max(1, p - 1))}
+                        disabled={dateWisePage === 1}
+                        className="px-3 py-1.5 rounded-full border border-border text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted/20"
+                      >
+                        Prev
+                      </button>
+                      <span className="text-xs text-muted-foreground">
+                        Page {dateWisePage} of {dateWiseTotalPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setDateWisePage((p) => Math.min(dateWiseTotalPages, p + 1))}
+                        disabled={dateWisePage === dateWiseTotalPages}
+                        className="px-3 py-1.5 rounded-full border border-border text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted/20"
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -1779,13 +1991,17 @@ function KpiCard({
     <div className="bg-gradient-card border border-border rounded-2xl p-3 shadow-card">
       <div className="flex items-start justify-between gap-2">
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{title}</p>
-        <span
-          className="text-muted-foreground/80 hover:text-accent transition-colors cursor-help mt-0.5"
-          title={info}
-          aria-label={info}
-        >
-          <CircleHelp className="w-3.5 h-3.5" />
-        </span>
+        <div className="relative group/info">
+          <span
+            className="text-muted-foreground/80 hover:text-accent transition-colors cursor-help mt-0.5 inline-flex"
+            aria-label={info}
+          >
+            <CircleHelp className="w-3.5 h-3.5" />
+          </span>
+          <div className="pointer-events-none absolute right-0 top-6 z-20 hidden w-56 rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
+            {info}
+          </div>
+        </div>
       </div>
       <p className="text-lg font-black mt-1 text-gradient-energy">{value}</p>
     </div>

@@ -402,7 +402,13 @@ function Admin() {
     recaptchaSite: "",
     recaptchaSecret: "",
     homeAnnouncementMode: "winner",
-    homeAnnouncementText: "🔥 Play now and become today's Revital Energy Challenge winner!",
+    homeAnnouncementTexts: [
+      "🔥 Play now and become today's Revital Energy Challenge winner!",
+      "",
+      "",
+      "",
+      "",
+    ],
   });
   const [savedFlash, setSavedFlash] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -1698,13 +1704,29 @@ function Admin() {
                           </select>
                         </div>
                         {settings.homeAnnouncementMode === "text" && (
-                          <SettingsField
-                            label="Custom text"
-                            value={settings.homeAnnouncementText}
-                            onChange={(v) => setSettings((s) => ({ ...s, homeAnnouncementText: v }))}
-                            placeholder="Type announcement text shown when custom text is selected"
-                            hint="Used on the moving bar at the top of the home page."
-                          />
+                          <div className="space-y-3">
+                            {settings.homeAnnouncementTexts.map((text, index) => (
+                              <SettingsField
+                                key={index}
+                                label={`Custom text ${index + 1}`}
+                                value={text}
+                                onChange={(v) =>
+                                  setSettings((s) => ({
+                                    ...s,
+                                    homeAnnouncementTexts: s.homeAnnouncementTexts.map((entry, i) =>
+                                      i === index ? v : entry,
+                                    ),
+                                  }))
+                                }
+                                placeholder={`Type custom announcement ${index + 1}`}
+                                hint={
+                                  index === 0
+                                    ? "Up to 5 texts are shown on the moving bar at the top of the home page."
+                                    : undefined
+                                }
+                              />
+                            ))}
+                          </div>
                         )}
                       </div>
                     </SettingsSection>

@@ -57,6 +57,32 @@ function ReflexGame() {
     setTimeout(() => nav({ to: "/play/memory" }), 1500);
   };
 
+
+  const completeRound = (reactionMs: number, premature = false) => {
+    setLastReactionMs(reactionMs);
+    const next = [...times, reactionMs];
+    const nextRound = round + 1;
+    setTimes(next);
+    setRound(nextRound);
+
+    if (nextRound >= ROUNDS) {
+      finish(next);
+      return;
+    }
+
+    if (premature) {
+      setPhase("tooSoon");
+      timeoutRef.current = setTimeout(() => {
+        setPhase("idle");
+        startRound();
+      }, 1500);
+      return;
+    }
+
+    setPhase("idle");
+    timeoutRef.current = setTimeout(startRound, 1000);
+  };
+
   const handleTap = () => {
     if (showStart || phase === "done") return;
 
@@ -68,28 +94,13 @@ function ReflexGame() {
     if (phase === "waiting") {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      setPhase("tooSoon");
-      timeoutRef.current = setTimeout(() => {
-        setPhase("idle");
-        startRound();
-      }, 1500);
+      completeRound(0, true);
       return;
     }
 
     if (phase === "go") {
       const reflexMs = Math.round(performance.now() - startRef.current);
-      setLastReactionMs(reflexMs);
-      const next = [...times, reflexMs];
-      const nextRound = round + 1;
-      setTimes(next);
-      setRound(nextRound);
-
-      if (nextRound >= ROUNDS) {
-        finish(next);
-      } else {
-        setPhase("idle");
-        timeoutRef.current = setTimeout(startRound, 1000);
-      }
+      completeRound(reflexMs);
     }
   };
 

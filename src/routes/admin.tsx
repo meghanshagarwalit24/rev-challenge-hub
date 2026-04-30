@@ -1647,13 +1647,15 @@ function Admin() {
                             <option value="text">Show custom text</option>
                           </select>
                         </div>
-                        <SettingsField
-                          label="Custom text"
-                          value={settings.homeAnnouncementText}
-                          onChange={(v) => setSettings((s) => ({ ...s, homeAnnouncementText: v }))}
-                          placeholder="Type announcement text shown when custom text is selected"
-                          hint="Used on the moving bar at the top of the home page."
-                        />
+                        {settings.homeAnnouncementMode === "text" && (
+                          <SettingsField
+                            label="Custom text"
+                            value={settings.homeAnnouncementText}
+                            onChange={(v) => setSettings((s) => ({ ...s, homeAnnouncementText: v }))}
+                            placeholder="Type announcement text shown when custom text is selected"
+                            hint="Used on the moving bar at the top of the home page."
+                          />
+                        )}
                       </div>
                     </SettingsSection>
 

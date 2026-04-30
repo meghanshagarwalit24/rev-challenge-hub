@@ -6,6 +6,7 @@ import {
   categorize,
   computeTotal,
   findUserByContact,
+  findUserByContactRemote,
   generateUserId,
   getCurrentScores,
   MOCK_OTP,
@@ -26,6 +27,7 @@ function Auth() {
   const [consent, setConsent] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+  const [existingUser, setExistingUser] = useState<Awaited<ReturnType<typeof findUserByContactRemote>>>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -37,6 +39,20 @@ function Auth() {
     window.localStorage.setItem("revital_referral_code", normalizedRef);
     setReferredBy(normalizedRef);
   }, [nav]);
+
+  useEffect(() => {
+    const normalizedContact = normalizeUaePhone(contact);
+    const isCandidate = /^\+9715\d{8}$/.test(normalizedContact);
+    if (!isCandidate) {
+      setExistingUser(null);
+      return;
+    }
+    const timer = window.setTimeout(async () => {
+      const user = await findUserByContactRemote(normalizedContact);
+      setExistingUser(user);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [contact]);
 
   const goToProfile = async () => {
     try {
@@ -133,17 +149,21 @@ function Auth() {
                   <label className="text-xs uppercase tracking-wider text-muted-foreground">
                     UAE Mobile Number
                   </label>
-                  <input
-                    autoFocus
-                    value={contact}
-                    onChange={(e) => setContact(e.target.value)}
-                    placeholder="+971 50 123 4567"
-                    className="mt-2 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
-                  />
+                  <div className="mt-2 flex items-center rounded-2xl border border-border bg-background/60 px-3 focus-within:ring-2 focus-within:ring-ring">
+                    <span className="text-sm font-semibold text-muted-foreground">+971</span>
+                    <input
+                      autoFocus
+                      value={contact}
+                      onChange={(e) => setContact(e.target.value)}
+                      placeholder="50 123 4567"
+                      className="w-full border-0 bg-transparent px-2 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+                    />
+                  </div>
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
                     Enter a UAE mobile number (e.g. +971501234567) — we'll send a one-time code.
                   </p>
                 </div>
+                {!existingUser && (
                 <div>
                   <label className="text-xs uppercase tracking-wider text-muted-foreground">
                     Referred by{" "}
@@ -162,6 +182,7 @@ function Auth() {
                     🏆
                   </p>
                 </div>
+                )}
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -233,7 +254,15 @@ function Auth() {
     </div>
   );
 }
-const normalizeUaePhone = (value: string): string => value.replace(/[\s()-]/g, "");
+const normalizeUaePhone = (value: string): string => {
+  const raw = value.replace(/[^\d+]/g, "");
+  if (raw.startsWith("+971")) return `+971${raw.slice(4).replace(/\D/g, "")}`;
+  if (raw.startsWith("00971")) return `+971${raw.slice(5).replace(/\D/g, "")}`;
+  if (raw.startsWith("971")) return `+971${raw.slice(3).replace(/\D/g, "")}`;
+  if (raw.startsWith("0")) return `+971${raw.slice(1).replace(/\D/g, "")}`;
+  if (raw.startsWith("5")) return `+971${raw.replace(/\D/g, "")}`;
+  return `+971${raw.replace(/\D/g, "")}`;
+};
 const isValidUaePhone = (value: string): boolean => {
   const normalized = normalizeUaePhone(value);
   return /^(?:\+971|00971|0)?5\d{8}$/.test(normalized);

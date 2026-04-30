@@ -396,6 +396,8 @@ function Admin() {
     clarity: "",
     recaptchaSite: "",
     recaptchaSecret: "",
+    homeAnnouncementMode: "winner",
+    homeAnnouncementText: "🔥 Play now and become today's Revital Energy Challenge winner!",
   });
   const [savedFlash, setSavedFlash] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -1569,7 +1571,7 @@ function Admin() {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <SectionTitle>Tracking & Security Settings</SectionTitle>
+                  <SectionTitle>Tracking, Security & Homepage Settings</SectionTitle>
                   <p className="text-xs text-muted-foreground mt-1 mb-5">
                     Settings are stored in the database and injected into all pages automatically.
                   </p>
@@ -1621,6 +1623,36 @@ function Admin() {
                           placeholder="6Lc…"
                           hint="Used server-side to verify tokens. Keep private."
                           isSecret
+                        />
+                      </div>
+                    </SettingsSection>
+
+                    <SettingsSection title="Homepage Announcement Bar">
+                      <div className="grid md:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                            Content Type
+                          </label>
+                          <select
+                            value={settings.homeAnnouncementMode}
+                            onChange={(e) =>
+                              setSettings((s) => ({
+                                ...s,
+                                homeAnnouncementMode: e.target.value as "winner" | "text",
+                              }))
+                            }
+                            className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                          >
+                            <option value="winner">Show daily winner</option>
+                            <option value="text">Show custom text</option>
+                          </select>
+                        </div>
+                        <SettingsField
+                          label="Custom text"
+                          value={settings.homeAnnouncementText}
+                          onChange={(v) => setSettings((s) => ({ ...s, homeAnnouncementText: v }))}
+                          placeholder="Type announcement text shown when custom text is selected"
+                          hint="Used on the moving bar at the top of the home page."
                         />
                       </div>
                     </SettingsSection>

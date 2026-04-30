@@ -57,6 +57,8 @@ export interface PlatformSettings {
   clarity: string;
   recaptchaSite: string;
   recaptchaSecret: string;
+  homeAnnouncementMode: "winner" | "text";
+  homeAnnouncementText: string;
 }
 
 const settingsSchema = z.object({
@@ -65,6 +67,8 @@ const settingsSchema = z.object({
   clarity: z.string(),
   recaptchaSite: z.string(),
   recaptchaSecret: z.string(),
+  homeAnnouncementMode: z.enum(["winner", "text"]).default("winner"),
+  homeAnnouncementText: z.string(),
 });
 
 export const savePlatformSettingsFn = createServerFn({ method: "POST" })
@@ -91,6 +95,8 @@ export const getPlatformSettingsFn = createServerFn({ method: "GET" }).handler(a
       clarity: "",
       recaptchaSite: "",
       recaptchaSecret: "",
+      homeAnnouncementMode: "winner",
+      homeAnnouncementText: "🔥 Play now and become today's Revital Energy Challenge winner!",
     } as PlatformSettings;
   const { _id: _a, _key: _b, updatedAt: _c, ...rest } = doc;
   return rest as PlatformSettings;

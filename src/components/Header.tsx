@@ -26,9 +26,11 @@ export function Header() {
           <img src={logo} alt="Revital Ginseng Plus" className="h-8 sm:h-9 md:h-12 w-auto object-contain transition-transform group-hover:scale-105" />
         </Link>
         <nav className="flex min-w-0 items-center gap-1 text-xs sm:text-sm">
-          <Link to="/auth" className="px-2.5 sm:px-3 py-2 rounded-full text-garnet/80 hover:text-garnet hover:bg-[var(--marigold)]/30 transition-colors font-medium whitespace-nowrap">
-            My Score
-          </Link>
+          {!user && (
+            <Link to="/auth" className="px-2.5 sm:px-3 py-2 rounded-full text-garnet/80 hover:text-garnet hover:bg-[var(--marigold)]/30 transition-colors font-medium whitespace-nowrap">
+              My Score
+            </Link>
+          )}
           {user ? (
             <div className="relative group/account">
               <button

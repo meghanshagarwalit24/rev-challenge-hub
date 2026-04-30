@@ -430,7 +430,7 @@ function Admin() {
   const [dateWiseTo, setDateWiseTo] = useState("");
   const [dateWisePage, setDateWisePage] = useState(1);
   const [dateWisePerPage, setDateWisePerPage] = useState(10);
-  const [dateWiseExportFormat, setDateWiseExportFormat] = useState<"csv" | "excel" | "pdf">(
+  const [dateWiseExportFormat, setDateWiseExportFormat] = useState<"csv" | "pdf">(
     "csv",
   );
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
@@ -765,6 +765,11 @@ function Admin() {
         "Referral By",
         "Number of Days (All 3 Games)",
         "Number of Times Completed All 3",
+        "UTM Source",
+        "UTM Medium",
+        "UTM Campaign",
+        "UTM Term",
+        "UTM Content",
       ],
       ...filtered.map((u) => [
         u.userId,
@@ -776,6 +781,11 @@ function Admin() {
         u.referredBy || "",
         u.completedAll3Days,
         u.completedAll3Plays,
+        u.utmSource || "",
+        u.utmMedium || "",
+        u.utmCampaign || "",
+        u.utmTerm || "",
+        u.utmContent || "",
       ]),
     ];
     exportCsv(rows, `revital-users-${Date.now()}.csv`);
@@ -794,6 +804,11 @@ function Admin() {
         "Referral By",
         "Number of Days (All 3 Games)",
         "Number of Times Completed All 3",
+        "UTM Source",
+        "UTM Medium",
+        "UTM Campaign",
+        "UTM Term",
+        "UTM Content",
       ],
       ...filtered.map((u) => [
         u.userId,
@@ -805,6 +820,11 @@ function Admin() {
         u.referredBy || "",
         u.completedAll3Days,
         u.completedAll3Plays,
+        u.utmSource || "",
+        u.utmMedium || "",
+        u.utmCampaign || "",
+        u.utmTerm || "",
+        u.utmContent || "",
       ]),
     ];
     exportExcel(rows, `revital-users-${Date.now()}.xls`);
@@ -823,6 +843,11 @@ function Admin() {
         "Referral By",
         "Number of Days (All 3 Games)",
         "Number of Times Completed All 3",
+        "UTM Source",
+        "UTM Medium",
+        "UTM Campaign",
+        "UTM Term",
+        "UTM Content",
       ],
       ...filtered.map((u) => [
         u.userId,
@@ -834,6 +859,11 @@ function Admin() {
         u.referredBy || "",
         u.completedAll3Days,
         u.completedAll3Plays,
+        u.utmSource || "",
+        u.utmMedium || "",
+        u.utmCampaign || "",
+        u.utmTerm || "",
+        u.utmContent || "",
       ]),
     ];
     exportPdf(rows, `revital-users-${Date.now()}.pdf`);
@@ -864,11 +894,6 @@ function Admin() {
   const handleDateWiseExport = () => {
     const rows = buildDateWiseExportRows();
     const stamp = Date.now();
-    if (dateWiseExportFormat === "excel") {
-      exportExcel(rows, `datewise-users-${stamp}.xls`);
-      addLog("DATEWISE_EXPORT_EXCEL", `Exported ${rows.length - 1} date-wise rows as Excel`);
-      return;
-    }
     if (dateWiseExportFormat === "pdf") {
       exportPdf(rows, `datewise-users-${stamp}.pdf`);
       addLog("DATEWISE_EXPORT_PDF", `Exported ${rows.length - 1} date-wise rows as PDF`);
@@ -1521,13 +1546,12 @@ function Admin() {
                       <select
                         value={dateWiseExportFormat}
                         onChange={(e) =>
-                          setDateWiseExportFormat(e.target.value as "csv" | "excel" | "pdf")
+                          setDateWiseExportFormat(e.target.value as "csv" | "pdf")
                         }
                         className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
                       >
                         <option value="csv">CSV</option>
-                        <option value="excel">Excel</option>
-                        <option value="pdf">PDF</option>
+                                                <option value="pdf">PDF</option>
                       </select>
                       <button
                         type="button"

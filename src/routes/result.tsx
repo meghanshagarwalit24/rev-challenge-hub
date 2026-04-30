@@ -49,7 +49,8 @@ function Result() {
   const cat = categorize(total);
   const pct = totalToPercentage(total);
 
-  const shareText = `I scored ${total} — ${cat.label} on the Revital Energy Challenge ⚡ Tag @revital.uae on Instagram & boost your chance to win! ${typeof window !== "undefined" ? window.location.origin : ""}`;
+  const shareUrl = typeof window !== "undefined" ? window.location.origin : "https://revital.com";
+  const shareText = `I scored ${total} — ${cat.label} on the Revital Energy Challenge ⚡ Tag @revital.uae on Instagram & boost your chance to win!`;
   const showShareNotice = (message: string) => {
     setShareNotice(message);
     if (noticeTimeout.current) {
@@ -74,7 +75,12 @@ function Result() {
       const navAny = navigator as any;
       if (navAny.canShare && navAny.canShare({ files: [file] }) && navAny.share) {
         try {
-          await navAny.share({ files: [file], title: "Revital Energy Challenge", text: shareText });
+          await navAny.share({
+            files: [file],
+            title: "Revital Energy Challenge",
+            text: `${shareText} ${shareUrl}`,
+            url: shareUrl,
+          });
           return;
         } catch {}
       }
@@ -86,12 +92,12 @@ function Result() {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      try { await navigator.clipboard.writeText(shareText); } catch {}
+      try { await navigator.clipboard.writeText(`${shareText} ${shareUrl}`); } catch {}
       if (openInstagram) {
-        showShareNotice("Caption copied and download started.");
+        showShareNotice("Image downloaded and caption + link copied. Add them in Instagram story/post.");
         window.open("https://www.instagram.com/", "_blank");
       } else {
-        showShareNotice("Caption copied and download started.");
+        showShareNotice("Image downloaded and caption + link copied.");
       }
     } catch (e) {
       console.error(e);

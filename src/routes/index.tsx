@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
+import { getUser } from "@/lib/storage";
 import { Leaderboard } from "@/components/Leaderboard";
 import { getDailyLeaderboard, getGlobalLeaderboard, type LeaderEntry } from "@/lib/leaderboard";
 import heroWordmark from "@/assets/revital-hero-wordmark.png";
@@ -15,7 +16,11 @@ function Landing() {
   const [daily, setDaily] = useState<LeaderEntry[]>([]);
   const [global, setGlobal] = useState<LeaderEntry[]>([]);
   const [announcement, setAnnouncement] = useState(defaultAnnouncement);
+  const [isLoggedIn, setIsLoggedIn] = useState(Boolean(getUser()));
   useEffect(() => {
+    const syncAuth = () => setIsLoggedIn(Boolean(getUser()));
+    window.addEventListener("revital-auth-changed", syncAuth);
+
     getDailyLeaderboard().then(setDaily);
     getGlobalLeaderboard().then(setGlobal);
     import("@/server/adminFns")
@@ -37,6 +42,8 @@ function Landing() {
         });
       })
       .catch(() => null);
+
+    return () => window.removeEventListener("revital-auth-changed", syncAuth);
   }, []);
 
   return (
@@ -115,7 +122,7 @@ function Landing() {
               <span className="absolute inset-0 rounded-full shimmer opacity-0 group-hover:opacity-100" />
             </Link>
             <Link
-              to="/auth"
+              to={isLoggedIn ? "/profile" : "/auth"}
               className="px-6 py-4 rounded-full border-2 border-[var(--garnet)]/20 bg-white/80 backdrop-blur text-garnet hover:bg-white hover:border-[var(--tiger)] transition-colors font-semibold"
             >
               View My Score

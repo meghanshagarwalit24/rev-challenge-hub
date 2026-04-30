@@ -31,6 +31,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  CircleHelp,
 } from "lucide-react";
 import { getAllUsersRemote, calcStreak, dedupeAttempts, type UserRecord } from "@/lib/storage";
 import type { AdminLog, PlatformSettings } from "@/server/adminFns";
@@ -969,20 +970,32 @@ function Admin() {
                 >
                   <SectionTitle>Campaign Overview</SectionTitle>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3 mt-4">
-                    <KpiCard title="Total Users" value={stats.total} />
-                    <KpiCard title="Avg Score" value={`${stats.avg}/1500`} />
-                    <KpiCard title="Median Score" value={`${stats.median}/1500`} />
-                    <KpiCard title="Best Score" value={`${stats.bestScore}/1500`} />
-                    <KpiCard title="Completed All" value={stats.completed} />
-                    <KpiCard title="Conversion" value={`${stats.completionRate}%`} />
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-                    <KpiCard title="Total Referrals" value={stats.totalReferrals} />
-                    <KpiCard title="Users Referred" value={stats.referredUsers} />
-                    <KpiCard title="Avg Attempts / User" value={stats.attemptsPerUser} />
-                    <KpiCard title="Returning Users" value={stats.returningUsers} />
+                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 mt-4">
+                    <KpiCard
+                      title="Total Users"
+                      value={stats.total}
+                      info="Unique registered users in the platform. Calculated as the count of user records."
+                    />
+                    <KpiCard
+                      title="Avg Score"
+                      value={`${stats.avg}/1500`}
+                      info="Average of each user's best total score (reflex + memory + balance) out of 1500."
+                    />
+                    <KpiCard
+                      title="Completed All"
+                      value={stats.completed}
+                      info="Users whose best attempt includes non-zero reflex, memory, and balance scores."
+                    />
+                    <KpiCard
+                      title="Conversion"
+                      value={`${stats.completionRate}%`}
+                      info="Completed All divided by Total Users, shown as a percentage."
+                    />
+                    <KpiCard
+                      title="User Registered Using Referral"
+                      value={stats.referredUsers}
+                      info="Users who signed up with a referral code (referredBy is present)."
+                    />
                   </div>
 
                   <div className="mt-5 grid md:grid-cols-2 gap-4">
@@ -1753,10 +1766,27 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="text-xl font-black">{children}</h2>;
 }
 
-function KpiCard({ title, value }: { title: string; value: string | number }) {
+function KpiCard({
+  title,
+  value,
+  info,
+}: {
+  title: string;
+  value: string | number;
+  info: string;
+}) {
   return (
     <div className="bg-gradient-card border border-border rounded-2xl p-3 shadow-card">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{title}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{title}</p>
+        <span
+          className="text-muted-foreground/80 hover:text-accent transition-colors cursor-help mt-0.5"
+          title={info}
+          aria-label={info}
+        >
+          <CircleHelp className="w-3.5 h-3.5" />
+        </span>
+      </div>
       <p className="text-lg font-black mt-1 text-gradient-energy">{value}</p>
     </div>
   );

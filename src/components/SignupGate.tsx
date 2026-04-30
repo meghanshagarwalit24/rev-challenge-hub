@@ -4,6 +4,7 @@ import {
   categorize,
   computeTotal,
   findUserByContact,
+  findUserByContactRemote,
   generateUserId,
   getCurrentScores,
   MOCK_OTP,
@@ -17,7 +18,15 @@ interface SignupGateProps {
 
 type Step = "contact" | "otp";
 
-const normalizeUaePhone = (value: string): string => value.replace(/[\s()-]/g, "");
+const normalizeUaePhone = (value: string): string => {
+  const raw = value.replace(/[^\d+]/g, "");
+  if (raw.startsWith("+971")) return `+971${raw.slice(4).replace(/\D/g, "")}`;
+  if (raw.startsWith("00971")) return `+971${raw.slice(5).replace(/\D/g, "")}`;
+  if (raw.startsWith("971")) return `+971${raw.slice(3).replace(/\D/g, "")}`;
+  if (raw.startsWith("0")) return `+971${raw.slice(1).replace(/\D/g, "")}`;
+  if (raw.startsWith("5")) return `+971${raw.replace(/\D/g, "")}`;
+  return `+971${raw.replace(/\D/g, "")}`;
+};
 const isValidUaePhone = (value: string): boolean => {
   const normalized = normalizeUaePhone(value);
   return /^(?:\+971|00971|0)?5\d{8}$/.test(normalized);
@@ -32,10 +41,8 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
   const [consent, setConsent] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
-  const existingUser = useMemo(
-    () => (contact.trim() ? findUserByContact(contact.trim()) : null),
-    [contact],
-  );
+  const existingUser = useMemo(() => (contact.trim() ? findUserByContact(contact.trim()) : null), [contact]);
+  const [existingRemoteUser, setExistingRemoteUser] = useState<Awaited<ReturnType<typeof findUserByContactRemote>>>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -48,6 +55,20 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
       window.localStorage.setItem("revital_referral_code", referralCode);
     }
   }, []);
+
+  useEffect(() => {
+    const normalizedContact = normalizeUaePhone(contact);
+    const isCandidate = /^\+9715\d{8}$/.test(normalizedContact);
+    if (!isCandidate) {
+      setExistingRemoteUser(null);
+      return;
+    }
+    const timer = window.setTimeout(async () => {
+      const user = await findUserByContactRemote(normalizedContact);
+      setExistingRemoteUser(user);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [contact]);
 
   const completeSignup = async (contactValue: string, displayName: string, referrer?: string) => {
     const scores = getCurrentScores();
@@ -161,22 +182,25 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
                 <label className="text-xs uppercase tracking-wider text-muted-foreground">
                   UAE Mobile Number
                 </label>
-                <input
-                  value={contact}
-                  onChange={(e) => setContact(e.target.value)}
-                  placeholder="+971 50 123 4567"
-                  className="mt-1.5 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
-                />
+                <div className="mt-1.5 flex items-center rounded-2xl border border-border bg-background/60 px-3 focus-within:ring-2 focus-within:ring-ring">
+                  <span className="text-sm font-semibold text-muted-foreground">+971</span>
+                  <input
+                    value={contact}
+                    onChange={(e) => setContact(e.target.value)}
+                    placeholder="50 123 4567"
+                    className="w-full border-0 bg-transparent px-2 py-3 focus:outline-none"
+                  />
+                </div>
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   Enter a UAE mobile number (e.g. +971501234567). We'll send a one-time code.
                 </p>
-                {existingUser && (
+                {(existingUser || existingRemoteUser) && (
                   <p className="mt-1 text-[11px] text-accent">
                     Existing account detected. Referral code is locked for returning users.
                   </p>
                 )}
               </div>
-              {!existingUser && (
+              {!existingUser && !existingRemoteUser && (
                 <div>
                   <label className="text-xs uppercase tracking-wider text-muted-foreground">
                     Referred by{" "}

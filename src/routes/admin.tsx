@@ -765,6 +765,11 @@ function Admin() {
         "Referral By",
         "Number of Days (All 3 Games)",
         "Number of Times Completed All 3",
+        "UTM Source",
+        "UTM Medium",
+        "UTM Campaign",
+        "UTM Term",
+        "UTM Content",
       ],
       ...filtered.map((u) => [
         u.userId,
@@ -776,6 +781,11 @@ function Admin() {
         u.referredBy || "",
         u.completedAll3Days,
         u.completedAll3Plays,
+        u.utmSource || "",
+        u.utmMedium || "",
+        u.utmCampaign || "",
+        u.utmTerm || "",
+        u.utmContent || "",
       ]),
     ];
     exportCsv(rows, `revital-users-${Date.now()}.csv`);
@@ -794,6 +804,11 @@ function Admin() {
         "Referral By",
         "Number of Days (All 3 Games)",
         "Number of Times Completed All 3",
+        "UTM Source",
+        "UTM Medium",
+        "UTM Campaign",
+        "UTM Term",
+        "UTM Content",
       ],
       ...filtered.map((u) => [
         u.userId,
@@ -805,6 +820,11 @@ function Admin() {
         u.referredBy || "",
         u.completedAll3Days,
         u.completedAll3Plays,
+        u.utmSource || "",
+        u.utmMedium || "",
+        u.utmCampaign || "",
+        u.utmTerm || "",
+        u.utmContent || "",
       ]),
     ];
     exportExcel(rows, `revital-users-${Date.now()}.xls`);
@@ -823,6 +843,11 @@ function Admin() {
         "Referral By",
         "Number of Days (All 3 Games)",
         "Number of Times Completed All 3",
+        "UTM Source",
+        "UTM Medium",
+        "UTM Campaign",
+        "UTM Term",
+        "UTM Content",
       ],
       ...filtered.map((u) => [
         u.userId,
@@ -834,6 +859,11 @@ function Admin() {
         u.referredBy || "",
         u.completedAll3Days,
         u.completedAll3Plays,
+        u.utmSource || "",
+        u.utmMedium || "",
+        u.utmCampaign || "",
+        u.utmTerm || "",
+        u.utmContent || "",
       ]),
     ];
     exportPdf(rows, `revital-users-${Date.now()}.pdf`);

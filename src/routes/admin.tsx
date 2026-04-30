@@ -33,6 +33,8 @@ import {
   ArrowDown,
   CircleHelp,
 } from "lucide-react";
+import { Leaderboard } from "@/components/Leaderboard";
+import { getDailyLeaderboard, getGlobalLeaderboard, type LeaderEntry } from "@/lib/leaderboard";
 import { getAllUsersRemote, calcStreak, dedupeAttempts, type UserRecord } from "@/lib/storage";
 import type { AdminLog, PlatformSettings } from "@/server/adminFns";
 
@@ -396,6 +398,8 @@ function Admin() {
   const [tab, setTab] = useState<Tab>("overview");
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [logs, setLogs] = useState<AdminLog[]>([]);
+  const [dailyLeaders, setDailyLeaders] = useState<LeaderEntry[]>([]);
+  const [globalLeaders, setGlobalLeaders] = useState<LeaderEntry[]>([]);
   const [settings, setSettings] = useState<PlatformSettings>({
     ga4: "",
     metaPixel: "",
@@ -440,8 +444,15 @@ function Admin() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [u, adminMod] = await Promise.all([getAllUsersRemote(), import("@/server/adminFns")]);
+      const [u, adminMod, daily, global] = await Promise.all([
+        getAllUsersRemote(),
+        import("@/server/adminFns"),
+        getDailyLeaderboard(),
+        getGlobalLeaderboard(),
+      ]);
       setUsers(u);
+      setDailyLeaders(daily);
+      setGlobalLeaders(global);
       const [l, s] = await Promise.all([
         adminMod.getAdminLogsFn(),
         adminMod.getPlatformSettingsFn(),
@@ -1062,6 +1073,24 @@ function Admin() {
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                    <Leaderboard
+                      title="Today's Leaders"
+                      subtitle="Daily Reward Pool"
+                      emoji="🔥"
+                      entries={dailyLeaders}
+                      accent="tiger"
+                    />
+                    <Leaderboard
+                      title="Global Leaderboard"
+                      subtitle="All-Time Top 10"
+                      emoji="👑"
+                      entries={globalLeaders}
+                      accent="marigold"
+                      highlightWinner={false}
+                    />
                   </div>
 
                   {stats.topReferrers.length > 0 && (

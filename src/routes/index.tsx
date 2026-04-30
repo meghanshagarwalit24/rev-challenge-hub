@@ -43,13 +43,13 @@ function Landing() {
         style={{ animationDelay: "1.5s" }}
       />
 
-      <Header />
       <div className="announcement-track">
         <div className="announcement-marquee">
           <span>{announcement}</span>
           <span aria-hidden>{announcement}</span>
         </div>
       </div>
+      <Header />
 
       {/* HERO */}
       <main className="relative max-w-6xl mx-auto px-4 pt-8 md:pt-14 pb-16">

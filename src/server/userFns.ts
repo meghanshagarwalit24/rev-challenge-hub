@@ -34,6 +34,11 @@ const userRecordSchema = z.object({
     .optional(),
   referredBy: z.string().optional(),
   referCount: z.number().optional(),
+  utmSource: z.string().optional(),
+  utmMedium: z.string().optional(),
+  utmCampaign: z.string().optional(),
+  utmTerm: z.string().optional(),
+  utmContent: z.string().optional(),
 });
 
 const contactSchema = z.object({ contact: z.string().min(1) });

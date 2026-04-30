@@ -92,8 +92,8 @@ function Profile() {
 
   const referralUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/auth?ref=${encodeURIComponent(user.userId)}`
-      : `/auth?ref=${encodeURIComponent(user.userId)}`;
+      ? `${window.location.origin}/?ref=${encodeURIComponent(user.userId)}`
+      : `/?ref=${encodeURIComponent(user.userId)}`;
   const hasSavedEmail = Boolean(user.email?.trim());
   const finalPercentage = totalToPercentage(user.total).toFixed(2);
   const hasPlayedBefore = Boolean(

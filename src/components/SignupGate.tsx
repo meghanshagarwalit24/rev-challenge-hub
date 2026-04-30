@@ -6,6 +6,7 @@ import {
   findUserByContact,
   findUserByContactRemote,
   generateUserId,
+  getPersistedUtmParams,
   getCurrentScores,
   MOCK_OTP,
   saveUser,
@@ -78,6 +79,7 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
     const normalizedReferrer = existing?.referredBy || referrer?.trim().toUpperCase();
     try {
       const payload = {
+        ...getPersistedUtmParams(),
         userId: existing?.userId ?? generateUserId(),
         contact: contactValue.trim(),
         name: displayName.trim() || existing?.name,

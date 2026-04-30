@@ -22,7 +22,11 @@ function Landing() {
       .then((mod) => mod.getPlatformSettingsFn())
       .then((settings) => {
         if (settings.homeAnnouncementMode === "text") {
-          setAnnouncement(settings.homeAnnouncementText?.trim() || defaultAnnouncement);
+          const mergedText = (settings.homeAnnouncementTexts ?? [])
+            .map((text) => text.trim())
+            .filter(Boolean)
+            .join("   ✦   ");
+          setAnnouncement(mergedText || defaultAnnouncement);
           return;
         }
         getDailyLeaderboard().then((entries) => {

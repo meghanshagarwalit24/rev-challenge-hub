@@ -58,7 +58,7 @@ export interface PlatformSettings {
   recaptchaSite: string;
   recaptchaSecret: string;
   homeAnnouncementMode: "winner" | "text";
-  homeAnnouncementText: string;
+  homeAnnouncementTexts: string[];
 }
 
 const settingsSchema = z.object({
@@ -68,7 +68,7 @@ const settingsSchema = z.object({
   recaptchaSite: z.string(),
   recaptchaSecret: z.string(),
   homeAnnouncementMode: z.enum(["winner", "text"]).default("winner"),
-  homeAnnouncementText: z.string(),
+  homeAnnouncementTexts: z.array(z.string()).length(5),
 });
 
 export const savePlatformSettingsFn = createServerFn({ method: "POST" })
@@ -96,8 +96,27 @@ export const getPlatformSettingsFn = createServerFn({ method: "GET" }).handler(a
       recaptchaSite: "",
       recaptchaSecret: "",
       homeAnnouncementMode: "winner",
-      homeAnnouncementText: "🔥 Play now and become today's Revital Energy Challenge winner!",
+      homeAnnouncementTexts: [
+        "🔥 Play now and become today's Revital Energy Challenge winner!",
+        "",
+        "",
+        "",
+        "",
+      ],
     } as PlatformSettings;
-  const { _id: _a, _key: _b, updatedAt: _c, ...rest } = doc;
-  return rest as PlatformSettings;
+  const { _id: _a, _key: _b, updatedAt: _c, ...rest } = doc as Record<string, unknown>;
+
+  const legacyText =
+    typeof rest.homeAnnouncementText === "string"
+      ? rest.homeAnnouncementText
+      : "🔥 Play now and become today's Revital Energy Challenge winner!";
+  const storedTexts = Array.isArray(rest.homeAnnouncementTexts)
+    ? rest.homeAnnouncementTexts.filter((v): v is string => typeof v === "string").slice(0, 5)
+    : [];
+  while (storedTexts.length < 5) storedTexts.push(storedTexts.length === 0 ? legacyText : "");
+
+  return {
+    ...(rest as Omit<PlatformSettings, "homeAnnouncementTexts">),
+    homeAnnouncementTexts: storedTexts,
+  } as PlatformSettings;
 });

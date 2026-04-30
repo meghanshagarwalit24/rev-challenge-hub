@@ -1988,7 +1988,7 @@ function KpiCard({
   info: string;
 }) {
   return (
-    <div className="bg-gradient-card border border-border rounded-2xl p-3 shadow-card">
+    <div className="relative overflow-visible bg-gradient-card border border-border rounded-2xl p-3 shadow-card hover:z-30">
       <div className="flex items-start justify-between gap-2">
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{title}</p>
         <div className="relative group/info">
@@ -1998,7 +1998,7 @@ function KpiCard({
           >
             <CircleHelp className="w-3.5 h-3.5" />
           </span>
-          <div className="pointer-events-none absolute right-0 top-6 z-20 hidden w-56 rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
+          <div className="pointer-events-none absolute right-0 top-6 z-50 hidden w-56 rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
             {info}
           </div>
         </div>

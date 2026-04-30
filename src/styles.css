@@ -173,4 +173,31 @@
   .perspective-card { perspective: 1000px; }
   .preserve-3d { transform-style: preserve-3d; }
   .backface-hidden { backface-visibility: hidden; }
+
+  .announcement-track {
+    overflow: hidden;
+    border-top: 1px solid oklch(0.32 0.1 35 / 0.1);
+    border-bottom: 1px solid oklch(0.32 0.1 35 / 0.1);
+    background: oklch(1 0 0 / 0.75);
+    backdrop-filter: blur(6px);
+  }
+  .announcement-marquee {
+    display: flex;
+    width: max-content;
+    min-width: 100%;
+    animation: announcement-marquee 22s linear infinite;
+  }
+  .announcement-marquee span {
+    display: inline-flex;
+    padding: 0.6rem 2rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--garnet);
+    white-space: nowrap;
+  }
+  @keyframes announcement-marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
 }

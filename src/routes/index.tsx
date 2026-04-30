@@ -11,11 +11,28 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
+  const defaultAnnouncement = "🔥 Play now and become today's Revital Energy Challenge winner!";
   const [daily, setDaily] = useState<LeaderEntry[]>([]);
   const [global, setGlobal] = useState<LeaderEntry[]>([]);
+  const [announcement, setAnnouncement] = useState(defaultAnnouncement);
   useEffect(() => {
     getDailyLeaderboard().then(setDaily);
     getGlobalLeaderboard().then(setGlobal);
+    import("@/server/adminFns")
+      .then((mod) => mod.getPlatformSettingsFn())
+      .then((settings) => {
+        if (settings.homeAnnouncementMode === "text") {
+          setAnnouncement(settings.homeAnnouncementText?.trim() || defaultAnnouncement);
+          return;
+        }
+        getDailyLeaderboard().then((entries) => {
+          const winner = entries[0];
+          if (winner) {
+            setAnnouncement(`🏆 Today's Winner: ${winner.name} with ${winner.score} points!`);
+          }
+        });
+      })
+      .catch(() => null);
   }, []);
 
   return (
@@ -27,6 +44,12 @@ function Landing() {
       />
 
       <Header />
+      <div className="announcement-track">
+        <div className="announcement-marquee">
+          <span>{announcement}</span>
+          <span aria-hidden>{announcement}</span>
+        </div>
+      </div>
 
       {/* HERO */}
       <main className="relative max-w-6xl mx-auto px-4 pt-8 md:pt-14 pb-16">

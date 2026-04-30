@@ -50,7 +50,12 @@ type UserSortKey =
   | "referredBy"
   | "joinedOn"
   | "completeDays"
-  | "all3Completed";
+  | "all3Completed"
+  | "utmSource"
+  | "utmMedium"
+  | "utmCampaign"
+  | "utmTerm"
+  | "utmContent";
 type SortDir = "asc" | "desc";
 
 interface DateWiseEntry {
@@ -532,6 +537,16 @@ function Admin() {
           return u.completedAll3Days;
         case "all3Completed":
           return u.completedAll3Plays;
+        case "utmSource":
+          return u.utmSource || "";
+        case "utmMedium":
+          return u.utmMedium || "";
+        case "utmCampaign":
+          return u.utmCampaign || "";
+        case "utmTerm":
+          return u.utmTerm || "";
+        case "utmContent":
+          return u.utmContent || "";
       }
     };
 
@@ -1202,13 +1217,43 @@ function Admin() {
                             sort={userSort}
                             onSort={toggleUserSort}
                           />
+                          <SortableTh
+                            label="UTM Source"
+                            sortKey="utmSource"
+                            sort={userSort}
+                            onSort={toggleUserSort}
+                          />
+                          <SortableTh
+                            label="UTM Medium"
+                            sortKey="utmMedium"
+                            sort={userSort}
+                            onSort={toggleUserSort}
+                          />
+                          <SortableTh
+                            label="UTM Campaign"
+                            sortKey="utmCampaign"
+                            sort={userSort}
+                            onSort={toggleUserSort}
+                          />
+                          <SortableTh
+                            label="UTM Term"
+                            sortKey="utmTerm"
+                            sort={userSort}
+                            onSort={toggleUserSort}
+                          />
+                          <SortableTh
+                            label="UTM Content"
+                            sortKey="utmContent"
+                            sort={userSort}
+                            onSort={toggleUserSort}
+                          />
                         </tr>
                       </thead>
                       <tbody>
                         {filtered.length === 0 && (
                           <tr>
                             <td
-                              colSpan={9}
+                              colSpan={14}
                               className="py-10 text-center text-muted-foreground text-sm"
                             >
                               No users match filters.
@@ -1234,6 +1279,11 @@ function Admin() {
                             <Td className="font-mono text-[11px]">{u.referredBy || "—"}</Td>
                             <Td className="font-medium text-center">{u.completedAll3Days}</Td>
                             <Td className="font-bold text-center">{u.completedAll3Plays}</Td>
+                            <Td className="font-mono text-[11px]">{u.utmSource || "—"}</Td>
+                            <Td className="font-mono text-[11px]">{u.utmMedium || "—"}</Td>
+                            <Td className="font-mono text-[11px]">{u.utmCampaign || "—"}</Td>
+                            <Td className="font-mono text-[11px]">{u.utmTerm || "—"}</Td>
+                            <Td className="font-mono text-[11px]">{u.utmContent || "—"}</Td>
                           </tr>
                         ))}
                       </tbody>

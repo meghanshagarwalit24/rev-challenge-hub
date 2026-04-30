@@ -61,7 +61,40 @@ export interface UserRecord {
   playAttempts?: PlayAttempt[]; // all completed 3-challenge runs
   referredBy?: string; // userId of the user who referred this person
   referCount?: number; // number of people this user has referred
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmTerm?: string;
+  utmContent?: string;
 }
+
+export interface UTMParams {
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmTerm?: string;
+  utmContent?: string;
+}
+
+const UTM_STORAGE_KEY = "revital_utm_params";
+
+export const getPersistedUtmParams = (): UTMParams => {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(UTM_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as UTMParams;
+    return {
+      utmSource: parsed.utmSource?.trim(),
+      utmMedium: parsed.utmMedium?.trim(),
+      utmCampaign: parsed.utmCampaign?.trim(),
+      utmTerm: parsed.utmTerm?.trim(),
+      utmContent: parsed.utmContent?.trim(),
+    };
+  } catch {
+    return {};
+  }
+};
 
 export const generateUserId = (): string => {
   const randomPart = (() => {

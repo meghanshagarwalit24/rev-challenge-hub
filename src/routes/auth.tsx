@@ -8,6 +8,7 @@ import {
   findUserByContact,
   findUserByContactRemote,
   generateUserId,
+  getPersistedUtmParams,
   getCurrentScores,
   MOCK_OTP,
   saveUser,
@@ -95,6 +96,7 @@ function Auth() {
     const normalizedContact = normalizeUaePhone(contact.trim());
     const existing = findUserByContact(normalizedContact);
     const payload = {
+      ...getPersistedUtmParams(),
       userId: existing?.userId ?? generateUserId(),
       contact: normalizedContact,
       name: existing?.name,

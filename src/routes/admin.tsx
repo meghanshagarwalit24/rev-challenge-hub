@@ -336,10 +336,7 @@ function exportExcel(rows: (string | number)[][], filename: string) {
 function exportPdf(rows: (string | number)[][], filename: string) {
   const [header, ...body] = rows;
   const escaped = (value: string | number) =>
-    String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+    String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   const html = `
     <!doctype html>
@@ -430,9 +427,7 @@ function Admin() {
   const [dateWiseTo, setDateWiseTo] = useState("");
   const [dateWisePage, setDateWisePage] = useState(1);
   const [dateWisePerPage, setDateWisePerPage] = useState(10);
-  const [dateWiseExportFormat, setDateWiseExportFormat] = useState<"csv" | "pdf">(
-    "csv",
-  );
+  const [dateWiseExportFormat, setDateWiseExportFormat] = useState<"csv" | "pdf">("csv");
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [userSort, setUserSort] = useState<{ key: UserSortKey; dir: SortDir }>({
     key: "joinedOn",
@@ -872,7 +867,18 @@ function Admin() {
 
   const buildDateWiseExportRows = () => {
     const rows: (string | number)[][] = [
-      ["Date", "User ID", "Contact", "Email", "Name", "Reflex", "Memory", "Balance", "Total", "Category"],
+      [
+        "Date",
+        "User ID",
+        "Contact",
+        "Email",
+        "Name",
+        "Reflex",
+        "Memory",
+        "Balance",
+        "Total",
+        "Category",
+      ],
       ...dateWise.flatMap((d) =>
         d.users.map((u) => [
           d.date,
@@ -1318,9 +1324,8 @@ function Admin() {
                   </p>
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                     <p className="text-xs text-muted-foreground">
-                      Showing{" "}
-                      {sortedFiltered.length === 0 ? 0 : (usersPage - 1) * usersPerPage + 1}-
-                      {Math.min(usersPage * usersPerPage, sortedFiltered.length)} of{" "}
+                      Showing {sortedFiltered.length === 0 ? 0 : (usersPage - 1) * usersPerPage + 1}
+                      -{Math.min(usersPage * usersPerPage, sortedFiltered.length)} of{" "}
                       {sortedFiltered.length}
                     </p>
                     <div className="flex items-center gap-2">
@@ -1545,20 +1550,19 @@ function Admin() {
                     <div className="flex items-center gap-2">
                       <select
                         value={dateWiseExportFormat}
-                        onChange={(e) =>
-                          setDateWiseExportFormat(e.target.value as "csv" | "pdf")
-                        }
+                        onChange={(e) => setDateWiseExportFormat(e.target.value as "csv" | "pdf")}
                         className="bg-background/60 border border-border rounded-full px-3 py-1.5 text-xs"
                       >
                         <option value="csv">CSV</option>
-                                                <option value="pdf">PDF</option>
+                        <option value="pdf">PDF</option>
                       </select>
                       <button
                         type="button"
                         onClick={handleDateWiseExport}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border hover:bg-muted/30 font-bold transition-colors text-xs"
                       >
-                        <Download className="w-3.5 h-3.5" /> Export {dateWiseExportFormat.toUpperCase()}
+                        <Download className="w-3.5 h-3.5" /> Export{" "}
+                        {dateWiseExportFormat.toUpperCase()}
                       </button>
                     </div>
                     {(dateWiseSearch || dateWiseFrom || dateWiseTo) && (
@@ -1681,8 +1685,9 @@ function Admin() {
                   </div>
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                     <p className="text-xs text-muted-foreground">
-                      Showing {dateWise.length === 0 ? 0 : (dateWisePage - 1) * dateWisePerPage + 1}-
-                      {Math.min(dateWisePage * dateWisePerPage, dateWise.length)} of {dateWise.length} dates
+                      Showing {dateWise.length === 0 ? 0 : (dateWisePage - 1) * dateWisePerPage + 1}
+                      -{Math.min(dateWisePage * dateWisePerPage, dateWise.length)} of{" "}
+                      {dateWise.length} dates
                     </p>
                     <div className="flex items-center gap-2">
                       <button
@@ -1976,13 +1981,17 @@ function Admin() {
                             onChange={(e) =>
                               setSettings((s) => ({
                                 ...s,
-                                homeAnnouncementMode: e.target.value as "winner" | "text",
+                                homeAnnouncementMode: e.target.value as
+                                  | "winner"
+                                  | "text"
+                                  | "leaderboard",
                               }))
                             }
                             className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                           >
                             <option value="winner">Show daily winner</option>
                             <option value="text">Show custom text</option>
+                            <option value="leaderboard">Show daily leaderboard</option>
                           </select>
                         </div>
                         {settings.homeAnnouncementMode === "text" && (
@@ -1995,8 +2004,8 @@ function Admin() {
                                 onChange={(v) =>
                                   setSettings((s) => ({
                                     ...s,
-                                    homeAnnouncementTexts: s.homeAnnouncementTexts.map((entry, i) =>
-                                      i === index ? v : entry,
+                                    homeAnnouncementTexts: s.homeAnnouncementTexts.map(
+                                      (entry, i) => (i === index ? v : entry),
                                     ),
                                   }))
                                 }
@@ -2035,15 +2044,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="text-xl font-black">{children}</h2>;
 }
 
-function KpiCard({
-  title,
-  value,
-  info,
-}: {
-  title: string;
-  value: string | number;
-  info: string;
-}) {
+function KpiCard({ title, value, info }: { title: string; value: string | number; info: string }) {
   return (
     <div className="relative overflow-visible bg-gradient-card border border-border rounded-2xl p-3 shadow-card hover:z-30">
       <div className="flex items-start justify-between gap-2">

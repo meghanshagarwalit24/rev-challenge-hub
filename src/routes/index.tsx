@@ -34,6 +34,13 @@ function Landing() {
           return;
         }
         getDailyLeaderboard().then((entries) => {
+          if (settings.homeAnnouncementMode === "leaderboard") {
+            const leaderboardTexts = entries
+              .slice(0, 5)
+              .map((entry, index) => `🏅 #${index + 1} ${entry.name} — ${entry.score} pts`);
+            setAnnouncements(leaderboardTexts.length ? leaderboardTexts : [defaultAnnouncement]);
+            return;
+          }
           const winner = entries[0];
           if (winner) {
             setAnnouncements([`🏆 Today's Winner: ${winner.name} with ${winner.score} points!`]);

@@ -15,7 +15,7 @@ function Landing() {
   const defaultAnnouncement = "🔥 Play now and become today's Revital Energy Challenge winner!";
   const [daily, setDaily] = useState<LeaderEntry[]>([]);
   const [global, setGlobal] = useState<LeaderEntry[]>([]);
-  const [announcement, setAnnouncement] = useState(defaultAnnouncement);
+  const [announcements, setAnnouncements] = useState<string[]>([defaultAnnouncement]);
   const [isLoggedIn, setIsLoggedIn] = useState(Boolean(getUser()));
   useEffect(() => {
     const syncAuth = () => setIsLoggedIn(Boolean(getUser()));
@@ -27,17 +27,16 @@ function Landing() {
       .then((mod) => mod.getPlatformSettingsFn())
       .then((settings) => {
         if (settings.homeAnnouncementMode === "text") {
-          const mergedText = (settings.homeAnnouncementTexts ?? [])
+          const texts = (settings.homeAnnouncementTexts ?? [])
             .map((text) => text.trim())
-            .filter(Boolean)
-            .join("   ✦   ");
-          setAnnouncement(mergedText || defaultAnnouncement);
+            .filter(Boolean);
+          setAnnouncements(texts.length ? texts : [defaultAnnouncement]);
           return;
         }
         getDailyLeaderboard().then((entries) => {
           const winner = entries[0];
           if (winner) {
-            setAnnouncement(`🏆 Today's Winner: ${winner.name} with ${winner.score} points!`);
+            setAnnouncements([`🏆 Today's Winner: ${winner.name} with ${winner.score} points!`]);
           }
         });
       })
@@ -56,8 +55,11 @@ function Landing() {
 
       <div className="announcement-track">
         <div className="announcement-marquee">
-          <span>{announcement}</span>
-          <span aria-hidden>{announcement}</span>
+          {[...announcements, ...announcements].map((item, index) => (
+            <span key={`${item}-${index}`} aria-hidden={index >= announcements.length}>
+              {item}
+            </span>
+          ))}
         </div>
       </div>
       <Header />

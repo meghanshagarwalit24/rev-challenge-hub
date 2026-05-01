@@ -57,7 +57,7 @@ export interface PlatformSettings {
   clarity: string;
   recaptchaSite: string;
   recaptchaSecret: string;
-  homeAnnouncementMode: "winner" | "text";
+  homeAnnouncementMode: "winner" | "text" | "leaderboard";
   homeAnnouncementTexts: string[];
 }
 
@@ -67,7 +67,7 @@ const settingsSchema = z.object({
   clarity: z.string(),
   recaptchaSite: z.string(),
   recaptchaSecret: z.string(),
-  homeAnnouncementMode: z.enum(["winner", "text"]).default("winner"),
+  homeAnnouncementMode: z.enum(["winner", "text", "leaderboard"]).default("winner"),
   homeAnnouncementTexts: z.array(z.string()).length(5),
 });
 

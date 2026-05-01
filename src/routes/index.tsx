@@ -66,7 +66,7 @@ function Landing() {
 
       {/* HERO */}
       <main className="relative max-w-6xl mx-auto px-4 pt-8 md:pt-14 pb-16">
-        <section className="text-center">
+        <section id="hero-section" className="text-center">
           <motion.img
             src={heroWordmark}
             alt="Revital Energy Challenge"
@@ -156,7 +156,7 @@ function Landing() {
         </section>
 
         {/* HOW TO PARTICIPATE */}
-        <section className="mt-20 md:mt-28">
+        <section id="how-to-participate" className="mt-20 md:mt-28">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -232,7 +232,7 @@ function Landing() {
         </section>
 
         {/* LEADERBOARDS */}
-        <section className="mt-20 md:mt-28">
+        <section id="leaderboard-section" className="mt-20 md:mt-28">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

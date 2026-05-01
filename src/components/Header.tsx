@@ -22,35 +22,45 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 border-b border-[var(--garnet)]/10">
-      <div className="max-w-6xl mx-auto w-full px-3 sm:px-4 py-2 flex items-center justify-between gap-2 sm:gap-3">
+      <div className="max-w-6xl mx-auto w-full px-3 sm:px-4 py-2 grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-3">
         <Link to="/" className="flex items-center group shrink-0">
-          <img src={logo} alt="Revital Ginseng Plus" className="h-8 sm:h-9 md:h-12 w-auto object-contain transition-transform group-hover:scale-105" />
+          <img
+            src={logo}
+            alt="Revital Ginseng Plus"
+            className="h-8 sm:h-9 md:h-12 w-auto object-contain transition-transform group-hover:scale-105"
+          />
         </Link>
-        <nav className="flex min-w-0 items-center gap-1 text-xs sm:text-sm">
+        <nav className="hidden md:flex min-w-0 items-center justify-center gap-1 text-xs sm:text-sm">
           {isHomePage && (
             <>
               <a
                 href="#hero-section"
-                className="hidden md:inline-flex px-2.5 sm:px-3 py-2 rounded-full text-garnet/80 hover:text-garnet hover:bg-[var(--marigold)]/30 transition-colors font-medium whitespace-nowrap"
+                className="inline-flex px-2.5 sm:px-3 py-2 rounded-full text-garnet/80 hover:text-garnet hover:bg-[var(--marigold)]/30 transition-colors font-medium whitespace-nowrap"
               >
                 Home
               </a>
               <a
                 href="#how-to-participate"
-                className="hidden md:inline-flex px-2.5 sm:px-3 py-2 rounded-full text-garnet/80 hover:text-garnet hover:bg-[var(--marigold)]/30 transition-colors font-medium whitespace-nowrap"
+                className="inline-flex px-2.5 sm:px-3 py-2 rounded-full text-garnet/80 hover:text-garnet hover:bg-[var(--marigold)]/30 transition-colors font-medium whitespace-nowrap"
               >
                 🎮 How to Participate
               </a>
               <a
                 href="#leaderboard-section"
-                className="hidden md:inline-flex px-2.5 sm:px-3 py-2 rounded-full text-garnet/80 hover:text-garnet hover:bg-[var(--marigold)]/30 transition-colors font-medium whitespace-nowrap"
+                className="inline-flex px-2.5 sm:px-3 py-2 rounded-full text-garnet/80 hover:text-garnet hover:bg-[var(--marigold)]/30 transition-colors font-medium whitespace-nowrap"
               >
                 Leaderboard
               </a>
             </>
           )}
+        </nav>
+
+        <div className="flex items-center justify-end gap-1 text-xs sm:text-sm">
           {!user && (
-            <Link to="/auth" className="px-2.5 sm:px-3 py-2 rounded-full text-garnet/80 hover:text-garnet hover:bg-[var(--marigold)]/30 transition-colors font-medium whitespace-nowrap">
+            <Link
+              to="/auth"
+              className="px-2.5 sm:px-3 py-2 rounded-full text-garnet/80 hover:text-garnet hover:bg-[var(--marigold)]/30 transition-colors font-medium whitespace-nowrap"
+            >
               My Score
             </Link>
           )}
@@ -65,7 +75,9 @@ export function Header() {
               </button>
 
               <div className="absolute right-0 top-12 z-50 hidden min-w-[190px] rounded-2xl border border-border bg-background/95 p-3 shadow-card backdrop-blur-sm group-hover/account:block group-focus-within/account:block">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">User ID</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  User ID
+                </p>
                 <p className="mt-1 text-xs font-black text-foreground break-all">{user.userId}</p>
                 <button
                   type="button"
@@ -80,11 +92,14 @@ export function Header() {
               </div>
             </div>
           ) : (
-            <Link to="/auth" className="px-4 py-2 rounded-full bg-gradient-energy text-white font-semibold shadow-button hover:scale-105 active:scale-95 transition-transform">
+            <Link
+              to="/auth"
+              className="px-4 py-2 rounded-full bg-gradient-energy text-white font-semibold shadow-button hover:scale-105 active:scale-95 transition-transform"
+            >
               Login
             </Link>
           )}
-        </nav>
+        </div>
       </div>
     </header>
   );

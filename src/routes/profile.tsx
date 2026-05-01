@@ -176,7 +176,34 @@ function Profile() {
     <div className="min-h-screen flex flex-col overflow-x-hidden">
       <Header />
       <main className="flex-1 w-full max-w-xl mx-auto px-4 py-8">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+        <div className="sticky top-20 z-30 mb-4 rounded-2xl border border-border bg-background/85 p-2 shadow-sm backdrop-blur">
+          <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
+            <a
+              href="#your-score-section"
+              className="rounded-xl px-3 py-2 text-center font-semibold text-garnet hover:bg-[var(--marigold)]/30 transition-colors"
+            >
+              Your Score
+            </a>
+            <a
+              href="#profile-section"
+              className="rounded-xl px-3 py-2 text-center font-semibold text-garnet hover:bg-[var(--marigold)]/30 transition-colors"
+            >
+              Profile
+            </a>
+            <a
+              href="#datewise-section"
+              className="rounded-xl px-3 py-2 text-center font-semibold text-garnet hover:bg-[var(--marigold)]/30 transition-colors"
+            >
+              Date-wise Score
+            </a>
+          </div>
+        </div>
+        <motion.div
+          id="your-score-section"
+          className="scroll-mt-28"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <div className="bg-gradient-card border border-border rounded-3xl p-6 shadow-card text-center">
             <div className="text-5xl">{hasPlayedBefore ? "🏆" : "⚡"}</div>
             <h1 className="mt-3 text-2xl md:text-3xl font-black">
@@ -310,11 +337,12 @@ function Profile() {
         </motion.div>
 
         <motion.form
+          id="profile-section"
+          className="mt-6 bg-gradient-card border border-border rounded-3xl p-6 shadow-card space-y-4 scroll-mt-28"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           onSubmit={save}
-          className="mt-6 bg-gradient-card border border-border rounded-3xl p-6 shadow-card space-y-4"
         >
           <h2 className="font-black text-lg">
             Complete your profile{" "}
@@ -361,10 +389,11 @@ function Profile() {
         </motion.form>
 
         <motion.div
+          id="datewise-section"
+          className="mt-6 bg-gradient-card border border-border rounded-3xl p-6 shadow-card scroll-mt-28"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="mt-6 bg-gradient-card border border-border rounded-3xl p-6 shadow-card"
         >
           <h2 className="font-black text-lg">Date-wise Score History</h2>
           <p className="text-xs text-muted-foreground mt-1">

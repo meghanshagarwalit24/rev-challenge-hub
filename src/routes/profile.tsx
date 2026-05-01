@@ -209,31 +209,53 @@ function Profile() {
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 Energy Rank Roadmap
               </p>
-              <div className="mt-3 space-y-2">
+              <div className="mt-4 grid grid-cols-1 gap-2">
                 {[
-                  { grade: "S", label: "Peak Performer", threshold: 80 },
-                  { grade: "A", label: "High Energy", threshold: 60 },
-                  { grade: "B", label: "Charged Up", threshold: 40 },
-                  { grade: "C", label: "Warming Up", threshold: 20 },
                   { grade: "D", label: "Recharge Needed", threshold: 0 },
-                ].map((band) => {
-                  const reached =
+                  { grade: "C", label: "Warming Up", threshold: 20 },
+                  { grade: "B", label: "Charged Up", threshold: 40 },
+                  { grade: "A", label: "High Energy", threshold: 60 },
+                  { grade: "S", label: "Peak Performer", threshold: 80 },
+                ].map((band, idx, arr) => {
+                  const unlocked =
                     hasPlayedBefore &&
-                    (band.grade === "D" ? finalPercentageValue < 20 : finalPercentageValue >= band.threshold);
+                    (band.grade === "D" ? true : finalPercentageValue >= band.threshold);
+                  const isCurrent =
+                    hasPlayedBefore &&
+                    ((band.grade === "D" && finalPercentageValue < 20) ||
+                      (band.grade !== "D" &&
+                        finalPercentageValue >= band.threshold &&
+                        (idx === arr.length - 1 || finalPercentageValue < arr[idx + 1].threshold)));
+
                   return (
                     <div key={band.grade} className="flex items-center gap-3">
-                      <div className="w-8 text-xs font-black text-garnet">{band.grade}</div>
-                      <div className="flex-1 h-2 rounded-full bg-border/50 overflow-hidden">
+                      <div className="relative flex items-center">
+                        {idx > 0 && (
+                          <span
+                            className={`absolute -left-9 top-1/2 h-1 w-9 -translate-y-1/2 rounded-full ${unlocked ? "bg-gradient-energy" : "bg-border"}`}
+                          />
+                        )}
                         <div
-                          className={`h-full transition-all ${reached ? "bg-gradient-energy" : "bg-muted"}`}
-                          style={{
-                            width: reached ? "100%" : `${Math.max(8, Math.min(100, (finalPercentageValue / 80) * 100))}%`,
-                          }}
-                        />
+                          className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-black transition-all ${
+                            unlocked
+                              ? "border-orange-300 bg-gradient-energy text-white shadow-md"
+                              : "border-border bg-muted text-muted-foreground"
+                          } ${isCurrent ? "ring-4 ring-yellow-200/70" : ""}`}
+                        >
+                          {band.grade}
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground min-w-[140px]">
-                        {band.label} {band.grade === "D" ? "< 20%" : `≥ ${band.threshold}%`}
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-garnet">{band.label}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {band.grade === "D" ? "< 20%" : `≥ ${band.threshold}%`}
+                        </p>
                       </div>
+                      {isCurrent && (
+                        <span className="ml-auto rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-semibold text-yellow-800">
+                          Current
+                        </span>
+                      )}
                     </div>
                   );
                 })}
@@ -414,7 +436,11 @@ function Row({ label, value, mono }: { label: string; value: string; mono?: bool
       <span className="text-[11px] uppercase tracking-wider text-muted-foreground shrink-0">
         {label}
       </span>
-      <span className={`w-full text-sm font-semibold sm:text-right ${mono ? "font-mono break-all" : "break-words"}`}>{value}</span>
+      <span
+        className={`w-full text-sm font-semibold sm:text-right ${mono ? "font-mono break-all" : "break-words"}`}
+      >
+        {value}
+      </span>
     </div>
   );
 }

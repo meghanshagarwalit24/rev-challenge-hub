@@ -4,6 +4,8 @@ ENV NODE_ENV=development
 COPY package*.json ./
 RUN npm ci --legacy-peer-deps --include=dev
 COPY . .
+RUN rm -rf node_modules
+RUN npm install --legacy-peer-deps --include=dev
 RUN npm run build
 
 FROM node:20-alpine

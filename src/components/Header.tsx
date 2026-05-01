@@ -7,6 +7,7 @@ export function Header() {
   const nav = useNavigate();
   const routerState = useRouterState();
   const [user, setUser] = useState<UserRecord | null>(getUser());
+  const isHomePage = routerState.location.pathname === "/";
 
   // Refresh user state on every route change
   useEffect(() => {
@@ -26,6 +27,28 @@ export function Header() {
           <img src={logo} alt="Revital Ginseng Plus" className="h-8 sm:h-9 md:h-12 w-auto object-contain transition-transform group-hover:scale-105" />
         </Link>
         <nav className="flex min-w-0 items-center gap-1 text-xs sm:text-sm">
+          {isHomePage && (
+            <>
+              <a
+                href="#hero-section"
+                className="hidden md:inline-flex px-2.5 sm:px-3 py-2 rounded-full text-garnet/80 hover:text-garnet hover:bg-[var(--marigold)]/30 transition-colors font-medium whitespace-nowrap"
+              >
+                Home
+              </a>
+              <a
+                href="#how-to-participate"
+                className="hidden md:inline-flex px-2.5 sm:px-3 py-2 rounded-full text-garnet/80 hover:text-garnet hover:bg-[var(--marigold)]/30 transition-colors font-medium whitespace-nowrap"
+              >
+                🎮 How to Participate
+              </a>
+              <a
+                href="#leaderboard-section"
+                className="hidden md:inline-flex px-2.5 sm:px-3 py-2 rounded-full text-garnet/80 hover:text-garnet hover:bg-[var(--marigold)]/30 transition-colors font-medium whitespace-nowrap"
+              >
+                Leaderboard
+              </a>
+            </>
+          )}
           {!user && (
             <Link to="/auth" className="px-2.5 sm:px-3 py-2 rounded-full text-garnet/80 hover:text-garnet hover:bg-[var(--marigold)]/30 transition-colors font-medium whitespace-nowrap">
               My Score

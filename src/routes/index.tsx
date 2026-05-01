@@ -15,7 +15,7 @@ function Landing() {
   const defaultAnnouncement = "🔥 Play now and become today's Revital Energy Challenge winner!";
   const [daily, setDaily] = useState<LeaderEntry[]>([]);
   const [global, setGlobal] = useState<LeaderEntry[]>([]);
-  const [announcement, setAnnouncement] = useState(defaultAnnouncement);
+  const [announcements, setAnnouncements] = useState<string[]>([defaultAnnouncement]);
   const [isLoggedIn, setIsLoggedIn] = useState(Boolean(getUser()));
   useEffect(() => {
     const syncAuth = () => setIsLoggedIn(Boolean(getUser()));
@@ -27,17 +27,16 @@ function Landing() {
       .then((mod) => mod.getPlatformSettingsFn())
       .then((settings) => {
         if (settings.homeAnnouncementMode === "text") {
-          const mergedText = (settings.homeAnnouncementTexts ?? [])
+          const texts = (settings.homeAnnouncementTexts ?? [])
             .map((text) => text.trim())
-            .filter(Boolean)
-            .join("   ✦   ");
-          setAnnouncement(mergedText || defaultAnnouncement);
+            .filter(Boolean);
+          setAnnouncements(texts.length ? texts : [defaultAnnouncement]);
           return;
         }
         getDailyLeaderboard().then((entries) => {
           const winner = entries[0];
           if (winner) {
-            setAnnouncement(`🏆 Today's Winner: ${winner.name} with ${winner.score} points!`);
+            setAnnouncements([`🏆 Today's Winner: ${winner.name} with ${winner.score} points!`]);
           }
         });
       })
@@ -56,15 +55,18 @@ function Landing() {
 
       <div className="announcement-track">
         <div className="announcement-marquee">
-          <span>{announcement}</span>
-          <span aria-hidden>{announcement}</span>
+          {[...announcements, ...announcements].map((item, index) => (
+            <span key={`${item}-${index}`} aria-hidden={index >= announcements.length}>
+              {item}
+            </span>
+          ))}
         </div>
       </div>
       <Header />
 
       {/* HERO */}
       <main className="relative max-w-6xl mx-auto px-4 pt-8 md:pt-14 pb-16">
-        <section className="text-center">
+        <section id="hero-section" className="text-center">
           <motion.img
             src={heroWordmark}
             alt="Revital Energy Challenge"
@@ -154,7 +156,7 @@ function Landing() {
         </section>
 
         {/* HOW TO PARTICIPATE */}
-        <section className="mt-20 md:mt-28">
+        <section id="how-to-participate" className="mt-20 md:mt-28">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -230,7 +232,7 @@ function Landing() {
         </section>
 
         {/* LEADERBOARDS */}
-        <section className="mt-20 md:mt-28">
+        <section id="leaderboard-section" className="mt-20 md:mt-28">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

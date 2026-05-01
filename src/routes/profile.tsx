@@ -96,6 +96,7 @@ function Profile() {
       : `/?ref=${encodeURIComponent(user.userId)}`;
   const hasSavedEmail = Boolean(user.email?.trim());
   const finalPercentage = totalToPercentage(user.total).toFixed(2);
+  const finalPercentageValue = Number(finalPercentage);
   const hasPlayedBefore = Boolean(
     (user.playAttempts?.length ?? 0) > 0 ||
     user.scores.reflex !== null ||
@@ -177,13 +178,69 @@ function Profile() {
       <main className="flex-1 w-full max-w-xl mx-auto px-4 py-8">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <div className="bg-gradient-card border border-border rounded-3xl p-6 shadow-card text-center">
-            <div className="text-5xl">🏆</div>
-            <h1 className="mt-3 text-2xl md:text-3xl font-black">You're In!</h1>
+            <div className="text-5xl">{hasPlayedBefore ? "🏆" : "⚡"}</div>
+            <h1 className="mt-3 text-2xl md:text-3xl font-black">
+              {hasPlayedBefore ? "You're In!" : "Ready to Make Your First Score?"}
+            </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Your score is saved. You're now in the prize draw.
+              {hasPlayedBefore
+                ? "Your score is saved. You're now in the prize draw."
+                : "Play your first challenge to unlock your score band and start climbing the leaderboard."}
             </p>
 
-            <div className="mt-5 bg-background/40 rounded-2xl p-4 text-left space-y-2">
+            {!hasPlayedBefore && (
+              <div className="mt-4">
+                <Link
+                  to="/play/reflex"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-energy text-white font-bold shadow-button hover:scale-105 active:scale-95 transition-transform"
+                >
+                  Play Now →
+                </Link>
+              </div>
+            )}
+
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              <Stat label="Final %" value={`${finalPercentage}%`} />
+              <Stat label="Tier" value={user.category.split(" ")[0]} />
+              <Stat label="Eligible" value="✓" />
+            </div>
+
+            <div className="mt-4 bg-background/40 rounded-2xl p-4 text-left">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Energy Rank Roadmap
+              </p>
+              <div className="mt-3 space-y-2">
+                {[
+                  { grade: "S", label: "Peak Performer", threshold: 80 },
+                  { grade: "A", label: "High Energy", threshold: 60 },
+                  { grade: "B", label: "Charged Up", threshold: 40 },
+                  { grade: "C", label: "Warming Up", threshold: 20 },
+                  { grade: "D", label: "Recharge Needed", threshold: 0 },
+                ].map((band) => {
+                  const reached =
+                    hasPlayedBefore &&
+                    (band.grade === "D" ? finalPercentageValue < 20 : finalPercentageValue >= band.threshold);
+                  return (
+                    <div key={band.grade} className="flex items-center gap-3">
+                      <div className="w-8 text-xs font-black text-garnet">{band.grade}</div>
+                      <div className="flex-1 h-2 rounded-full bg-border/50 overflow-hidden">
+                        <div
+                          className={`h-full transition-all ${reached ? "bg-gradient-energy" : "bg-muted"}`}
+                          style={{
+                            width: reached ? "100%" : `${Math.max(8, Math.min(100, (finalPercentageValue / 80) * 100))}%`,
+                          }}
+                        />
+                      </div>
+                      <div className="text-xs text-muted-foreground min-w-[140px]">
+                        {band.label} {band.grade === "D" ? "< 20%" : `≥ ${band.threshold}%`}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-4 bg-background/40 rounded-2xl p-4 text-left space-y-2">
               <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <span className="text-[11px] uppercase tracking-wider text-muted-foreground shrink-0">
                   User ID
@@ -202,12 +259,6 @@ function Profile() {
               {user.name && <Row label="Name" value={user.name} />}
               {user.referredBy && <Row label="Referred By ID" value={user.referredBy} mono />}
               {user.referredBy && <Row label="Referrer Name" value={referrerName || "—"} />}
-            </div>
-
-            <div className="mt-4 grid grid-cols-3 gap-3">
-              <Stat label="Final %" value={`${finalPercentage}%`} />
-              <Stat label="Tier" value={user.category.split(" ")[0]} />
-              <Stat label="Eligible" value="✓" />
             </div>
 
             <div className="mt-4 bg-background/40 rounded-2xl p-4 text-left">

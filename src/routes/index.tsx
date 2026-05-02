@@ -37,13 +37,13 @@ function Landing() {
           if (settings.homeAnnouncementMode === "leaderboard") {
             const leaderboardTexts = entries
               .slice(0, 5)
-              .map((entry, index) => `🏅 #${index + 1} ${entry.name} — ${entry.score} pts`);
+              .map((entry, index) => `🏅 #${index + 1} ${entry.name} — ${entry.total} pts`);
             setAnnouncements(leaderboardTexts.length ? leaderboardTexts : [defaultAnnouncement]);
             return;
           }
           const winner = entries[0];
           if (winner) {
-            setAnnouncements([`🏆 Today's Winner: ${winner.name} with ${winner.score} points!`]);
+            setAnnouncements([`🏆 Today's Winner: ${winner.name} with ${winner.total} points!`]);
           }
         });
       })
@@ -73,7 +73,7 @@ function Landing() {
 
       {/* HERO */}
       <main className="relative max-w-6xl mx-auto px-4 pt-8 md:pt-14 pb-16">
-        <section id="hero-section" className="text-center">
+        <section id="hero-section" className="scroll-mt-24 text-center">
           <motion.img
             src={heroWordmark}
             alt="Revital Energy Challenge"
@@ -163,7 +163,7 @@ function Landing() {
         </section>
 
         {/* HOW TO PARTICIPATE */}
-        <section id="how-to-participate" className="mt-20 md:mt-28">
+        <section id="how-to-participate" className="scroll-mt-24 mt-20 md:mt-28">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -239,7 +239,7 @@ function Landing() {
         </section>
 
         {/* LEADERBOARDS */}
-        <section id="leaderboard-section" className="mt-20 md:mt-28">
+        <section id="leaderboard-section" className="scroll-mt-24 mt-20 md:mt-28">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

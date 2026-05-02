@@ -213,45 +213,94 @@ async function downloadDailyWinnersImage(
   winners: DateWiseEntry["winners"],
 ): Promise<void> {
   const canvas = document.createElement("canvas");
-  canvas.width = 1200;
-  canvas.height = 1600;
+  canvas.width = 1080;
+  canvas.height = 1920;
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  const bg = ctx.createLinearGradient(0, 0, 1200, 1600);
-  bg.addColorStop(0, "#FFE882");
-  bg.addColorStop(0.45, "#F7C452");
-  bg.addColorStop(1, "#E9972E");
+  const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  bg.addColorStop(0, "#FF6A00");
+  bg.addColorStop(0.35, "#FFA500");
+  bg.addColorStop(0.72, "#FFD95A");
+  bg.addColorStop(1, "#FFB238");
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = "#7A1F1F";
-  ctx.font = "bold 88px Arial";
-  ctx.fillText("REVITAL ENERGY", 90, 170);
-  ctx.font = "bold 64px Arial";
-  ctx.fillStyle = "#FFFFFF";
-  ctx.fillText("Daily Top 10 Winners", 90, 250);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#FFF4B0";
+  ctx.font = "italic 100px Georgia";
+  ctx.fillText("Congratulations", canvas.width / 2, 175);
 
-  ctx.fillStyle = "rgba(122,31,31,0.18)";
-  ctx.fillRect(80, 300, 1040, 1180);
+  ctx.fillStyle = "#3E1D0A";
+  ctx.font = "700 76px Arial";
+  ctx.fillText("Today's Top 10 Winners", canvas.width / 2, 330);
+  ctx.font = "500 40px Arial";
+  ctx.fillText("You brought the energy. You made it to the top.", canvas.width / 2, 390);
+  ctx.font = "600 30px Arial";
+  ctx.fillText(new Date(`${date}T00:00:00`).toLocaleDateString(), canvas.width / 2, 440);
 
-  ctx.fillStyle = "#7A1F1F";
-  ctx.font = "bold 36px Arial";
-  ctx.fillText(`Date: ${date}`, 110, 355);
+  const leftX = 80;
+  const rightX = 550;
+  const cardW = 450;
+  const cardH = 105;
+  const startY = 520;
+  const yGap = 128;
 
-  winners.forEach((winner, index) => {
-    const y = 420 + index * 100;
-    ctx.fillStyle = index < 3 ? "#7A1F1F" : "#4C2A16";
-    ctx.font = index < 3 ? "bold 34px Arial" : "bold 30px Arial";
+  winners.slice(0, 10).forEach((winner, index) => {
+    const col = index % 2;
+    const row = Math.floor(index / 2);
+    const x = col === 0 ? leftX : rightX;
+    const y = startY + row * yGap;
+
+    ctx.fillStyle = "#F7F1CF";
+    ctx.strokeStyle = "#D97A00";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(x, y, cardW, cardH, 20);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#F59E0B";
+    ctx.beginPath();
+    ctx.arc(x + 32, y + 25, 21, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#612400";
+    ctx.textAlign = "center";
+    ctx.font = "bold 25px Arial";
+    ctx.fillText(`${index + 1}`, x + 32, y + 34);
+
     const displayName = winner.name?.trim() || winner.contact;
-    ctx.fillText(`${index + 1}. ${displayName}`, 120, y);
-    ctx.font = "bold 26px Arial";
-    ctx.fillText(`Score: ${winner.total}`, 830, y);
+    const handle = winner.contact.startsWith("@") ? winner.contact : `@${winner.contact}`;
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#2E190E";
+    ctx.font = "700 44px Arial";
+    ctx.fillText(displayName, x + 70, y + 50, cardW - 90);
+    ctx.font = "500 28px Arial";
+    ctx.fillStyle = "#5B3A2B";
+    ctx.fillText(`${handle} • ${winner.total} pts`, x + 70, y + 84, cardW - 90);
   });
 
-  ctx.fillStyle = "#7A1F1F";
-  ctx.font = "bold 30px Arial";
-  ctx.fillText("Powered by Revital Ginseng Plus", 90, 1530);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#2E190E";
+  ctx.font = "700 64px Arial";
+  ctx.fillText("Think you can beat them?", canvas.width / 2, 1280);
+
+  ctx.fillStyle = "#F97316";
+  ctx.strokeStyle = "#FDE047";
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.roundRect(90, 1350, 900, 126, 50);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = "700 58px Arial";
+  ctx.fillText("Play Now & Get Featured Tomorrow", canvas.width / 2, 1432);
+
+  ctx.fillStyle = "#AA1C28";
+  ctx.font = "700 60px Arial";
+  ctx.fillText("REVITAL ENERGY CHALLENGE", canvas.width / 2, 1620);
+  ctx.font = "700 42px Arial";
+  ctx.fillText("Built on Energy. Backed by Revital.", canvas.width / 2, 1710);
 
   const dataUrl = canvas.toDataURL("image/png");
   const a = document.createElement("a");

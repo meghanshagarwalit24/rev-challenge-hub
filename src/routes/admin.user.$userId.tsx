@@ -217,10 +217,24 @@ function AdminUserDetail() {
           </div>
         </div>
 
+        <div className="bg-gradient-card border border-border rounded-2xl p-4 mb-4">
+          <h2 className="font-bold text-sm mb-3">UTM Details</h2>
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+            <InfoRow label="UTM Source" value={user.utmSource || "—"} />
+            <InfoRow label="UTM Medium" value={user.utmMedium || "—"} />
+            <InfoRow label="UTM Campaign" value={user.utmCampaign || "—"} />
+            <InfoRow label="UTM Term" value={user.utmTerm || "—"} />
+            <InfoRow label="UTM Content" value={user.utmContent || "—"} />
+          </div>
+        </div>
+
         <div className="grid md:grid-cols-2 gap-4">
           {/* All Completed Attempts */}
           <div className="bg-gradient-card border border-border rounded-2xl p-4">
             <h2 className="font-bold text-sm mb-3">All Completed Attempts</h2>
+            <p className="text-[11px] text-muted-foreground mb-3">
+              Every valid run where all 3 games were completed (across all dates).
+            </p>
             {completedAttempts.length === 0 ? (
               <p className="text-xs text-muted-foreground">No completed 3-game runs found.</p>
             ) : (
@@ -273,6 +287,9 @@ function AdminUserDetail() {
 
         <div className="bg-gradient-card border border-border rounded-2xl p-4 mt-4">
           <h2 className="font-bold text-sm mb-3">Date-wise Scores</h2>
+          <p className="text-[11px] text-muted-foreground mb-3">
+            Same completed runs grouped by day, so you can see how many full runs happened on each date.
+          </p>
           {dateWiseAttempts.length === 0 ? (
             <p className="text-xs text-muted-foreground">No dated attempts available yet.</p>
           ) : (

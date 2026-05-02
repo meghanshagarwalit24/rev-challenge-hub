@@ -212,46 +212,49 @@ async function downloadDailyWinnersImage(
   date: string,
   winners: DateWiseEntry["winners"],
 ): Promise<void> {
+  const templateImage = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () =>
+      reject(new Error("Template image not found. Please add /public/winners-template.png"));
+    img.src = "/winners-template.png";
+  }).catch((err) => {
+    alert((err as Error).message);
+    return null;
+  });
+  if (!templateImage) return;
+
   const canvas = document.createElement("canvas");
-  canvas.width = 1200;
-  canvas.height = 1600;
+  canvas.width = templateImage.width;
+  canvas.height = templateImage.height;
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
+  ctx.drawImage(templateImage, 0, 0);
 
-  const bg = ctx.createLinearGradient(0, 0, 1200, 1600);
-  bg.addColorStop(0, "#FFE882");
-  bg.addColorStop(0.45, "#F7C452");
-  bg.addColorStop(1, "#E9972E");
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const nameSlots = [
+    { x: 285, y: 1015 }, { x: 983, y: 1015 },
+    { x: 285, y: 1170 }, { x: 983, y: 1170 },
+    { x: 285, y: 1325 }, { x: 983, y: 1325 },
+    { x: 285, y: 1480 }, { x: 983, y: 1480 },
+    { x: 285, y: 1635 }, { x: 983, y: 1635 },
+  ];
 
-  ctx.fillStyle = "#7A1F1F";
-  ctx.font = "bold 88px Arial";
-  ctx.fillText("REVITAL ENERGY", 90, 170);
-  ctx.font = "bold 64px Arial";
-  ctx.fillStyle = "#FFFFFF";
-  ctx.fillText("Daily Top 10 Winners", 90, 250);
-
-  ctx.fillStyle = "rgba(122,31,31,0.18)";
-  ctx.fillRect(80, 300, 1040, 1180);
-
-  ctx.fillStyle = "#7A1F1F";
-  ctx.font = "bold 36px Arial";
-  ctx.fillText(`Date: ${date}`, 110, 355);
-
-  winners.forEach((winner, index) => {
-    const y = 420 + index * 100;
-    ctx.fillStyle = index < 3 ? "#7A1F1F" : "#4C2A16";
-    ctx.font = index < 3 ? "bold 34px Arial" : "bold 30px Arial";
+  winners.slice(0, 10).forEach((winner, index) => {
+    const slot = nameSlots[index];
+    if (!slot) return;
     const displayName = winner.name?.trim() || winner.contact;
-    ctx.fillText(`${index + 1}. ${displayName}`, 120, y);
-    ctx.font = "bold 26px Arial";
-    ctx.fillText(`Score: ${winner.total}`, 830, y);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#2F180C";
+    let fontSize = 56;
+    ctx.font = `700 ${fontSize}px Arial`;
+    while (fontSize > 34 && ctx.measureText(displayName).width > 460) {
+      fontSize -= 2;
+      ctx.font = `700 ${fontSize}px Arial`;
+    }
+    ctx.fillText(displayName, slot.x, slot.y);
   });
-
-  ctx.fillStyle = "#7A1F1F";
-  ctx.font = "bold 30px Arial";
-  ctx.fillText("Powered by Revital Ginseng Plus", 90, 1530);
 
   const dataUrl = canvas.toDataURL("image/png");
   const a = document.createElement("a");

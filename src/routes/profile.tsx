@@ -104,8 +104,8 @@ function Profile() {
   ] as const;
 
   const currentBandGrade = hasPlayedBefore
-    ? rankBands.find((band) => finalPercentageValue >= band.min && finalPercentageValue < band.max)
-        ?.grade ?? "D"
+    ? (rankBands.find((band) => finalPercentageValue >= band.min && finalPercentageValue < band.max)
+        ?.grade ?? "D")
     : null;
 
   const save = async (e: React.FormEvent) => {
@@ -259,6 +259,12 @@ function Profile() {
                       strokeLinecap="round"
                     />
                   </svg>
+                  <div className="absolute left-[2%] top-[66%] rounded-md border border-white/80 bg-red-600 px-1.5 py-0.5 text-[10px] font-black text-white shadow">
+                    STOP
+                  </div>
+                  <div className="absolute right-[5%] top-[4%] text-lg" aria-label="finish flag">
+                    🏁
+                  </div>
                   {["D", "C", "B", "A", "S"].map((grade, idx) => {
                     const nodePos = [
                       "left-[7%] top-[58%]",
@@ -267,7 +273,13 @@ function Profile() {
                       "left-[60%] top-[30%]",
                       "left-[82%] top-[8%]",
                     ][idx];
-                    const color = ["bg-yellow-400", "bg-red-500", "bg-emerald-500", "bg-blue-600", "bg-purple-700"][idx];
+                    const color = [
+                      "bg-yellow-400",
+                      "bg-red-500",
+                      "bg-emerald-500",
+                      "bg-blue-600",
+                      "bg-purple-700",
+                    ][idx];
                     const isCurrent = currentBandGrade === grade;
                     return (
                       <div key={grade} className={`absolute ${nodePos}`}>
@@ -275,17 +287,19 @@ function Profile() {
                           className={`relative flex h-10 w-10 items-center justify-center rounded-full text-sm font-black text-white shadow-lg ${color} ${isCurrent ? "ring-4 ring-yellow-300" : ""}`}
                         >
                           {grade}
-                          <span className={`absolute left-1/2 top-[90%] h-0 w-0 -translate-x-1/2 border-l-[6px] border-r-[6px] border-t-[9px] border-l-transparent border-r-transparent ${
-                            idx === 0
-                              ? "border-t-yellow-400"
-                              : idx === 1
-                                ? "border-t-red-500"
-                                : idx === 2
-                                  ? "border-t-emerald-500"
-                                  : idx === 3
-                                    ? "border-t-blue-600"
-                                    : "border-t-purple-700"
-                          }`} />
+                          <span
+                            className={`absolute left-1/2 top-[90%] h-0 w-0 -translate-x-1/2 border-l-[6px] border-r-[6px] border-t-[9px] border-l-transparent border-r-transparent ${
+                              idx === 0
+                                ? "border-t-yellow-400"
+                                : idx === 1
+                                  ? "border-t-red-500"
+                                  : idx === 2
+                                    ? "border-t-emerald-500"
+                                    : idx === 3
+                                      ? "border-t-blue-600"
+                                      : "border-t-purple-700"
+                            }`}
+                          />
                         </div>
                       </div>
                     );
@@ -296,7 +310,10 @@ function Profile() {
                     .slice()
                     .reverse()
                     .map((band) => (
-                      <div key={band.grade} className="flex items-center justify-between rounded-lg bg-background/70 px-2 py-1">
+                      <div
+                        key={band.grade}
+                        className="flex items-center justify-between rounded-lg bg-background/70 px-2 py-1"
+                      >
                         <span className="font-bold text-garnet">
                           {band.grade} / {band.label}
                         </span>

@@ -95,6 +95,18 @@ function Profile() {
   const finalPercentDisplay = hasPlayedBefore ? `${finalPercentage}%` : "—";
   const tierDisplay = hasPlayedBefore ? user.category.split(" ")[0] : "Not started";
   const eligibleDisplay = hasPlayedBefore ? "✓" : "Not yet";
+  const rankBands = [
+    { grade: "D", label: "Recharge Needed", thresholdText: "< 20%", min: 0, max: 20 },
+    { grade: "C", label: "Warming Up", thresholdText: "≥ 20%", min: 20, max: 40 },
+    { grade: "B", label: "Charged Up", thresholdText: "≥ 40%", min: 40, max: 60 },
+    { grade: "A", label: "High Energy", thresholdText: "≥ 60%", min: 60, max: 80 },
+    { grade: "S", label: "Peak Performer", thresholdText: "≥ 80%", min: 80, max: 101 },
+  ] as const;
+
+  const currentBandGrade = hasPlayedBefore
+    ? rankBands.find((band) => finalPercentageValue >= band.min && finalPercentageValue < band.max)
+        ?.grade ?? "D"
+    : null;
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -228,56 +240,70 @@ function Profile() {
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 Energy Rank Roadmap
               </p>
-              <div className="mt-4 grid grid-cols-1 gap-2">
-                {[
-                  { grade: "D", label: "Recharge Needed", threshold: 0 },
-                  { grade: "C", label: "Warming Up", threshold: 20 },
-                  { grade: "B", label: "Charged Up", threshold: 40 },
-                  { grade: "A", label: "High Energy", threshold: 60 },
-                  { grade: "S", label: "Peak Performer", threshold: 80 },
-                ].map((band, idx, arr) => {
-                  const unlocked =
-                    hasPlayedBefore &&
-                    (band.grade === "D" ? true : finalPercentageValue >= band.threshold);
-                  const isCurrent =
-                    hasPlayedBefore &&
-                    ((band.grade === "D" && finalPercentageValue < 20) ||
-                      (band.grade !== "D" &&
-                        finalPercentageValue >= band.threshold &&
-                        (idx === arr.length - 1 || finalPercentageValue < arr[idx + 1].threshold)));
-
-                  return (
-                    <div key={band.grade} className="flex items-center gap-3">
-                      <div className="relative flex items-center">
-                        {idx > 0 && (
-                          <span
-                            className={`absolute -left-9 top-1/2 h-1 w-9 -translate-y-1/2 rounded-full ${unlocked ? "bg-gradient-energy" : "bg-border"}`}
-                          />
-                        )}
+              <div className="mt-3 rounded-2xl border border-border/70 bg-white/70 p-3">
+                <div className="relative h-44 overflow-hidden rounded-xl bg-slate-100/90">
+                  <svg viewBox="0 0 100 40" className="absolute inset-0 h-full w-full">
+                    <path
+                      d="M 3 33 C 16 18, 24 34, 38 20 C 52 7, 61 30, 74 17 C 84 7, 91 13, 98 8"
+                      fill="none"
+                      stroke="#2f2f2f"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M 3 33 C 16 18, 24 34, 38 20 C 52 7, 61 30, 74 17 C 84 7, 91 13, 98 8"
+                      fill="none"
+                      stroke="#9ca3af"
+                      strokeWidth="1"
+                      strokeDasharray="3 2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  {["D", "C", "B", "A", "S"].map((grade, idx) => {
+                    const nodePos = [
+                      "left-[7%] top-[58%]",
+                      "left-[22%] top-[40%]",
+                      "left-[41%] top-[45%]",
+                      "left-[60%] top-[30%]",
+                      "left-[82%] top-[8%]",
+                    ][idx];
+                    const color = ["bg-yellow-400", "bg-red-500", "bg-emerald-500", "bg-blue-600", "bg-purple-700"][idx];
+                    const isCurrent = currentBandGrade === grade;
+                    return (
+                      <div key={grade} className={`absolute ${nodePos}`}>
                         <div
-                          className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-black transition-all ${
-                            unlocked
-                              ? "border-orange-300 bg-gradient-energy text-white shadow-md"
-                              : "border-border bg-muted text-muted-foreground"
-                          } ${isCurrent ? "ring-4 ring-yellow-200/70" : ""}`}
+                          className={`relative flex h-10 w-10 items-center justify-center rounded-full text-sm font-black text-white shadow-lg ${color} ${isCurrent ? "ring-4 ring-yellow-300" : ""}`}
                         >
-                          {band.grade}
+                          {grade}
+                          <span className={`absolute left-1/2 top-[90%] h-0 w-0 -translate-x-1/2 border-l-[6px] border-r-[6px] border-t-[9px] border-l-transparent border-r-transparent ${
+                            idx === 0
+                              ? "border-t-yellow-400"
+                              : idx === 1
+                                ? "border-t-red-500"
+                                : idx === 2
+                                  ? "border-t-emerald-500"
+                                  : idx === 3
+                                    ? "border-t-blue-600"
+                                    : "border-t-purple-700"
+                          }`} />
                         </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-garnet">{band.label}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {band.grade === "D" ? "< 20%" : `≥ ${band.threshold}%`}
-                        </p>
-                      </div>
-                      {isCurrent && (
-                        <span className="ml-auto rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-semibold text-yellow-800">
-                          Current
+                    );
+                  })}
+                </div>
+                <div className="mt-3 grid grid-cols-1 gap-1.5 text-xs">
+                  {rankBands
+                    .slice()
+                    .reverse()
+                    .map((band) => (
+                      <div key={band.grade} className="flex items-center justify-between rounded-lg bg-background/70 px-2 py-1">
+                        <span className="font-bold text-garnet">
+                          {band.grade} / {band.label}
                         </span>
-                      )}
-                    </div>
-                  );
-                })}
+                        <span className="text-muted-foreground">{band.thresholdText}</span>
+                      </div>
+                    ))}
+                </div>
               </div>
             </div>
 

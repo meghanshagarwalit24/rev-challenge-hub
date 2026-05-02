@@ -233,16 +233,16 @@ async function downloadDailyWinnersImage(
   ctx.drawImage(templateImage, 0, 0);
 
   const nameSlots = [
-    { rank: 1, x: 360, y: 560 },
-    { rank: 2, x: 720, y: 560 },
-    { rank: 3, x: 360, y: 660 },
-    { rank: 4, x: 720, y: 660 },
-    { rank: 5, x: 360, y: 760 },
-    { rank: 6, x: 720, y: 760 },
-    { rank: 7, x: 360, y: 860 },
-    { rank: 8, x: 720, y: 860 },
-    { rank: 9, x: 360, y: 960 },
-    { rank: 10, x: 720, y: 960 },
+    { rank: 1, x: 300, y: 758 },
+    { rank: 2, x: 780, y: 758 },
+    { rank: 3, x: 300, y: 878 },
+    { rank: 4, x: 780, y: 878 },
+    { rank: 5, x: 300, y: 998 },
+    { rank: 6, x: 780, y: 998 },
+    { rank: 7, x: 300, y: 1118 },
+    { rank: 8, x: 780, y: 1118 },
+    { rank: 9, x: 300, y: 1238 },
+    { rank: 10, x: 780, y: 1238 },
   ];
 
   const templateWidth = 1080;
@@ -257,13 +257,13 @@ async function downloadDailyWinnersImage(
     const displayName = winner.name?.trim() || winner.contact;
     const nameX = slot.x * scaleX;
     const nameY = slot.y * scaleY;
-    const maxTextWidth = 380 * scaleX;
+    const maxTextWidth = 390 * scaleX;
 
-    ctx.textAlign = "left";
+    ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#2F180C";
-    let fontSize = Math.round(36 * Math.min(scaleX, scaleY));
-    const minFontSize = Math.round(24 * Math.min(scaleX, scaleY));
+    let fontSize = Math.round(52 * Math.min(scaleX, scaleY));
+    const minFontSize = Math.round(26 * Math.min(scaleX, scaleY));
     ctx.font = `700 ${fontSize}px Arial`;
 
     while (fontSize > minFontSize && ctx.measureText(displayName).width > maxTextWidth) {
@@ -2081,7 +2081,7 @@ function KpiCard({ title, value, info }: { title: string; value: string | number
           >
             <CircleHelp className="w-3.5 h-3.5" />
           </span>
-          <div className="pointer-events-none absolute right-0 top-6 z-50 hidden w-56 rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
+          <div className="pointer-events-none absolute left-1/2 top-6 z-[80] hidden w-56 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block sm:left-auto sm:right-0 sm:translate-x-0">
             {info}
           </div>
         </div>

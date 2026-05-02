@@ -77,15 +77,7 @@ function Profile() {
     if (historic.length > 0) {
       return [...historic].sort((a, b) => b.playedAt.localeCompare(a.playedAt));
     }
-    return [
-      {
-        playedAt: user.createdAt,
-        date: user.createdAt.slice(0, 10),
-        scores: user.scores,
-        total: user.total,
-        category: user.category,
-      },
-    ];
+    return [];
   }, [user]);
 
   if (!user) return null;
@@ -97,12 +89,12 @@ function Profile() {
   const hasSavedEmail = Boolean(user.email?.trim());
   const finalPercentage = totalToPercentage(user.total).toFixed(2);
   const finalPercentageValue = Number(finalPercentage);
-  const hasPlayedBefore = Boolean(
-    (user.playAttempts?.length ?? 0) > 0 ||
-    user.scores.reflex !== null ||
-    user.scores.memory !== null ||
-    user.scores.balance !== null,
-  );
+  const hasCompletedRun =
+    user.scores.reflex !== null && user.scores.memory !== null && user.scores.balance !== null;
+  const hasPlayedBefore = Boolean((user.playAttempts?.length ?? 0) > 0 || hasCompletedRun);
+  const finalPercentDisplay = hasPlayedBefore ? `${finalPercentage}%` : "—";
+  const tierDisplay = hasPlayedBefore ? user.category.split(" ")[0] : "Not started";
+  const eligibleDisplay = hasPlayedBefore ? "✓" : "Not yet";
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,7 +199,7 @@ function Profile() {
           <div className="bg-gradient-card border border-border rounded-3xl p-6 shadow-card text-center">
             <div className="text-5xl">{hasPlayedBefore ? "🏆" : "⚡"}</div>
             <h1 className="mt-3 text-2xl md:text-3xl font-black">
-              {hasPlayedBefore ? "You're In!" : "Ready to Make Your First Score?"}
+              {hasPlayedBefore ? "You're In!" : "You are yet to play"}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
               {hasPlayedBefore
@@ -227,9 +219,9 @@ function Profile() {
             )}
 
             <div className="mt-4 grid grid-cols-3 gap-3">
-              <Stat label="Final %" value={`${finalPercentage}%`} />
-              <Stat label="Tier" value={user.category.split(" ")[0]} />
-              <Stat label="Eligible" value="✓" />
+              <Stat label="Final %" value={finalPercentDisplay} />
+              <Stat label="Tier" value={tierDisplay} />
+              <Stat label="Eligible" value={eligibleDisplay} />
             </div>
 
             <div className="mt-4 bg-background/40 rounded-2xl p-4 text-left">
@@ -410,18 +402,26 @@ function Profile() {
                 </tr>
               </thead>
               <tbody>
-                {attempts.map((attempt, idx) => (
-                  <tr key={`${attempt.playedAt}-${idx}`} className="border-b border-border/40">
-                    <td className="py-2 pr-3">{attempt.date}</td>
-                    <td className="py-2 pr-3 text-muted-foreground text-xs">
-                      {new Date(attempt.playedAt).toLocaleTimeString()}
+                {attempts.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-4 text-center text-xs text-muted-foreground">
+                      No attempts yet. Play all three games to see your score history.
                     </td>
-                    <td className="py-2 pr-3 font-bold text-gradient-energy">
-                      {totalToPercentage(attempt.total).toFixed(2)}%
-                    </td>
-                    <td className="py-2 pr-3">{attempt.category}</td>
                   </tr>
-                ))}
+                ) : (
+                  attempts.map((attempt, idx) => (
+                    <tr key={`${attempt.playedAt}-${idx}`} className="border-b border-border/40">
+                      <td className="py-2 pr-3">{attempt.date}</td>
+                      <td className="py-2 pr-3 text-muted-foreground text-xs">
+                        {new Date(attempt.playedAt).toLocaleTimeString()}
+                      </td>
+                      <td className="py-2 pr-3 font-bold text-gradient-energy">
+                        {totalToPercentage(attempt.total).toFixed(2)}%
+                      </td>
+                      <td className="py-2 pr-3">{attempt.category}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

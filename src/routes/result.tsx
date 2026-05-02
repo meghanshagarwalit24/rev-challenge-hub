@@ -64,6 +64,21 @@ function Result() {
 
   const generateAndShare = async (openInstagram = false) => {
     try {
+      const navAny = navigator as any;
+
+      // Generic "Share" should prioritize link/text so apps like WhatsApp
+      // keep a tappable URL preview instead of sending only the image asset.
+      if (!openInstagram && navAny.share) {
+        try {
+          await navAny.share({
+            title: "Revital Energy Challenge",
+            text: `${shareText} ${shareUrl}`,
+            url: shareUrl,
+          });
+          return;
+        } catch {}
+      }
+
       const user = getUser();
       const blob = await buildShareCard({
         name: user?.name,
@@ -72,7 +87,6 @@ function Result() {
         tier: cat.tier,
       });
       const file = new File([blob], "revital-energy-score.png", { type: "image/png" });
-      const navAny = navigator as any;
       if (navAny.canShare && navAny.canShare({ files: [file] }) && navAny.share) {
         try {
           await navAny.share({

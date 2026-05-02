@@ -84,6 +84,20 @@ function Result() {
           return;
         } catch {}
       }
+
+      // Some browsers/apps do not allow file sharing, but still support native text/url sharing.
+      if (navAny.share) {
+        try {
+          await navAny.share({
+            title: "Revital Energy Challenge",
+            text: `${shareText} ${shareUrl}`,
+            url: shareUrl,
+          });
+          showShareNotice("Shared link. Image sharing is limited on this browser/app.");
+          return;
+        } catch {}
+      }
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

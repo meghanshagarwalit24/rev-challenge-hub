@@ -233,27 +233,45 @@ async function downloadDailyWinnersImage(
   ctx.drawImage(templateImage, 0, 0);
 
   const nameSlots = [
-    { x: 285, y: 1015 }, { x: 983, y: 1015 },
-    { x: 285, y: 1170 }, { x: 983, y: 1170 },
-    { x: 285, y: 1325 }, { x: 983, y: 1325 },
-    { x: 285, y: 1480 }, { x: 983, y: 1480 },
-    { x: 285, y: 1635 }, { x: 983, y: 1635 },
+    { rank: 1, x: 360, y: 560 },
+    { rank: 2, x: 720, y: 560 },
+    { rank: 3, x: 360, y: 660 },
+    { rank: 4, x: 720, y: 660 },
+    { rank: 5, x: 360, y: 760 },
+    { rank: 6, x: 720, y: 760 },
+    { rank: 7, x: 360, y: 860 },
+    { rank: 8, x: 720, y: 860 },
+    { rank: 9, x: 360, y: 960 },
+    { rank: 10, x: 720, y: 960 },
   ];
+
+  const templateWidth = 1080;
+  const templateHeight = 1920;
+  const scaleX = canvas.width / templateWidth;
+  const scaleY = canvas.height / templateHeight;
 
   winners.slice(0, 10).forEach((winner, index) => {
     const slot = nameSlots[index];
     if (!slot) return;
+
     const displayName = winner.name?.trim() || winner.contact;
+    const nameX = slot.x * scaleX;
+    const nameY = slot.y * scaleY;
+    const maxTextWidth = 380 * scaleX;
+
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#2F180C";
-    let fontSize = 56;
+    let fontSize = Math.round(36 * Math.min(scaleX, scaleY));
+    const minFontSize = Math.round(24 * Math.min(scaleX, scaleY));
     ctx.font = `700 ${fontSize}px Arial`;
-    while (fontSize > 34 && ctx.measureText(displayName).width > 460) {
-      fontSize -= 2;
+
+    while (fontSize > minFontSize && ctx.measureText(displayName).width > maxTextWidth) {
+      fontSize -= 1;
       ctx.font = `700 ${fontSize}px Arial`;
     }
-    ctx.fillText(displayName, slot.x, slot.y);
+
+    ctx.fillText(displayName, nameX, nameY);
   });
 
   const dataUrl = canvas.toDataURL("image/png");

@@ -212,95 +212,49 @@ async function downloadDailyWinnersImage(
   date: string,
   winners: DateWiseEntry["winners"],
 ): Promise<void> {
+  const templateImage = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () =>
+      reject(new Error("Template image not found. Please add /public/winners-template.png"));
+    img.src = "/winners-template.png";
+  }).catch((err) => {
+    alert((err as Error).message);
+    return null;
+  });
+  if (!templateImage) return;
+
   const canvas = document.createElement("canvas");
-  canvas.width = 1080;
-  canvas.height = 1920;
+  canvas.width = templateImage.width;
+  canvas.height = templateImage.height;
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
+  ctx.drawImage(templateImage, 0, 0);
 
-  const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  bg.addColorStop(0, "#FF6A00");
-  bg.addColorStop(0.35, "#FFA500");
-  bg.addColorStop(0.72, "#FFD95A");
-  bg.addColorStop(1, "#FFB238");
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#FFF4B0";
-  ctx.font = "italic 100px Georgia";
-  ctx.fillText("Congratulations", canvas.width / 2, 175);
-
-  ctx.fillStyle = "#3E1D0A";
-  ctx.font = "700 76px Arial";
-  ctx.fillText("Today's Top 10 Winners", canvas.width / 2, 330);
-  ctx.font = "500 40px Arial";
-  ctx.fillText("You brought the energy. You made it to the top.", canvas.width / 2, 390);
-  ctx.font = "600 30px Arial";
-  ctx.fillText(new Date(`${date}T00:00:00`).toLocaleDateString(), canvas.width / 2, 440);
-
-  const leftX = 80;
-  const rightX = 550;
-  const cardW = 450;
-  const cardH = 105;
-  const startY = 520;
-  const yGap = 128;
+  const nameSlots = [
+    { x: 285, y: 1015 }, { x: 983, y: 1015 },
+    { x: 285, y: 1170 }, { x: 983, y: 1170 },
+    { x: 285, y: 1325 }, { x: 983, y: 1325 },
+    { x: 285, y: 1480 }, { x: 983, y: 1480 },
+    { x: 285, y: 1635 }, { x: 983, y: 1635 },
+  ];
 
   winners.slice(0, 10).forEach((winner, index) => {
-    const col = index % 2;
-    const row = Math.floor(index / 2);
-    const x = col === 0 ? leftX : rightX;
-    const y = startY + row * yGap;
-
-    ctx.fillStyle = "#F7F1CF";
-    ctx.strokeStyle = "#D97A00";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.roundRect(x, y, cardW, cardH, 20);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#F59E0B";
-    ctx.beginPath();
-    ctx.arc(x + 32, y + 25, 21, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#612400";
-    ctx.textAlign = "center";
-    ctx.font = "bold 25px Arial";
-    ctx.fillText(`${index + 1}`, x + 32, y + 34);
-
+    const slot = nameSlots[index];
+    if (!slot) return;
     const displayName = winner.name?.trim() || winner.contact;
-    const handle = winner.contact.startsWith("@") ? winner.contact : `@${winner.contact}`;
     ctx.textAlign = "left";
-    ctx.fillStyle = "#2E190E";
-    ctx.font = "700 44px Arial";
-    ctx.fillText(displayName, x + 70, y + 50, cardW - 90);
-    ctx.font = "500 28px Arial";
-    ctx.fillStyle = "#5B3A2B";
-    ctx.fillText(`${handle} • ${winner.total} pts`, x + 70, y + 84, cardW - 90);
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#2F180C";
+    let fontSize = 56;
+    ctx.font = `700 ${fontSize}px Arial`;
+    while (fontSize > 34 && ctx.measureText(displayName).width > 460) {
+      fontSize -= 2;
+      ctx.font = `700 ${fontSize}px Arial`;
+    }
+    ctx.fillText(displayName, slot.x, slot.y);
   });
-
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#2E190E";
-  ctx.font = "700 64px Arial";
-  ctx.fillText("Think you can beat them?", canvas.width / 2, 1280);
-
-  ctx.fillStyle = "#F97316";
-  ctx.strokeStyle = "#FDE047";
-  ctx.lineWidth = 6;
-  ctx.beginPath();
-  ctx.roundRect(90, 1350, 900, 126, 50);
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = "#FFFFFF";
-  ctx.font = "700 58px Arial";
-  ctx.fillText("Play Now & Get Featured Tomorrow", canvas.width / 2, 1432);
-
-  ctx.fillStyle = "#AA1C28";
-  ctx.font = "700 60px Arial";
-  ctx.fillText("REVITAL ENERGY CHALLENGE", canvas.width / 2, 1620);
-  ctx.font = "700 42px Arial";
-  ctx.fillText("Built on Energy. Backed by Revital.", canvas.width / 2, 1710);
 
   const dataUrl = canvas.toDataURL("image/png");
   const a = document.createElement("a");

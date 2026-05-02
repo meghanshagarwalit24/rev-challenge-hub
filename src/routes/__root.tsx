@@ -2,6 +2,8 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts, useLocation } from
 import { useEffect } from "react";
 import appCss from "../styles.css?url";
 import revitalLogo from "@/assets/revital-logo.png?url";
+
+const socialShareOgImage = "https://revital.revtilabs.com/assets/revital-hero-wordmark-DN1KXeZP.png";
 import { CookieConsent } from "@/components/CookieConsent";
 import { Footer } from "@/components/Footer";
 
@@ -52,9 +54,9 @@ export const Route = createRootRoute({
         content:
           "Take the Revital Energy Challenge. Play 3 fast games, score your energy, and climb the daily leaderboard.",
       },
-      { property: "og:image", content: revitalLogo },
+      { property: "og:image", content: socialShareOgImage },
       { property: "og:image:alt", content: "Revital Energy Challenge logo" },
-      { name: "twitter:image", content: revitalLogo },
+      { name: "twitter:image", content: socialShareOgImage },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

@@ -173,8 +173,8 @@ function AdminUserDetail() {
 
   // ── User Detail ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background px-4 py-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="bg-background px-4 py-6 md:px-6 md:py-5">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <button

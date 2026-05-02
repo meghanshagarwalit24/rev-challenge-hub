@@ -1083,7 +1083,11 @@ function Admin() {
         </AnimatePresence>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto px-4 md:px-6 py-6 min-w-0">
+        <main
+          className={`flex-1 overflow-y-auto min-w-0 ${
+            isUserDetailRoute ? "px-0 py-0" : "px-4 md:px-6 py-6"
+          }`}
+        >
           {isUserDetailRoute ? (
             <Outlet />
           ) : (

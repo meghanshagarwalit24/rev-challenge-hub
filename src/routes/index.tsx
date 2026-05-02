@@ -37,13 +37,13 @@ function Landing() {
           if (settings.homeAnnouncementMode === "leaderboard") {
             const leaderboardTexts = entries
               .slice(0, 5)
-              .map((entry, index) => `🏅 #${index + 1} ${entry.name} — ${entry.score} pts`);
+              .map((entry, index) => `🏅 #${index + 1} ${entry.name} — ${entry.total} pts`);
             setAnnouncements(leaderboardTexts.length ? leaderboardTexts : [defaultAnnouncement]);
             return;
           }
           const winner = entries[0];
           if (winner) {
-            setAnnouncements([`🏆 Today's Winner: ${winner.name} with ${winner.score} points!`]);
+            setAnnouncements([`🏆 Today's Winner: ${winner.name} with ${winner.total} points!`]);
           }
         });
       })

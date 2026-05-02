@@ -2081,7 +2081,7 @@ function KpiCard({ title, value, info }: { title: string; value: string | number
           >
             <CircleHelp className="w-3.5 h-3.5" />
           </span>
-          <div className="pointer-events-none absolute right-0 top-6 z-50 hidden w-56 rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
+          <div className="pointer-events-none absolute left-1/2 top-6 z-[80] hidden w-56 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block sm:left-auto sm:right-0 sm:translate-x-0">
             {info}
           </div>
         </div>

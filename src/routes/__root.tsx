@@ -1,6 +1,7 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
 import appCss from "../styles.css?url";
+import revitalLogo from "@/assets/revital-logo.png?url";
 import { CookieConsent } from "@/components/CookieConsent";
 import { Footer } from "@/components/Footer";
 
@@ -43,6 +44,7 @@ export const Route = createRootRoute({
           "Take the Revital Energy Challenge. Play 3 fast games, score your energy, and climb the daily leaderboard.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://revital-energy-challenge.com" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Revital Energy Challenge — Are You Ready?" },
       {
@@ -50,19 +52,14 @@ export const Route = createRootRoute({
         content:
           "Take the Revital Energy Challenge. Play 3 fast games, score your energy, and climb the daily leaderboard.",
       },
-      {
-        property: "og:image",
-        content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2561bd18-a65b-48f9-bd1a-18f8abaec95b/id-preview-605a5d92--f6ce6fc7-3c89-4c59-b074-ac2fbb50b2bb.lovable.app-1776510535243.png",
-      },
-      {
-        name: "twitter:image",
-        content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2561bd18-a65b-48f9-bd1a-18f8abaec95b/id-preview-605a5d92--f6ce6fc7-3c89-4c59-b074-ac2fbb50b2bb.lovable.app-1776510535243.png",
-      },
+      { property: "og:image", content: revitalLogo },
+      { property: "og:image:alt", content: "Revital Energy Challenge logo" },
+      { name: "twitter:image", content: revitalLogo },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: revitalLogo, type: "image/png" },
+      { rel: "apple-touch-icon", href: revitalLogo },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "preconnect", href: "https://accounts.google.com" },

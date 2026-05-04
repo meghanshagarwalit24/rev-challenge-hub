@@ -125,7 +125,7 @@ function Landing() {
           >
             <div className="grid gap-3 md:grid-cols-2">
               <div className="flex items-start gap-3 rounded-2xl border border-[var(--garnet)]/10 bg-white/70 p-4 text-left">
-                <div className="text-4xl leading-none">🏆</div>
+                <div className="text-5xl md:text-6xl leading-none">🏆</div>
                 <div>
                   <p className="text-2xl font-black uppercase leading-tight text-garnet">
                     <span className="text-[var(--tiger)]">10 Winners</span> Everyday
@@ -136,7 +136,7 @@ function Landing() {
                 </div>
               </div>
               <div className="flex items-start gap-3 rounded-2xl border border-[var(--garnet)]/10 bg-white/70 p-4 text-left">
-                <div className="text-4xl leading-none">🎁</div>
+                <div className="text-5xl md:text-6xl leading-none">🎁</div>
                 <div>
                   <p className="text-2xl font-black uppercase leading-tight text-garnet">
                     <span className="text-[var(--tiger)]">1 Grand</span> Global Winner

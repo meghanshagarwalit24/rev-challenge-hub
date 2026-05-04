@@ -103,10 +103,14 @@ function Profile() {
     { grade: "S", label: "Peak Performer", thresholdText: "≥ 80%", min: 80, max: 101 },
   ] as const;
 
-  const currentBandGrade = hasPlayedBefore
-    ? (rankBands.find((band) => finalPercentageValue >= band.min && finalPercentageValue < band.max)
-        ?.grade ?? "D")
+  const currentBand = hasPlayedBefore
+    ? (rankBands.find(
+        (band) => finalPercentageValue >= band.min && finalPercentageValue < band.max,
+      ) ?? rankBands[0])
     : null;
+  const currentBandIndex = currentBand
+    ? rankBands.findIndex((band) => band.grade === currentBand.grade)
+    : -1;
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,87 +244,53 @@ function Profile() {
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 Energy Rank Roadmap
               </p>
-              <div className="mt-3 rounded-2xl border border-border/70 bg-white/70 p-3">
-                <div className="relative h-44 overflow-hidden rounded-xl bg-slate-100/90">
-                  <svg viewBox="0 0 100 40" className="absolute inset-0 h-full w-full">
-                    <path
-                      d="M 3 33 C 16 18, 24 34, 38 20 C 52 7, 61 30, 74 17 C 84 7, 91 13, 98 8"
-                      fill="none"
-                      stroke="var(--garnet)"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M 3 33 C 16 18, 24 34, 38 20 C 52 7, 61 30, 74 17 C 84 7, 91 13, 98 8"
-                      fill="none"
-                      stroke="#9ca3af"
-                      strokeWidth="1"
-                      strokeDasharray="3 2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <div className="absolute left-[2%] top-[66%] rounded-md border border-white/80 bg-[var(--garnet)] px-1.5 py-0.5 text-[10px] font-black text-white shadow">
-                    STOP
-                  </div>
-                  <div className="absolute right-[5%] top-[4%] text-lg" aria-label="finish flag">
-                    🏁
-                  </div>
-                  {["D", "C", "B", "A", "S"].map((grade, idx) => {
-                    const nodePos = [
-                      "left-[7%] top-[58%]",
-                      "left-[22%] top-[40%]",
-                      "left-[41%] top-[45%]",
-                      "left-[60%] top-[30%]",
-                      "left-[82%] top-[8%]",
-                    ][idx];
-                    const color = [
-                      "bg-[var(--marigold)] text-garnet",
-                      "bg-[var(--tiger)]",
-                      "bg-[var(--lime)] text-garnet",
-                      "bg-[var(--royal)]",
-                      "bg-[var(--eggplant)]",
-                    ][idx];
-                    const isCurrent = currentBandGrade === grade;
-                    return (
-                      <div key={grade} className={`absolute ${nodePos}`}>
-                        <div
-                          className={`relative flex h-10 w-10 items-center justify-center rounded-full text-sm font-black shadow-lg ${color} ${isCurrent ? "ring-4 ring-[var(--marigold)]" : ""}`}
-                        >
-                          {grade}
+              <p className="mt-1 text-xs text-muted-foreground">
+                {hasPlayedBefore
+                  ? `You are currently in ${currentBand?.grade} (${currentBand?.label}) at ${finalPercentage}%.`
+                  : "Complete all 3 games once to get your first rank. Start from D and move upward to S."}
+              </p>
+              <div className="mt-3 space-y-2">
+                {rankBands.map((band, index) => {
+                  const isUnlocked = hasPlayedBefore && index <= currentBandIndex;
+                  const isCurrent = hasPlayedBefore && currentBand?.grade === band.grade;
+                  return (
+                    <div
+                      key={band.grade}
+                      className={`rounded-xl border px-3 py-2 transition-colors ${
+                        isCurrent
+                          ? "border-[var(--garnet)] bg-[var(--marigold)]/30"
+                          : isUnlocked
+                            ? "border-border bg-background/80"
+                            : "border-border/60 bg-background/40"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
                           <span
-                            className={`absolute left-1/2 top-[90%] h-0 w-0 -translate-x-1/2 border-l-[6px] border-r-[6px] border-t-[9px] border-l-transparent border-r-transparent ${
-                              idx === 0
-                                ? "border-t-[var(--marigold)]"
-                                : idx === 1
-                                  ? "border-t-[var(--tiger)]"
-                                  : idx === 2
-                                    ? "border-t-[var(--lime)]"
-                                    : idx === 3
-                                      ? "border-t-[var(--royal)]"
-                                      : "border-t-[var(--eggplant)]"
+                            className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${
+                              isCurrent
+                                ? "bg-[var(--garnet)] text-white"
+                                : isUnlocked
+                                  ? "bg-[var(--garnet)]/80 text-white"
+                                  : "bg-muted text-muted-foreground"
                             }`}
-                          />
+                          >
+                            {band.grade}
+                          </span>
+                          <div>
+                            <p className="text-sm font-bold text-garnet">{band.label}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              Target: {band.thresholdText}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-3 grid grid-cols-1 gap-1.5 text-xs">
-                  {rankBands
-                    .slice()
-                    .reverse()
-                    .map((band) => (
-                      <div
-                        key={band.grade}
-                        className="flex items-center justify-between rounded-lg bg-background/70 px-2 py-1"
-                      >
-                        <span className="font-bold text-garnet">
-                          {band.grade} / {band.label}
+                        <span className="text-xs font-semibold text-muted-foreground">
+                          {isCurrent ? "Current" : isUnlocked ? "Completed" : "Locked"}
                         </span>
-                        <span className="text-muted-foreground">{band.thresholdText}</span>
                       </div>
-                    ))}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

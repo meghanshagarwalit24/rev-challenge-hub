@@ -233,16 +233,16 @@ async function downloadDailyWinnersImage(
   ctx.drawImage(templateImage, 0, 0);
 
   const nameSlots = [
-    { rank: 1, x: 300, y: 758 },
-    { rank: 2, x: 780, y: 758 },
-    { rank: 3, x: 300, y: 878 },
-    { rank: 4, x: 780, y: 878 },
-    { rank: 5, x: 300, y: 998 },
-    { rank: 6, x: 780, y: 998 },
-    { rank: 7, x: 300, y: 1118 },
-    { rank: 8, x: 780, y: 1118 },
-    { rank: 9, x: 300, y: 1238 },
-    { rank: 10, x: 780, y: 1238 },
+    { x: 350, y: 560 },
+    { x: 730, y: 560 },
+    { x: 350, y: 660 },
+    { x: 730, y: 660 },
+    { x: 350, y: 760 },
+    { x: 730, y: 760 },
+    { x: 350, y: 860 },
+    { x: 730, y: 860 },
+    { x: 350, y: 960 },
+    { x: 730, y: 960 },
   ];
 
   const templateWidth = 1080;
@@ -257,21 +257,35 @@ async function downloadDailyWinnersImage(
     const displayName = winner.name?.trim() || winner.contact;
     const nameX = slot.x * scaleX;
     const nameY = slot.y * scaleY;
-    const maxTextWidth = 390 * scaleX;
+    const maxTextWidth = 280 * scaleX;
 
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#2F180C";
-    let fontSize = Math.round(52 * Math.min(scaleX, scaleY));
-    const minFontSize = Math.round(26 * Math.min(scaleX, scaleY));
+
+    let fontSize = Math.round(40 * Math.min(scaleX, scaleY));
+    const minFontSize = Math.round(18 * Math.min(scaleX, scaleY));
+    let textToDraw = displayName;
+    const ellipsis = "...";
+
     ctx.font = `700 ${fontSize}px Arial`;
 
-    while (fontSize > minFontSize && ctx.measureText(displayName).width > maxTextWidth) {
+    while (fontSize > minFontSize && ctx.measureText(textToDraw).width > maxTextWidth) {
       fontSize -= 1;
       ctx.font = `700 ${fontSize}px Arial`;
     }
 
-    ctx.fillText(displayName, nameX, nameY);
+    if (ctx.measureText(textToDraw).width > maxTextWidth) {
+      while (
+        textToDraw.length > 0 &&
+        ctx.measureText(`${textToDraw}${ellipsis}`).width > maxTextWidth
+      ) {
+        textToDraw = textToDraw.slice(0, -1);
+      }
+      textToDraw = textToDraw ? `${textToDraw}${ellipsis}` : ellipsis;
+    }
+
+    ctx.fillText(textToDraw, nameX, nameY);
   });
 
   const dataUrl = canvas.toDataURL("image/png");
@@ -2115,7 +2129,7 @@ function KpiCard({
           >
             <CircleHelp className="w-3.5 h-3.5" />
           </span>
-          <div className="pointer-events-none absolute left-0 top-6 z-[80] hidden w-56 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
+          <div className="pointer-events-none absolute right-0 top-6 z-[80] hidden w-56 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
             {info}
           </div>
         </div>

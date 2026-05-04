@@ -233,16 +233,16 @@ async function downloadDailyWinnersImage(
   ctx.drawImage(templateImage, 0, 0);
 
   const nameSlots = [
-    { x: 350, y: 560 },
-    { x: 730, y: 560 },
-    { x: 350, y: 660 },
-    { x: 730, y: 660 },
-    { x: 350, y: 760 },
-    { x: 730, y: 760 },
-    { x: 350, y: 860 },
-    { x: 730, y: 860 },
-    { x: 350, y: 960 },
-    { x: 730, y: 960 },
+    { x: 321.5, y: 735.5 }, // Rank 1 (Left)
+    { x: 779.5, y: 735.5 }, // Rank 2 (Right)
+    { x: 321.5, y: 842.5 }, // Rank 3 (Left)
+    { x: 779.5, y: 842.5 }, // Rank 4 (Right)
+    { x: 321.5, y: 949.5 }, // Rank 5 (Left)
+    { x: 779.5, y: 949.5 }, // Rank 6 (Right)
+    { x: 321.5, y: 1056.5 }, // Rank 7 (Left)
+    { x: 779.5, y: 1056.5 }, // Rank 8 (Right)
+    { x: 321.5, y: 1163.5 }, // Rank 9 (Left)
+    { x: 779.5, y: 1163.5 }, // Rank 10 (Right)
   ];
 
   const templateWidth = 1080;

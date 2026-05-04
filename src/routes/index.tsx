@@ -120,6 +120,38 @@ function Landing() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.65 }}
+            className="mt-7 max-w-4xl mx-auto rounded-3xl border-2 border-[var(--garnet)]/10 bg-white/85 p-3 md:p-5 backdrop-blur shadow-card"
+          >
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="flex items-start gap-3 rounded-2xl border border-[var(--garnet)]/10 bg-white/70 p-4 text-left">
+                <div className="text-4xl leading-none">🏆</div>
+                <div>
+                  <p className="text-2xl font-black uppercase leading-tight text-garnet">
+                    <span className="text-[var(--tiger)]">10 Winners</span> Everyday
+                  </p>
+                  <p className="mt-1 text-sm md:text-base text-garnet/80">
+                    Win daily rewards by topping the leaderboard.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 rounded-2xl border border-[var(--garnet)]/10 bg-white/70 p-4 text-left">
+                <div className="text-4xl leading-none">🎁</div>
+                <div>
+                  <p className="text-2xl font-black uppercase leading-tight text-garnet">
+                    <span className="text-[var(--tiger)]">1 Grand</span> Global Winner
+                  </p>
+                  <p className="mt-1 text-sm md:text-base text-garnet/80">
+                    Compete across players and win the ultimate prize.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
             className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3"
           >

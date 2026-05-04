@@ -261,19 +261,13 @@ async function downloadDailyWinnersImage(
 
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillStyle = "#2F180C";
+    ctx.fillStyle = "#461901";
 
-    let fontSize = Math.round(40 * Math.min(scaleX, scaleY));
-    const minFontSize = Math.round(18 * Math.min(scaleX, scaleY));
+    const fontSize = Math.round(30 * Math.min(scaleX, scaleY));
     let textToDraw = displayName;
     const ellipsis = "...";
 
-    ctx.font = `700 ${fontSize}px Arial`;
-
-    while (fontSize > minFontSize && ctx.measureText(textToDraw).width > maxTextWidth) {
-      fontSize -= 1;
-      ctx.font = `700 ${fontSize}px Arial`;
-    }
+    ctx.font = `600 ${fontSize}px Duplit`;
 
     if (ctx.measureText(textToDraw).width > maxTextWidth) {
       while (

@@ -11,6 +11,14 @@ export const verifyAdminPasswordFn = createServerFn({ method: "POST" })
     return { ok: data.password === expected };
   });
 
+/** Verify OTP settings panel password (compares against OTP_ADMIN_PAGE_PASSWORD env var). */
+export const verifyOtpSettingsPasswordFn = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => z.object({ password: z.string() }).parse(data))
+  .handler(async ({ data }) => {
+    const expected = process.env.OTP_ADMIN_PAGE_PASSWORD ?? "u9V#4pL!2qX@8mT$7zK^1rN&6wB%3dH";
+    return { ok: data.password === expected };
+  });
+
 // ── Admin Log ──────────────────────────────────────────────────────────────────
 export interface AdminLog {
   logId: string;
@@ -59,6 +67,12 @@ export interface PlatformSettings {
   recaptchaSecret: string;
   homeAnnouncementMode: "winner" | "text" | "leaderboard";
   homeAnnouncementTexts: string[];
+  otpProvider: string;
+  otpAccountSid: string;
+  otpAuthToken: string;
+  otpVerifyServiceSid: string;
+  otpDefaultChannel: "sms" | "whatsapp" | "call" | "email";
+  otpRegionProfile: string;
 }
 
 const settingsSchema = z.object({
@@ -69,6 +83,12 @@ const settingsSchema = z.object({
   recaptchaSecret: z.string(),
   homeAnnouncementMode: z.enum(["winner", "text", "leaderboard"]).default("winner"),
   homeAnnouncementTexts: z.array(z.string()).length(5),
+  otpProvider: z.string().default("twilio"),
+  otpAccountSid: z.string().default(""),
+  otpAuthToken: z.string().default(""),
+  otpVerifyServiceSid: z.string().default(""),
+  otpDefaultChannel: z.enum(["sms", "whatsapp", "call", "email"]).default("sms"),
+  otpRegionProfile: z.string().default("INDIA"),
 });
 
 export const savePlatformSettingsFn = createServerFn({ method: "POST" })
@@ -103,6 +123,12 @@ export const getPlatformSettingsFn = createServerFn({ method: "GET" }).handler(a
         "",
         "",
       ],
+      otpProvider: "twilio",
+      otpAccountSid: "",
+      otpAuthToken: "",
+      otpVerifyServiceSid: "",
+      otpDefaultChannel: "sms",
+      otpRegionProfile: "INDIA",
     } as PlatformSettings;
   const { _id: _a, _key: _b, updatedAt: _c, ...rest } = doc as Record<string, unknown>;
 
@@ -115,8 +141,22 @@ export const getPlatformSettingsFn = createServerFn({ method: "GET" }).handler(a
     : [];
   while (storedTexts.length < 5) storedTexts.push(storedTexts.length === 0 ? legacyText : "");
 
+  const otpDefaultChannel =
+    rest.otpDefaultChannel === "whatsapp" ||
+    rest.otpDefaultChannel === "call" ||
+    rest.otpDefaultChannel === "email"
+      ? rest.otpDefaultChannel
+      : "sms";
+
   return {
     ...(rest as Omit<PlatformSettings, "homeAnnouncementTexts">),
     homeAnnouncementTexts: storedTexts,
+    otpProvider: typeof rest.otpProvider === "string" ? rest.otpProvider : "twilio",
+    otpAccountSid: typeof rest.otpAccountSid === "string" ? rest.otpAccountSid : "",
+    otpAuthToken: typeof rest.otpAuthToken === "string" ? rest.otpAuthToken : "",
+    otpVerifyServiceSid:
+      typeof rest.otpVerifyServiceSid === "string" ? rest.otpVerifyServiceSid : "",
+    otpDefaultChannel,
+    otpRegionProfile: typeof rest.otpRegionProfile === "string" ? rest.otpRegionProfile : "INDIA",
   } as PlatformSettings;
 });

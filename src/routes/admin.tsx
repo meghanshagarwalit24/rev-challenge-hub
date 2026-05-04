@@ -446,6 +446,7 @@ function Admin() {
     otpVerifyServiceSid: "",
     otpDefaultChannel: "sms",
     otpRegionProfile: "INDIA",
+    leaderboardAdminEmail: "",
   });
   const [savedFlash, setSavedFlash] = useState(false);
   const [otpSettingsUnlocked, setOtpSettingsUnlocked] = useState(false);
@@ -2195,6 +2196,24 @@ function Admin() {
                           </div>
                         </div>
                       )}
+                    </SettingsSection>
+
+                    <SettingsSection title="Daily Leaderboard Lock Email (UAE)">
+                      <div className="grid md:grid-cols-2 gap-3">
+                        <SettingsField
+                          label="Admin alert email"
+                          value={settings.leaderboardAdminEmail}
+                          onChange={(v) =>
+                            setSettings((prev) => ({ ...prev, leaderboardAdminEmail: v }))
+                          }
+                          placeholder="admin@company.com"
+                          hint="At 11:59:59 PM UAE time, top 10 winners will be mailed here."
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Run server function <code>lockDailyTopTenAndNotifyFn</code> at 11:59:59 PM
+                        Asia/Dubai every day to lock top 10 winners for that UAE date.
+                      </p>
                     </SettingsSection>
 
                     <div className="flex items-center gap-3 pt-2">

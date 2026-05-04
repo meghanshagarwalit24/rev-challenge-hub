@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getDb } from "./db";
+import type { UserRecord } from "@/lib/storage";
+import tls from "node:tls";
 
 // ── Admin Auth ─────────────────────────────────────────────────────────────────
 /** Verify admin password on the server (compares against ADMIN_PASSWORD env var). */
@@ -73,6 +75,7 @@ export interface PlatformSettings {
   otpVerifyServiceSid: string;
   otpDefaultChannel: "sms" | "whatsapp" | "call" | "email";
   otpRegionProfile: string;
+  leaderboardAdminEmail: string;
 }
 
 const settingsSchema = z.object({
@@ -89,6 +92,7 @@ const settingsSchema = z.object({
   otpVerifyServiceSid: z.string().default(""),
   otpDefaultChannel: z.enum(["sms", "whatsapp", "call", "email"]).default("sms"),
   otpRegionProfile: z.string().default("INDIA"),
+  leaderboardAdminEmail: z.string().default(""),
 });
 
 export const savePlatformSettingsFn = createServerFn({ method: "POST" })
@@ -129,6 +133,7 @@ export const getPlatformSettingsFn = createServerFn({ method: "GET" }).handler(a
       otpVerifyServiceSid: "",
       otpDefaultChannel: "sms",
       otpRegionProfile: "INDIA",
+      leaderboardAdminEmail: "",
     } as PlatformSettings;
   const { _id: _a, _key: _b, updatedAt: _c, ...rest } = doc as Record<string, unknown>;
 
@@ -158,5 +163,86 @@ export const getPlatformSettingsFn = createServerFn({ method: "GET" }).handler(a
       typeof rest.otpVerifyServiceSid === "string" ? rest.otpVerifyServiceSid : "",
     otpDefaultChannel,
     otpRegionProfile: typeof rest.otpRegionProfile === "string" ? rest.otpRegionProfile : "INDIA",
+    leaderboardAdminEmail:
+      typeof rest.leaderboardAdminEmail === "string" ? rest.leaderboardAdminEmail : "",
   } as PlatformSettings;
+});
+
+const GMAIL_SMTP_HOST = "smtp.gmail.com";
+const GMAIL_SMTP_PORT = 465;
+const GMAIL_FROM_EMAIL = "REPLACE_WITH_SENDER_GMAIL@gmail.com";
+const GMAIL_APP_PASSWORD = "REPLACE_WITH_GMAIL_APP_PASSWORD";
+
+async function sendViaGmailSmtp(to: string, subject: string, body: string): Promise<void> {
+  const socket = tls.connect({ host: GMAIL_SMTP_HOST, port: GMAIL_SMTP_PORT, servername: GMAIL_SMTP_HOST });
+  const readResponse = () =>
+    new Promise<string>((resolve, reject) => {
+      const onData = (chunk: Buffer) => {
+        const text = chunk.toString("utf8");
+        if (/^\d{3}[\s-]/m.test(text)) {
+          socket.off("data", onData);
+          resolve(text);
+        }
+      };
+      socket.on("data", onData);
+      socket.once("error", reject);
+    });
+  const send = async (line: string) => {
+    socket.write(`${line}\r\n`);
+    await readResponse();
+  };
+  await readResponse();
+  await send(`EHLO revital.local`);
+  await send(`AUTH LOGIN`);
+  await send(Buffer.from(GMAIL_FROM_EMAIL).toString("base64"));
+  await send(Buffer.from(GMAIL_APP_PASSWORD).toString("base64"));
+  await send(`MAIL FROM:<${GMAIL_FROM_EMAIL}>`);
+  await send(`RCPT TO:<${to}>`);
+  await send(`DATA`);
+  socket.write(`Subject: ${subject}\r\nFrom: ${GMAIL_FROM_EMAIL}\r\nTo: ${to}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}\r\n.\r\n`);
+  await readResponse();
+  await send("QUIT");
+  socket.end();
+}
+
+const formatUaeDate = (d: Date): string =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(d);
+
+export const lockDailyTopTenAndNotifyFn = createServerFn({ method: "POST" }).handler(async () => {
+  const db = await getDb();
+  const settingsDoc = await db.collection("platform_settings").findOne({ _key: "main" });
+  const settings = (settingsDoc ?? {}) as Partial<PlatformSettings>;
+  const lockDate = formatUaeDate(new Date(Date.now() - 24 * 60 * 60 * 1000));
+
+  const users = await db.collection<UserRecord>("users").find({}).toArray();
+  const ranked = users
+    .map((u) => {
+      const best = (u.playAttempts ?? [])
+        .filter((a) => a.date === lockDate)
+        .reduce<number>((m, a) => Math.max(m, a.total), -1);
+      return { userId: u.userId, name: u.name || u.contact, score: best };
+    })
+    .filter((u) => u.score >= 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10);
+
+  if (!ranked.length) return { ok: true, lockDate, winners: 0, mailed: false };
+
+  await Promise.all(
+    ranked.map((winner) =>
+      db.collection<UserRecord>("users").updateOne(
+        { userId: winner.userId },
+        { $addToSet: { winnerLockDates: lockDate } },
+      ),
+    ),
+  );
+
+  const adminEmail = (settings.leaderboardAdminEmail || "").trim();
+  if (!adminEmail) {
+    return { ok: true, lockDate, winners: ranked.length, mailed: false };
+  }
+  const subject = `Leaderboard locked for ${lockDate} (UAE)`;
+  const text = ranked.map((w, i) => `#${i + 1} ${w.name} — ${w.score}`).join("\n");
+  await sendViaGmailSmtp(adminEmail, subject, text);
+  return { ok: true, lockDate, winners: ranked.length, mailed: true, adminEmail };
 });

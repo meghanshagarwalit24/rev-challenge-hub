@@ -1000,7 +1000,7 @@ function Admin() {
     { id: "overview", label: "Overview", icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: "users", label: "Users", icon: <Users className="w-4 h-4" /> },
     { id: "datewise", label: "Date-wise", icon: <CalendarDays className="w-4 h-4" /> },
-    { id: "winners", label: "Winners", icon: <Trophy className="w-4 h-4" /> },
+    { id: "winners", label: "Daily Winners", icon: <Trophy className="w-4 h-4" /> },
     { id: "streaks", label: "Consistent Players", icon: <Flame className="w-4 h-4" /> },
     { id: "logs", label: "Admin Logs", icon: <ScrollText className="w-4 h-4" /> },
     { id: "settings", label: "Settings", icon: <Settings className="w-4 h-4" /> },

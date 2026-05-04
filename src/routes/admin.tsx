@@ -1688,7 +1688,10 @@ function Admin() {
                     )}
                     {paginatedDateWise.map((d) => {
                       const isOpen = expandedDates.has(d.date);
-                      const winnerIds = new Set(d.winners.map((w) => w.userId));
+                      const isTodayUae = d.date === uaeToday;
+                      const winnerIds = isTodayUae
+                        ? new Set<string>()
+                        : new Set(d.winners.map((w) => w.userId));
                       const toggle = () => {
                         setExpandedDates((s) => {
                           const ns = new Set(s);
@@ -1723,21 +1726,27 @@ function Admin() {
                             <div className="border-t border-border">
                               <div className="p-4 border-b border-border/50 bg-muted/10">
                                 <p className="text-xs text-muted-foreground">
-                                  Top 10 winners are auto-selected daily by highest total score.
+                                  {isTodayUae
+                                    ? "Today's winners will be selected at 11:59:59 PM UAE time."
+                                    : "Top 10 winners are auto-selected daily by highest total score."}
                                 </p>
-                                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-                                  {d.winners.map((winner, idx) => (
-                                    <div
-                                      key={`${d.date}-${winner.userId}-${idx}`}
-                                      className="text-xs rounded-xl px-3 py-2 border border-accent/30 bg-accent/10 flex justify-between"
-                                    >
-                                      <span className="font-semibold">
-                                        #{idx + 1} {winner.name || winner.contact}
-                                      </span>
-                                      <span className="font-bold text-accent">{winner.total}</span>
-                                    </div>
-                                  ))}
-                                </div>
+                                {!isTodayUae ? (
+                                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    {d.winners.map((winner, idx) => (
+                                      <div
+                                        key={`${d.date}-${winner.userId}-${idx}`}
+                                        className="text-xs rounded-xl px-3 py-2 border border-accent/30 bg-accent/10 flex justify-between"
+                                      >
+                                        <span className="font-semibold">
+                                          #{idx + 1} {winner.name || winner.contact}
+                                        </span>
+                                        <span className="font-bold text-accent">
+                                          {winner.total}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : null}
                               </div>
                               <div className="overflow-x-auto">
                                 <table className="w-full text-sm min-w-[600px]">

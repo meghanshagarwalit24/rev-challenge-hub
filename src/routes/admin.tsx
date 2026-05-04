@@ -71,6 +71,7 @@ interface DateWiseEntry {
     scores: UserRecord["scores"];
     total: number;
     category: string;
+    completedAll3Today: number;
   }[];
   winners: {
     userId: string;
@@ -148,7 +149,9 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
     );
     if (completedAttempts.length > 0) {
       const bestByDate = new Map<string, (typeof completedAttempts)[number]>();
+      const completedCountByDate = new Map<string, number>();
       for (const attempt of completedAttempts) {
+        completedCountByDate.set(attempt.date, (completedCountByDate.get(attempt.date) ?? 0) + 1);
         const current = bestByDate.get(attempt.date);
         if (
           !current ||
@@ -168,6 +171,7 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
           scores: attempt.scores,
           total: attempt.total,
           category: attempt.category,
+          completedAll3Today: completedCountByDate.get(date) ?? 0,
         });
       }
       continue;
@@ -183,6 +187,7 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
       scores: u.scores,
       total: u.total,
       category: u.category,
+      completedAll3Today: isComplete(u.scores) ? 1 : 0,
     });
   }
   const sortedEntries = [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
@@ -780,16 +785,16 @@ function Admin() {
     );
   }, [logs, logSearch]);
 
+  const uaeToday = useMemo(
+    () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date()),
+    [],
+  );
   const winnersByDate = useMemo(
     () =>
       dateWise
         .map((d) => ({ date: d.date, winners: d.winners }))
-        .filter((d) => d.winners.length > 0),
-    [dateWise],
-  );
-  const uaeToday = useMemo(
-    () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date()),
-    [],
+        .filter((d) => d.date !== uaeToday && d.winners.length > 0),
+    [dateWise, uaeToday],
   );
 
   const handleExportCsv = () => {
@@ -1760,6 +1765,7 @@ function Admin() {
                                       <Th>Memory</Th>
                                       <Th>Balance</Th>
                                       <Th>Total</Th>
+                                      <Th>No. of times played all 3 today</Th>
                                       <Th>Category</Th>
                                     </tr>
                                   </thead>
@@ -1780,6 +1786,9 @@ function Admin() {
                                         <Td>{u.scores.balance ?? "—"}</Td>
                                         <Td className="font-bold text-gradient-energy">
                                           {u.total}
+                                        </Td>
+                                        <Td className="text-center">
+                                          {u.completedAll3Today}
                                         </Td>
                                         <Td>
                                           <CategoryBadge cat={u.category} />

@@ -1219,6 +1219,36 @@ function Admin() {
                     </div>
                   </div>
 
+
+
+                  <div className="mt-5 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+                    <KpiCard
+                      title="Median Score"
+                      value={`${stats.median}/1500`}
+                      info="Middle score among users' best totals (or average of the two middle scores when user count is even)."
+                    />
+                    <KpiCard
+                      title="Best Score"
+                      value={`${stats.bestScore}/1500`}
+                      info="Highest best total score recorded across all users."
+                    />
+                    <KpiCard
+                      title="Users Referred"
+                      value={stats.referredUsers}
+                      info="Number of users who joined using a referral ID (users that were referred by someone)."
+                    />
+                    <KpiCard
+                      title="Avg Attempts / User"
+                      value={stats.attemptsPerUser}
+                      info="Average number of completed 3-game runs per user."
+                    />
+                    <KpiCard
+                      title="Returning Users"
+                      value={stats.returningUsers}
+                      info="Users who returned and completed more than one run/day."
+                    />
+                  </div>
+
                   <div className="mt-5 grid gap-4 xl:grid-cols-2">
                     <Leaderboard
                       title="Today's Leaders"

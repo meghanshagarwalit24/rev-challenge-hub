@@ -205,6 +205,12 @@ async function sendViaGmailSmtp(to: string, subject: string, body: string): Prom
   socket.end();
 }
 
+const parseAdminEmails = (input: string): string[] =>
+  input
+    .split(",")
+    .map((email) => email.trim())
+    .filter(Boolean);
+
 const formatUaeDate = (d: Date): string =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(d);
 
@@ -237,12 +243,12 @@ export const lockDailyTopTenAndNotifyFn = createServerFn({ method: "POST" }).han
     ),
   );
 
-  const adminEmail = (settings.leaderboardAdminEmail || "").trim();
-  if (!adminEmail) {
+  const adminEmails = parseAdminEmails(settings.leaderboardAdminEmail || "");
+  if (!adminEmails.length) {
     return { ok: true, lockDate, winners: ranked.length, mailed: false };
   }
   const subject = `Leaderboard locked for ${lockDate} (UAE)`;
   const text = ranked.map((w, i) => `#${i + 1} ${w.name} — ${w.score}`).join("\n");
-  await sendViaGmailSmtp(adminEmail, subject, text);
-  return { ok: true, lockDate, winners: ranked.length, mailed: true, adminEmail };
+  await Promise.all(adminEmails.map((email) => sendViaGmailSmtp(email, subject, text)));
+  return { ok: true, lockDate, winners: ranked.length, mailed: true, adminEmails };
 });

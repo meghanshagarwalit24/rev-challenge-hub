@@ -2206,8 +2206,8 @@ function Admin() {
                           onChange={(v) =>
                             setSettings((prev) => ({ ...prev, leaderboardAdminEmail: v }))
                           }
-                          placeholder="admin@company.com"
-                          hint="At 11:59:59 PM UAE time, top 10 winners will be mailed here."
+                          placeholder="admin1@company.com, admin2@company.com"
+                          hint="Use comma-separated emails. At 11:59:59 PM UAE time, top 10 winners will be mailed to all."
                         />
                       </div>
                       <p className="text-xs text-muted-foreground">

@@ -249,8 +249,66 @@ function Profile() {
                   ? `You are currently in ${currentBand?.grade} (${currentBand?.label}) at ${finalPercentage}%.`
                   : "Complete all 3 games once to get your first rank. Start from D and move upward to S."}
               </p>
+              <div className="mt-3 rounded-2xl border border-border/70 bg-[#d9dde3] p-3 sm:p-4">
+                <div className="relative h-40 sm:h-44 overflow-hidden rounded-xl bg-[#d0d4da]">
+                  <svg viewBox="0 0 720 220" className="absolute inset-0 h-full w-full" aria-hidden="true">
+                    <path
+                      d="M20 185 C80 115, 150 200, 230 130 C300 70, 360 120, 430 150 C500 178, 560 85, 700 52"
+                      fill="none"
+                      stroke="#7A160D"
+                      strokeWidth="42"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M20 185 C80 115, 150 200, 230 130 C300 70, 360 120, 430 150 C500 178, 560 85, 700 52"
+                      fill="none"
+                      stroke="#A7B0BA"
+                      strokeWidth="6"
+                      strokeDasharray="20 14"
+                      strokeLinecap="round"
+                    />
+                    <text x="26" y="170" fill="#fff" fontSize="18" fontWeight="700">START</text>
+                    <text x="650" y="32" fill="#3D3D3D" fontSize="18" fontWeight="700">🏁</text>
+                  </svg>
+
+                  {[
+                    { grade: 'D', x: '10%', y: '66%', color: '#ffe500', textColor: '#6b2100' },
+                    { grade: 'C', x: '26%', y: '40%', color: '#ff7a00', textColor: '#3f1000' },
+                    { grade: 'B', x: '46%', y: '47%', color: '#d5d9df', textColor: '#7A160D' },
+                    { grade: 'A', x: '65%', y: '42%', color: '#a44f1a', textColor: '#fff' },
+                    { grade: 'S', x: '88%', y: '18%', color: '#7A160D', textColor: '#fff' },
+                  ].map((marker) => {
+                    const isCurrent = hasPlayedBefore && currentBand?.grade === marker.grade;
+                    const isUnlocked = hasPlayedBefore && currentBandIndex >= rankBands.findIndex((b) => b.grade === marker.grade);
+                    return (
+                      <div
+                        key={marker.grade}
+                        className="absolute -translate-x-1/2 -translate-y-1/2"
+                        style={{ left: marker.x, top: marker.y }}
+                      >
+                        <div
+                          className="flex h-12 w-12 items-center justify-center rounded-full border-2 text-lg font-black shadow"
+                          style={{
+                            backgroundColor: marker.color,
+                            color: marker.textColor,
+                            opacity: isUnlocked || !hasPlayedBefore ? 1 : 0.6,
+                            transform: isCurrent ? 'scale(1.08)' : 'scale(1)',
+                          }}
+                        >
+                          {marker.grade}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="mt-3 space-y-2">
-                {rankBands.map((band, index) => {
+                {rankBands
+                  .slice()
+                  .reverse()
+                  .map((band) => {
+                    const index = rankBands.findIndex((item) => item.grade === band.grade);
                   const isUnlocked = hasPlayedBefore && index <= currentBandIndex;
                   const isCurrent = hasPlayedBefore && currentBand?.grade === band.grade;
                   return (
@@ -290,7 +348,7 @@ function Profile() {
                       </div>
                     </div>
                   );
-                })}
+                  })}
               </div>
             </div>
 

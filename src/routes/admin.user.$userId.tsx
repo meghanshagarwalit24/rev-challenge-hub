@@ -229,38 +229,6 @@ function AdminUserDetail() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
-          {/* Completed Attempts (Run-level) */}
-          <div className="bg-gradient-card border border-border rounded-2xl p-4">
-            <h2 className="font-bold text-sm mb-3">All Completed Attempts</h2>
-            <p className="text-[11px] text-muted-foreground mb-3">
-              Each row is one full 3-game run with exact timestamp, split scores, and total.
-            </p>
-            {completedAttempts.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No completed 3-game runs found.</p>
-            ) : (
-              <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-                {completedAttempts.map((a, idx) => (
-                  <div
-                    key={`${a.playedAt}-${idx}`}
-                    className="rounded-xl border border-border/70 p-2.5"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="text-[11px] text-muted-foreground">
-                        {new Date(a.playedAt).toLocaleString()}
-                      </div>
-                      <div className="font-bold text-gradient-energy">{a.total}</div>
-                    </div>
-                    <div className="text-[11px] mt-1">
-                      R:{a.scores.reflex ?? 0} · M:{a.scores.memory ?? 0} · B:
-                      {a.scores.balance ?? 0}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">{a.category}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Referred Users */}
           <div className="bg-gradient-card border border-border rounded-2xl p-4">
             <h2 className="font-bold text-sm mb-3">Referred Users</h2>
@@ -283,46 +251,46 @@ function AdminUserDetail() {
               </div>
             )}
           </div>
-        </div>
 
-        <div className="bg-gradient-card border border-border rounded-2xl p-4 mt-4">
-          <h2 className="font-bold text-sm mb-3">Date-wise Summary (Grouped)</h2>
-          <p className="text-[11px] text-muted-foreground mb-3">
-            Same completed runs grouped by date. Use this for daily count/trend; use Run-level for per-attempt details.
-          </p>
-          {dateWiseAttempts.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No dated attempts available yet.</p>
-          ) : (
-            <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-              {dateWiseAttempts.map((d) => (
-                <div key={d.date} className="rounded-xl border border-border/70 overflow-hidden">
-                  <div className="px-3 py-2 bg-muted/10 flex items-center justify-between">
-                    <div className="font-semibold text-sm">{d.date}</div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {d.attempts.length} run{d.attempts.length === 1 ? "" : "s"}
+          <div className="bg-gradient-card border border-border rounded-2xl p-4">
+            <h2 className="font-bold text-sm mb-3">Date-wise Scores</h2>
+            <p className="text-[11px] text-muted-foreground mb-3">
+              Completed runs grouped by day so you can track daily attempts and scores.
+            </p>
+            {dateWiseAttempts.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No dated attempts available yet.</p>
+            ) : (
+              <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                {dateWiseAttempts.map((d) => (
+                  <div key={d.date} className="rounded-xl border border-border/70 overflow-hidden">
+                    <div className="px-3 py-2 bg-muted/10 flex items-center justify-between">
+                      <div className="font-semibold text-sm">{d.date}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {d.attempts.length} run{d.attempts.length === 1 ? "" : "s"}
+                      </div>
+                    </div>
+                    <div className="divide-y divide-border/60">
+                      {d.attempts.map((a, idx) => (
+                        <div
+                          key={`${d.date}-${a.playedAt}-${idx}`}
+                          className="px-3 py-2 text-[11px] flex items-center justify-between gap-2"
+                        >
+                          <div className="text-muted-foreground">
+                            {new Date(a.playedAt).toLocaleTimeString()}
+                          </div>
+                          <div className="font-medium">
+                            R:{a.scores.reflex ?? 0} · M:{a.scores.memory ?? 0} · B:
+                            {a.scores.balance ?? 0}
+                          </div>
+                          <div className="font-bold text-gradient-energy">{a.total}</div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <div className="divide-y divide-border/60">
-                    {d.attempts.map((a, idx) => (
-                      <div
-                        key={`${d.date}-${a.playedAt}-${idx}`}
-                        className="px-3 py-2 text-[11px] flex items-center justify-between gap-2"
-                      >
-                        <div className="text-muted-foreground">
-                          {new Date(a.playedAt).toLocaleTimeString()}
-                        </div>
-                        <div className="font-medium">
-                          R:{a.scores.reflex ?? 0} · M:{a.scores.memory ?? 0} · B:
-                          {a.scores.balance ?? 0}
-                        </div>
-                        <div className="font-bold text-gradient-energy">{a.total}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

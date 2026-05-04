@@ -71,6 +71,7 @@ interface DateWiseEntry {
     scores: UserRecord["scores"];
     total: number;
     category: string;
+    completedAll3Today: number;
   }[];
   winners: {
     userId: string;
@@ -148,7 +149,9 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
     );
     if (completedAttempts.length > 0) {
       const bestByDate = new Map<string, (typeof completedAttempts)[number]>();
+      const completedCountByDate = new Map<string, number>();
       for (const attempt of completedAttempts) {
+        completedCountByDate.set(attempt.date, (completedCountByDate.get(attempt.date) ?? 0) + 1);
         const current = bestByDate.get(attempt.date);
         if (
           !current ||
@@ -168,6 +171,7 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
           scores: attempt.scores,
           total: attempt.total,
           category: attempt.category,
+          completedAll3Today: completedCountByDate.get(date) ?? 0,
         });
       }
       continue;
@@ -183,6 +187,7 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
       scores: u.scores,
       total: u.total,
       category: u.category,
+      completedAll3Today: isComplete(u.scores) ? 1 : 0,
     });
   }
   const sortedEntries = [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
@@ -762,12 +767,17 @@ function Admin() {
     }
   }, [dateWisePage, dateWiseTotalPages]);
 
-  // ── Streaks ─────────────────────────────────────────────────────────────────
+  // ── Consistent players ──────────────────────────────────────────────────────
   const streaks = useMemo(
     () =>
       [...users]
         .map((u) => ({ ...u, streak: calcStreak(u.playDates ?? []) }))
-        .sort((a, b) => b.streak - a.streak),
+        .sort((a, b) => {
+          const playDaysDiff = (b.playDates?.length ?? 0) - (a.playDates?.length ?? 0);
+          if (playDaysDiff !== 0) return playDaysDiff;
+          if (b.total !== a.total) return b.total - a.total;
+          return b.streak - a.streak;
+        }),
     [users],
   );
 
@@ -780,16 +790,16 @@ function Admin() {
     );
   }, [logs, logSearch]);
 
+  const uaeToday = useMemo(
+    () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date()),
+    [],
+  );
   const winnersByDate = useMemo(
     () =>
       dateWise
         .map((d) => ({ date: d.date, winners: d.winners }))
-        .filter((d) => d.winners.length > 0),
-    [dateWise],
-  );
-  const uaeToday = useMemo(
-    () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date()),
-    [],
+        .filter((d) => d.date !== uaeToday && d.winners.length > 0),
+    [dateWise, uaeToday],
   );
 
   const handleExportCsv = () => {
@@ -1760,6 +1770,7 @@ function Admin() {
                                       <Th>Memory</Th>
                                       <Th>Balance</Th>
                                       <Th>Total</Th>
+                                      <Th>No. of times played all 3 today</Th>
                                       <Th>Category</Th>
                                     </tr>
                                   </thead>
@@ -1780,6 +1791,9 @@ function Admin() {
                                         <Td>{u.scores.balance ?? "—"}</Td>
                                         <Td className="font-bold text-gradient-energy">
                                           {u.total}
+                                        </Td>
+                                        <Td className="text-center">
+                                          {u.completedAll3Today}
                                         </Td>
                                         <Td>
                                           <CategoryBadge cat={u.category} />
@@ -1900,7 +1914,7 @@ function Admin() {
                 >
                   <SectionTitle>Consistent Players</SectionTitle>
                   <p className="text-xs text-muted-foreground mt-1 mb-4">
-                    Users ranked by their current consecutive-day play streak.
+                    Users ranked by highest total play days.
                   </p>
 
                   <div className="bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
@@ -1911,8 +1925,18 @@ function Admin() {
                           <Th>User ID</Th>
                           <Th>Contact</Th>
                           <Th>Name</Th>
-                          <Th>Total Play Days</Th>
-                          <Th>Score</Th>
+                          <Th>
+                            <span className="inline-flex items-center gap-1">
+                              Total Play Days
+                              <InfoHint text="Number of unique days this user has played (from playDates)." />
+                            </span>
+                          </Th>
+                          <Th>
+                            <span className="inline-flex items-center gap-1">
+                              Score
+                              <InfoHint text="Displayed score is the user's best total score used for ranking context." />
+                            </span>
+                          </Th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2291,7 +2315,7 @@ function KpiCard({
           >
             <CircleHelp className="w-3.5 h-3.5" />
           </span>
-          <div className="pointer-events-none absolute right-0 top-6 z-[80] hidden w-56 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
+          <div className="pointer-events-none absolute left-0 top-6 z-[80] hidden w-56 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
             {info}
           </div>
         </div>
@@ -2303,6 +2327,22 @@ function KpiCard({
 
 function Th({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
   return <th className={`py-2.5 px-3 font-semibold ${className}`}>{children}</th>;
+}
+
+function InfoHint({ text }: { text: string }) {
+  return (
+    <span className="relative group/info inline-flex items-center">
+      <span
+        className="text-muted-foreground/80 hover:text-accent transition-colors cursor-help inline-flex"
+        aria-label={text}
+      >
+        <CircleHelp className="w-3.5 h-3.5" />
+      </span>
+      <span className="pointer-events-none absolute left-1/2 top-5 z-[80] hidden w-56 -translate-x-1/2 rounded-xl border border-border bg-background/95 p-2 text-[10px] normal-case font-medium leading-relaxed tracking-normal text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
+        {text}
+      </span>
+    </span>
+  );
 }
 
 function Td({ children, className = "" }: { children?: React.ReactNode; className?: string }) {

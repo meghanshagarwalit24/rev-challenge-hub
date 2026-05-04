@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { Shield, ArrowLeft } from "lucide-react";
+import { Shield, ArrowLeft, CircleHelp } from "lucide-react";
 import type { UserRecord } from "@/lib/storage";
-import { calcStreak, dedupeAttempts } from "@/lib/storage";
+import { dedupeAttempts } from "@/lib/storage";
 
 export const Route = createFileRoute("/admin/user/$userId")({
   component: AdminUserDetail,
@@ -101,7 +101,7 @@ function AdminUserDetail() {
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }, [allUsers, user]);
 
-  const streak = useMemo(() => calcStreak(user?.playDates ?? []), [user]);
+  const totalPlayDays = (user.playDates ?? []).length;
 
   // ── Login Screen ────────────────────────────────────────────────────────────
   if (!authenticated) {
@@ -198,7 +198,11 @@ function AdminUserDetail() {
           <KpiCard title="Best Score" value={bestAttempt?.total ?? 0} />
           <KpiCard title="Completed Attempts" value={completedAttempts.length} />
           <KpiCard title="Users Referred" value={referredUsers.length} />
-          <KpiCard title="Current Streak" value={`${streak}d`} />
+          <KpiCard
+            title="Total Play Days"
+            value={totalPlayDays}
+            info="Number of unique days this user has played any challenge."
+          />
         </div>
 
         {/* User info */}
@@ -297,10 +301,33 @@ function AdminUserDetail() {
   );
 }
 
-function KpiCard({ title, value }: { title: string; value: string | number }) {
+function KpiCard({
+  title,
+  value,
+  info,
+}: {
+  title: string;
+  value: string | number;
+  info?: string;
+}) {
   return (
     <div className="bg-gradient-card border border-border rounded-2xl p-4 shadow-card">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{title}</div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{title}</div>
+        {info ? (
+          <span className="relative group/info inline-flex items-center">
+            <span
+              className="text-muted-foreground/80 hover:text-accent transition-colors cursor-help inline-flex"
+              aria-label={info}
+            >
+              <CircleHelp className="w-3.5 h-3.5" />
+            </span>
+            <span className="pointer-events-none absolute right-0 top-5 z-[80] hidden w-56 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-background/95 p-2 text-[10px] normal-case font-medium leading-relaxed tracking-normal text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
+              {info}
+            </span>
+          </span>
+        ) : null}
+      </div>
       <div className="text-2xl md:text-3xl font-black text-gradient-energy mt-1">{value}</div>
     </div>
   );

@@ -72,12 +72,12 @@ function Landing() {
       <Header />
 
       {/* HERO */}
-      <main className="relative max-w-6xl mx-auto px-4 pt-8 md:pt-14 pb-16">
+      <main className="relative max-w-6xl mx-auto px-4 pt-6 md:pt-10 max-[900px]:pt-4 pb-16">
         <section id="hero-section" className="scroll-mt-24 text-center">
           <motion.img
             src={heroWordmark}
             alt="Revital Energy Challenge"
-            className="mx-auto h-28 md:h-48 w-auto drop-shadow-2xl"
+            className="mx-auto h-24 md:h-40 max-[900px]:h-20 w-auto drop-shadow-2xl"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", damping: 12, delay: 0.1 }}
@@ -87,7 +87,7 @@ function Landing() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="mt-6 inline-block px-4 py-1.5 rounded-full bg-[var(--garnet)] text-white text-xs uppercase tracking-[0.2em] font-bold shadow-button"
+            className="mt-4 max-[900px]:mt-3 inline-block px-4 py-1.5 rounded-full bg-[var(--garnet)] text-white text-xs uppercase tracking-[0.2em] font-bold shadow-button"
           >
             ⚡ Power Up. Play. Conquer.
           </motion.div>
@@ -96,7 +96,7 @@ function Landing() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="mt-5 text-4xl md:text-7xl font-black leading-[1.05] text-garnet"
+            className="mt-4 max-[900px]:mt-3 text-4xl md:text-6xl max-[900px]:text-3xl font-black leading-[1.05] text-garnet"
           >
             YOUR DAY TESTS YOU
             <br />
@@ -107,7 +107,7 @@ function Landing() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.55 }}
-            className="mt-5 text-base md:text-xl text-garnet/80 max-w-2xl mx-auto"
+            className="mt-4 max-[900px]:mt-3 text-base md:text-lg max-[900px]:text-sm text-garnet/80 max-w-2xl mx-auto"
           >
             Take the Revital{" "}
             <span className="font-script text-[var(--tiger)] text-xl md:text-2xl">
@@ -121,7 +121,7 @@ function Landing() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.65 }}
-            className="mt-7 max-w-4xl mx-auto rounded-3xl border-2 border-[var(--garnet)]/10 bg-white/85 p-3 md:p-5 backdrop-blur shadow-card"
+            className="mt-5 max-[900px]:mt-4 max-w-4xl mx-auto rounded-3xl border-2 border-[var(--garnet)]/10 bg-white/85 p-3 md:p-4 max-[900px]:p-2 backdrop-blur shadow-card"
           >
             <div className="grid gap-3 md:grid-cols-2">
               <div className="flex items-start gap-3 rounded-2xl border border-[var(--garnet)]/10 bg-white/70 p-4 text-left">
@@ -153,7 +153,7 @@ function Landing() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
-            className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3"
+            className="mt-6 max-[900px]:mt-4 flex flex-col sm:flex-row items-center justify-center gap-3"
           >
             <Link
               to="/play/reflex"
@@ -174,7 +174,7 @@ function Landing() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
-            className="mt-12 grid grid-cols-3 gap-3 md:gap-6 max-w-2xl mx-auto"
+            className="mt-8 max-[900px]:mt-5 grid grid-cols-3 gap-3 md:gap-6 max-w-2xl mx-auto"
           >
             {[
               { n: "3", label: "Quick games" },

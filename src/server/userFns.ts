@@ -39,6 +39,7 @@ const userRecordSchema = z.object({
   utmCampaign: z.string().optional(),
   utmTerm: z.string().optional(),
   utmContent: z.string().optional(),
+  winnerLockDates: z.array(z.string()).optional(),
 });
 
 const contactSchema = z.object({ contact: z.string().min(1) });

@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getDb } from "./db";
+import type { UserRecord } from "@/lib/storage";
+import tls from "node:tls";
 
 // ── Admin Auth ─────────────────────────────────────────────────────────────────
 /** Verify admin password on the server (compares against ADMIN_PASSWORD env var). */
@@ -73,6 +75,7 @@ export interface PlatformSettings {
   otpVerifyServiceSid: string;
   otpDefaultChannel: "sms" | "whatsapp" | "call" | "email";
   otpRegionProfile: string;
+  leaderboardAdminEmail: string;
 }
 
 const settingsSchema = z.object({
@@ -89,6 +92,7 @@ const settingsSchema = z.object({
   otpVerifyServiceSid: z.string().default(""),
   otpDefaultChannel: z.enum(["sms", "whatsapp", "call", "email"]).default("sms"),
   otpRegionProfile: z.string().default("INDIA"),
+  leaderboardAdminEmail: z.string().default(""),
 });
 
 export const savePlatformSettingsFn = createServerFn({ method: "POST" })
@@ -129,6 +133,7 @@ export const getPlatformSettingsFn = createServerFn({ method: "GET" }).handler(a
       otpVerifyServiceSid: "",
       otpDefaultChannel: "sms",
       otpRegionProfile: "INDIA",
+      leaderboardAdminEmail: "",
     } as PlatformSettings;
   const { _id: _a, _key: _b, updatedAt: _c, ...rest } = doc as Record<string, unknown>;
 
@@ -158,5 +163,139 @@ export const getPlatformSettingsFn = createServerFn({ method: "GET" }).handler(a
       typeof rest.otpVerifyServiceSid === "string" ? rest.otpVerifyServiceSid : "",
     otpDefaultChannel,
     otpRegionProfile: typeof rest.otpRegionProfile === "string" ? rest.otpRegionProfile : "INDIA",
+    leaderboardAdminEmail:
+      typeof rest.leaderboardAdminEmail === "string" ? rest.leaderboardAdminEmail : "",
   } as PlatformSettings;
+});
+
+const GMAIL_SMTP_HOST = "smtp.gmail.com";
+const GMAIL_SMTP_PORT = 465;
+const GMAIL_FROM_EMAIL = "revitalenergyuae@gmail.com";
+const GMAIL_APP_PASSWORD = "zkve peto wnre mhmx";
+
+function generateWinnersSvg(lockDate: string, winners: Array<{ name: string; score: number }>): string {
+  const rows = winners
+    .slice(0, 10)
+    .map(
+      (winner, idx) =>
+        `<text x="70" y="${210 + idx * 52}" font-size="28" font-family="Arial, sans-serif" fill="#5A1E11">#${idx + 1} ${winner.name}</text>
+<text x="980" y="${210 + idx * 52}" text-anchor="end" font-size="28" font-family="Arial, sans-serif" fill="#D97706">${winner.score}</text>`,
+    )
+    .join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080">
+  <rect width="100%" height="100%" fill="#FFF7ED"/>
+  <text x="540" y="90" text-anchor="middle" font-size="44" font-family="Arial, sans-serif" fill="#7C2D12">Revital Daily Winners</text>
+  <text x="540" y="140" text-anchor="middle" font-size="24" font-family="Arial, sans-serif" fill="#9A3412">${lockDate}</text>
+  ${rows}
+</svg>`;
+}
+
+async function sendViaGmailSmtp(
+  to: string,
+  subject: string,
+  body: string,
+  attachment?: { filename: string; contentType: string; content: string },
+): Promise<void> {
+  const socket = tls.connect({ host: GMAIL_SMTP_HOST, port: GMAIL_SMTP_PORT, servername: GMAIL_SMTP_HOST });
+  const readResponse = () =>
+    new Promise<string>((resolve, reject) => {
+      const onData = (chunk: Buffer) => {
+        const text = chunk.toString("utf8");
+        if (/^\d{3}[\s-]/m.test(text)) {
+          socket.off("data", onData);
+          resolve(text);
+        }
+      };
+      socket.on("data", onData);
+      socket.once("error", reject);
+    });
+  const send = async (line: string) => {
+    socket.write(`${line}\r\n`);
+    await readResponse();
+  };
+  await readResponse();
+  await send(`EHLO revital.local`);
+  await send(`AUTH LOGIN`);
+  await send(Buffer.from(GMAIL_FROM_EMAIL).toString("base64"));
+  await send(Buffer.from(GMAIL_APP_PASSWORD).toString("base64"));
+  await send(`MAIL FROM:<${GMAIL_FROM_EMAIL}>`);
+  await send(`RCPT TO:<${to}>`);
+  await send(`DATA`);
+  if (!attachment) {
+    socket.write(
+      `Subject: ${subject}\r\nFrom: ${GMAIL_FROM_EMAIL}\r\nTo: ${to}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}\r\n.\r\n`,
+    );
+  } else {
+    const boundary = `revital_${Date.now()}`;
+    const encoded = Buffer.from(attachment.content, "utf8").toString("base64");
+    socket.write(
+      `Subject: ${subject}\r\nFrom: ${GMAIL_FROM_EMAIL}\r\nTo: ${to}\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n--${boundary}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}\r\n\r\n--${boundary}\r\nContent-Type: ${attachment.contentType}; name="${attachment.filename}"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename="${attachment.filename}"\r\n\r\n${encoded}\r\n--${boundary}--\r\n.\r\n`,
+    );
+  }
+  await readResponse();
+  await send("QUIT");
+  socket.end();
+}
+
+const parseAdminEmails = (input: string): string[] =>
+  input
+    .split(",")
+    .map((email) => email.trim())
+    .filter(Boolean);
+
+const formatUaeDate = (d: Date): string =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(d);
+
+export const lockDailyTopTenAndNotifyFn = createServerFn({ method: "POST" }).handler(async () => {
+  const db = await getDb();
+  const settingsDoc = await db.collection("platform_settings").findOne({ _key: "main" });
+  const settings = (settingsDoc ?? {}) as Partial<PlatformSettings>;
+  const lockDate = formatUaeDate(new Date(Date.now() - 24 * 60 * 60 * 1000));
+
+  const users = await db.collection<UserRecord>("users").find({}).toArray();
+  const ranked = users
+    .map((u) => {
+      const best = (u.playAttempts ?? [])
+        .filter((a) => a.date === lockDate)
+        .reduce<number>((m, a) => Math.max(m, a.total), -1);
+      return { userId: u.userId, name: u.name || u.contact, score: best };
+    })
+    .filter((u) => u.score >= 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10);
+
+  if (!ranked.length) return { ok: true, lockDate, winners: 0, mailed: false };
+
+  await Promise.all(
+    ranked.map((winner) =>
+      db.collection<UserRecord>("users").updateOne(
+        { userId: winner.userId },
+        { $addToSet: { winnerLockDates: lockDate } },
+      ),
+    ),
+  );
+
+  const adminEmails = parseAdminEmails(settings.leaderboardAdminEmail || "");
+  if (!adminEmails.length) {
+    return { ok: true, lockDate, winners: ranked.length, mailed: false };
+  }
+  const subject = `Leaderboard locked for ${lockDate} (UAE)`;
+  const text = ranked.map((w, i) => `#${i + 1} ${w.name} — ${w.score}`).join("\n");
+  const dayName = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Dubai",
+    weekday: "long",
+  }).format(new Date(`${lockDate}T12:00:00+04:00`));
+  const enrichedSubject = `Winners Locked: ${lockDate} (${dayName}) UAE`;
+  const winnersSvg = generateWinnersSvg(lockDate, ranked);
+  await Promise.all(
+    adminEmails.map((email) =>
+      sendViaGmailSmtp(email, enrichedSubject, text, {
+        filename: `revital-winners-${lockDate}.svg`,
+        contentType: "image/svg+xml",
+        content: winnersSvg,
+      }),
+    ),
+  );
+  return { ok: true, lockDate, winners: ranked.length, mailed: true, adminEmails };
 });

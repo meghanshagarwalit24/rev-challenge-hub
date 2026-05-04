@@ -66,6 +66,7 @@ export interface UserRecord {
   utmCampaign?: string;
   utmTerm?: string;
   utmContent?: string;
+  winnerLockDates?: string[]; // YYYY-MM-DD dates where this user finished in the locked top 10
 }
 
 export interface UTMParams {

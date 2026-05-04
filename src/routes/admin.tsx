@@ -446,6 +446,7 @@ function Admin() {
     otpVerifyServiceSid: "",
     otpDefaultChannel: "sms",
     otpRegionProfile: "INDIA",
+    leaderboardAdminEmail: "",
   });
   const [savedFlash, setSavedFlash] = useState(false);
   const [otpSettingsUnlocked, setOtpSettingsUnlocked] = useState(false);
@@ -785,6 +786,10 @@ function Admin() {
         .map((d) => ({ date: d.date, winners: d.winners }))
         .filter((d) => d.winners.length > 0),
     [dateWise],
+  );
+  const uaeToday = useMemo(
+    () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date()),
+    [],
   );
 
   const handleExportCsv = () => {
@@ -1683,7 +1688,10 @@ function Admin() {
                     )}
                     {paginatedDateWise.map((d) => {
                       const isOpen = expandedDates.has(d.date);
-                      const winnerIds = new Set(d.winners.map((w) => w.userId));
+                      const isTodayUae = d.date === uaeToday;
+                      const winnerIds = isTodayUae
+                        ? new Set<string>()
+                        : new Set(d.winners.map((w) => w.userId));
                       const toggle = () => {
                         setExpandedDates((s) => {
                           const ns = new Set(s);
@@ -1718,21 +1726,27 @@ function Admin() {
                             <div className="border-t border-border">
                               <div className="p-4 border-b border-border/50 bg-muted/10">
                                 <p className="text-xs text-muted-foreground">
-                                  Top 10 winners are auto-selected daily by highest total score.
+                                  {isTodayUae
+                                    ? "Today's winners will be selected at 11:59:59 PM UAE time."
+                                    : "Top 10 winners are auto-selected daily by highest total score."}
                                 </p>
-                                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-                                  {d.winners.map((winner, idx) => (
-                                    <div
-                                      key={`${d.date}-${winner.userId}-${idx}`}
-                                      className="text-xs rounded-xl px-3 py-2 border border-accent/30 bg-accent/10 flex justify-between"
-                                    >
-                                      <span className="font-semibold">
-                                        #{idx + 1} {winner.name || winner.contact}
-                                      </span>
-                                      <span className="font-bold text-accent">{winner.total}</span>
-                                    </div>
-                                  ))}
-                                </div>
+                                {!isTodayUae ? (
+                                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    {d.winners.map((winner, idx) => (
+                                      <div
+                                        key={`${d.date}-${winner.userId}-${idx}`}
+                                        className="text-xs rounded-xl px-3 py-2 border border-accent/30 bg-accent/10 flex justify-between"
+                                      >
+                                        <span className="font-semibold">
+                                          #{idx + 1} {winner.name || winner.contact}
+                                        </span>
+                                        <span className="font-bold text-accent">
+                                          {winner.total}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : null}
                               </div>
                               <div className="overflow-x-auto">
                                 <table className="w-full text-sm min-w-[600px]">
@@ -1834,6 +1848,12 @@ function Admin() {
                         key={`winners-${d.date}`}
                         className="bg-gradient-card border border-border rounded-2xl p-4 shadow-card"
                       >
+                        {d.date === uaeToday ? (
+                          <div className="rounded-xl border border-amber-300 bg-amber-50/60 px-3 py-2 mb-3 text-xs text-amber-900">
+                            Today&apos;s winner is locked at <strong>11:59:59 PM UAE time</strong>.
+                            Please come back after that time to view winners.
+                          </div>
+                        ) : null}
                         <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                           <div className="flex items-center gap-3">
                             <h3 className="font-bold text-sm">{d.date}</h3>
@@ -1841,26 +1861,30 @@ function Admin() {
                               {d.winners.length} winner{d.winners.length !== 1 ? "s" : ""}
                             </span>
                           </div>
-                          <button
-                            onClick={() => downloadDailyWinnersImage(d.date, d.winners)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform text-xs"
-                          >
-                            <Download className="w-3.5 h-3.5" /> Download winners image
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {d.winners.map((winner, idx) => (
-                            <div
-                              key={`${d.date}-${winner.userId}-${idx}`}
-                              className="text-xs rounded-xl px-3 py-2 border border-accent/30 bg-accent/10 flex justify-between"
+                          {d.date !== uaeToday ? (
+                            <button
+                              onClick={() => downloadDailyWinnersImage(d.date, d.winners)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-105 active:scale-95 transition-transform text-xs"
                             >
-                              <span className="font-semibold">
-                                #{idx + 1} {winner.name || winner.contact}
-                              </span>
-                              <span className="font-bold text-accent">{winner.total}</span>
-                            </div>
-                          ))}
+                              <Download className="w-3.5 h-3.5" /> Download winners image
+                            </button>
+                          ) : null}
                         </div>
+                        {d.date !== uaeToday ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {d.winners.map((winner, idx) => (
+                              <div
+                                key={`${d.date}-${winner.userId}-${idx}`}
+                                className="text-xs rounded-xl px-3 py-2 border border-accent/30 bg-accent/10 flex justify-between"
+                              >
+                                <span className="font-semibold">
+                                  #{idx + 1} {winner.name || winner.contact}
+                                </span>
+                                <span className="font-bold text-accent">{winner.total}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                     ))}
                   </div>
@@ -2195,6 +2219,24 @@ function Admin() {
                           </div>
                         </div>
                       )}
+                    </SettingsSection>
+
+                    <SettingsSection title="Daily Leaderboard Lock Email (UAE)">
+                      <div className="grid md:grid-cols-2 gap-3">
+                        <SettingsField
+                          label="Admin alert email"
+                          value={settings.leaderboardAdminEmail}
+                          onChange={(v) =>
+                            setSettings((prev) => ({ ...prev, leaderboardAdminEmail: v }))
+                          }
+                          placeholder="admin1@company.com, admin2@company.com"
+                          hint="Use comma-separated emails. At 11:59:59 PM UAE time, top 10 winners will be mailed to all."
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Run server function <code>lockDailyTopTenAndNotifyFn</code> at 11:59:59 PM
+                        Asia/Dubai every day to lock top 10 winners for that UAE date.
+                      </p>
                     </SettingsSection>
 
                     <div className="flex items-center gap-3 pt-2">

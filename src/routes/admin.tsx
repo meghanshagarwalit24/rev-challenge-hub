@@ -1127,6 +1127,7 @@ function Admin() {
                       title="Total Users"
                       value={stats.total}
                       info="Unique registered users in the platform. Calculated as the count of user records."
+                      onClick={() => handleTabChange("users")}
                     />
                     <KpiCard
                       title="Avg Score"
@@ -2069,9 +2070,25 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="text-xl font-black">{children}</h2>;
 }
 
-function KpiCard({ title, value, info }: { title: string; value: string | number; info: string }) {
+function KpiCard({
+  title,
+  value,
+  info,
+  onClick,
+}: {
+  title: string;
+  value: string | number;
+  info: string;
+  onClick?: () => void;
+}) {
   return (
-    <div className="relative overflow-visible bg-gradient-card border border-border rounded-2xl p-3 shadow-card hover:z-30">
+    <button
+      type="button"
+      onClick={onClick}
+      className={`relative w-full text-left overflow-visible bg-gradient-card border border-border rounded-2xl p-3 shadow-card hover:z-30 ${
+        onClick ? "cursor-pointer hover:border-accent/60 hover:shadow-[0_8px_28px_rgba(243,116,33,0.22)] transition-all" : ""
+      }`}
+    >
       <div className="flex items-start justify-between gap-2">
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{title}</p>
         <div className="relative group/info">
@@ -2087,7 +2104,7 @@ function KpiCard({ title, value, info }: { title: string; value: string | number
         </div>
       </div>
       <p className="text-lg font-black mt-1 text-gradient-energy">{value}</p>
-    </div>
+    </button>
   );
 }
 

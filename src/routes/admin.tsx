@@ -1847,7 +1847,6 @@ function Admin() {
                           <Th>User ID</Th>
                           <Th>Contact</Th>
                           <Th>Name</Th>
-                          <Th>🔥 Streak (days)</Th>
                           <Th>Total Play Days</Th>
                           <Th>Score</Th>
                         </tr>
@@ -1856,7 +1855,7 @@ function Admin() {
                         {streaks.length === 0 && (
                           <tr>
                             <td
-                              colSpan={7}
+                              colSpan={6}
                               className="py-10 text-center text-muted-foreground text-sm"
                             >
                               No users yet.
@@ -1872,20 +1871,6 @@ function Admin() {
                             <Td className="font-mono text-[11px]">{u.userId}</Td>
                             <Td className="font-mono text-[11px]">{u.contact}</Td>
                             <Td>{u.name || "—"}</Td>
-                            <Td>
-                              <span
-                                className={`font-black text-base ${
-                                  u.streak >= 7
-                                    ? "text-orange-400"
-                                    : u.streak >= 3
-                                      ? "text-yellow-400"
-                                      : "text-foreground"
-                                }`}
-                              >
-                                {u.streak}
-                                {u.streak >= 7 ? " 🔥" : u.streak >= 3 ? " ⚡" : ""}
-                              </span>
-                            </Td>
                             <Td className="text-muted-foreground">{(u.playDates ?? []).length}</Td>
                             <Td className="font-bold text-gradient-energy">{u.total}</Td>
                           </tr>

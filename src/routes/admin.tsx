@@ -1925,8 +1925,18 @@ function Admin() {
                           <Th>User ID</Th>
                           <Th>Contact</Th>
                           <Th>Name</Th>
-                          <Th>Total Play Days</Th>
-                          <Th>Score</Th>
+                          <Th>
+                            <span className="inline-flex items-center gap-1">
+                              Total Play Days
+                              <InfoHint text="Number of unique days this user has played (from playDates)." />
+                            </span>
+                          </Th>
+                          <Th>
+                            <span className="inline-flex items-center gap-1">
+                              Score
+                              <InfoHint text="Displayed score is the user's best total score used for ranking context." />
+                            </span>
+                          </Th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2317,6 +2327,22 @@ function KpiCard({
 
 function Th({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
   return <th className={`py-2.5 px-3 font-semibold ${className}`}>{children}</th>;
+}
+
+function InfoHint({ text }: { text: string }) {
+  return (
+    <span className="relative group/info inline-flex items-center">
+      <span
+        className="text-muted-foreground/80 hover:text-accent transition-colors cursor-help inline-flex"
+        aria-label={text}
+      >
+        <CircleHelp className="w-3.5 h-3.5" />
+      </span>
+      <span className="pointer-events-none absolute left-1/2 top-5 z-[80] hidden w-56 -translate-x-1/2 rounded-xl border border-border bg-background/95 p-2 text-[10px] normal-case font-medium leading-relaxed tracking-normal text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
+        {text}
+      </span>
+    </span>
+  );
 }
 
 function Td({ children, className = "" }: { children?: React.ReactNode; className?: string }) {

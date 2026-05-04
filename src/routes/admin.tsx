@@ -780,16 +780,16 @@ function Admin() {
     );
   }, [logs, logSearch]);
 
+  const uaeToday = useMemo(
+    () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date()),
+    [],
+  );
   const winnersByDate = useMemo(
     () =>
       dateWise
         .map((d) => ({ date: d.date, winners: d.winners }))
-        .filter((d) => d.winners.length > 0),
-    [dateWise],
-  );
-  const uaeToday = useMemo(
-    () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date()),
-    [],
+        .filter((d) => d.date !== uaeToday && d.winners.length > 0),
+    [dateWise, uaeToday],
   );
 
   const handleExportCsv = () => {

@@ -170,8 +170,8 @@ export const getPlatformSettingsFn = createServerFn({ method: "GET" }).handler(a
 
 const GMAIL_SMTP_HOST = "smtp.gmail.com";
 const GMAIL_SMTP_PORT = 465;
-const GMAIL_FROM_EMAIL = "REPLACE_WITH_SENDER_GMAIL@gmail.com";
-const GMAIL_APP_PASSWORD = "REPLACE_WITH_GMAIL_APP_PASSWORD";
+const GMAIL_FROM_EMAIL = "revitalenergyuae@gmail.com";
+const GMAIL_APP_PASSWORD = "zkve peto wnre mhmx";
 
 async function sendViaGmailSmtp(to: string, subject: string, body: string): Promise<void> {
   const socket = tls.connect({ host: GMAIL_SMTP_HOST, port: GMAIL_SMTP_PORT, servername: GMAIL_SMTP_HOST });

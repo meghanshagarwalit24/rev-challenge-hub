@@ -229,11 +229,11 @@ function AdminUserDetail() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
-          {/* All Completed Attempts */}
+          {/* Completed Attempts (Run-level) */}
           <div className="bg-gradient-card border border-border rounded-2xl p-4">
             <h2 className="font-bold text-sm mb-3">All Completed Attempts</h2>
             <p className="text-[11px] text-muted-foreground mb-3">
-              Every valid run where all 3 games were completed (across all dates).
+              Each row is one full 3-game run with exact timestamp, split scores, and total.
             </p>
             {completedAttempts.length === 0 ? (
               <p className="text-xs text-muted-foreground">No completed 3-game runs found.</p>
@@ -286,9 +286,9 @@ function AdminUserDetail() {
         </div>
 
         <div className="bg-gradient-card border border-border rounded-2xl p-4 mt-4">
-          <h2 className="font-bold text-sm mb-3">Date-wise Scores</h2>
+          <h2 className="font-bold text-sm mb-3">Date-wise Summary (Grouped)</h2>
           <p className="text-[11px] text-muted-foreground mb-3">
-            Same completed runs grouped by day, so you can see how many full runs happened on each date.
+            Same completed runs grouped by date. Use this for daily count/trend; use Run-level for per-attempt details.
           </p>
           {dateWiseAttempts.length === 0 ? (
             <p className="text-xs text-muted-foreground">No dated attempts available yet.</p>

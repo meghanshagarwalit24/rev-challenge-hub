@@ -246,7 +246,7 @@ function Profile() {
                     <path
                       d="M 3 33 C 16 18, 24 34, 38 20 C 52 7, 61 30, 74 17 C 84 7, 91 13, 98 8"
                       fill="none"
-                      stroke="#2f2f2f"
+                      stroke="var(--garnet)"
                       strokeWidth="8"
                       strokeLinecap="round"
                     />
@@ -259,7 +259,7 @@ function Profile() {
                       strokeLinecap="round"
                     />
                   </svg>
-                  <div className="absolute left-[2%] top-[66%] rounded-md border border-white/80 bg-red-600 px-1.5 py-0.5 text-[10px] font-black text-white shadow">
+                  <div className="absolute left-[2%] top-[66%] rounded-md border border-white/80 bg-[var(--garnet)] px-1.5 py-0.5 text-[10px] font-black text-white shadow">
                     STOP
                   </div>
                   <div className="absolute right-[5%] top-[4%] text-lg" aria-label="finish flag">
@@ -274,30 +274,30 @@ function Profile() {
                       "left-[82%] top-[8%]",
                     ][idx];
                     const color = [
-                      "bg-yellow-400",
-                      "bg-red-500",
-                      "bg-emerald-500",
-                      "bg-blue-600",
-                      "bg-purple-700",
+                      "bg-[var(--marigold)] text-garnet",
+                      "bg-[var(--tiger)]",
+                      "bg-[var(--lime)] text-garnet",
+                      "bg-[var(--royal)]",
+                      "bg-[var(--eggplant)]",
                     ][idx];
                     const isCurrent = currentBandGrade === grade;
                     return (
                       <div key={grade} className={`absolute ${nodePos}`}>
                         <div
-                          className={`relative flex h-10 w-10 items-center justify-center rounded-full text-sm font-black text-white shadow-lg ${color} ${isCurrent ? "ring-4 ring-yellow-300" : ""}`}
+                          className={`relative flex h-10 w-10 items-center justify-center rounded-full text-sm font-black shadow-lg ${color} ${isCurrent ? "ring-4 ring-[var(--marigold)]" : ""}`}
                         >
                           {grade}
                           <span
                             className={`absolute left-1/2 top-[90%] h-0 w-0 -translate-x-1/2 border-l-[6px] border-r-[6px] border-t-[9px] border-l-transparent border-r-transparent ${
                               idx === 0
-                                ? "border-t-yellow-400"
+                                ? "border-t-[var(--marigold)]"
                                 : idx === 1
-                                  ? "border-t-red-500"
+                                  ? "border-t-[var(--tiger)]"
                                   : idx === 2
-                                    ? "border-t-emerald-500"
+                                    ? "border-t-[var(--lime)]"
                                     : idx === 3
-                                      ? "border-t-blue-600"
-                                      : "border-t-purple-700"
+                                      ? "border-t-[var(--royal)]"
+                                      : "border-t-[var(--eggplant)]"
                             }`}
                           />
                         </div>

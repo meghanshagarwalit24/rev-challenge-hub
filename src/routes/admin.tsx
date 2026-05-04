@@ -767,12 +767,17 @@ function Admin() {
     }
   }, [dateWisePage, dateWiseTotalPages]);
 
-  // ── Streaks ─────────────────────────────────────────────────────────────────
+  // ── Consistent players ──────────────────────────────────────────────────────
   const streaks = useMemo(
     () =>
       [...users]
         .map((u) => ({ ...u, streak: calcStreak(u.playDates ?? []) }))
-        .sort((a, b) => b.streak - a.streak),
+        .sort((a, b) => {
+          const playDaysDiff = (b.playDates?.length ?? 0) - (a.playDates?.length ?? 0);
+          if (playDaysDiff !== 0) return playDaysDiff;
+          if (b.total !== a.total) return b.total - a.total;
+          return b.streak - a.streak;
+        }),
     [users],
   );
 
@@ -1909,7 +1914,7 @@ function Admin() {
                 >
                   <SectionTitle>Consistent Players</SectionTitle>
                   <p className="text-xs text-muted-foreground mt-1 mb-4">
-                    Users ranked by their current consecutive-day play streak.
+                    Users ranked by highest total play days.
                   </p>
 
                   <div className="bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">

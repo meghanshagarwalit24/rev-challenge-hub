@@ -121,7 +121,28 @@ function Landing() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.65 }}
-            className="mt-5 max-[900px]:mt-4 max-w-4xl mx-auto rounded-3xl border-2 border-[var(--garnet)]/10 bg-white/85 p-3 md:p-4 max-[900px]:p-2 backdrop-blur shadow-card"
+            className="mt-5 max-[900px]:mt-4 flex flex-col sm:flex-row items-center justify-center gap-3"
+          >
+            <Link
+              to="/play/reflex"
+              className="group relative inline-flex items-center justify-center px-8 py-4 rounded-full bg-gradient-energy text-white font-bold text-lg shadow-button glow-pulse hover:scale-105 active:scale-95 transition-transform"
+            >
+              <span className="relative z-10">Start Now! →</span>
+              <span className="absolute inset-0 rounded-full shimmer opacity-0 group-hover:opacity-100" />
+            </Link>
+            <Link
+              to={isLoggedIn ? "/profile" : "/auth"}
+              className="px-6 py-4 rounded-full border-2 border-[var(--garnet)]/20 bg-white/80 backdrop-blur text-garnet hover:bg-white hover:border-[var(--tiger)] transition-colors font-semibold"
+            >
+              View My Score
+            </Link>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="mt-6 max-[900px]:mt-4 max-w-4xl mx-auto rounded-3xl border-2 border-[var(--garnet)]/10 bg-white/85 p-3 md:p-4 max-[900px]:p-2 backdrop-blur shadow-card"
           >
             <div className="grid gap-3 md:grid-cols-2">
               <div className="flex items-start gap-3 rounded-2xl border border-[var(--garnet)]/10 bg-white/70 p-4 text-left">
@@ -147,27 +168,6 @@ function Landing() {
                 </div>
               </div>
             </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            className="mt-6 max-[900px]:mt-4 flex flex-col sm:flex-row items-center justify-center gap-3"
-          >
-            <Link
-              to="/play/reflex"
-              className="group relative inline-flex items-center justify-center px-8 py-4 rounded-full bg-gradient-energy text-white font-bold text-lg shadow-button glow-pulse hover:scale-105 active:scale-95 transition-transform"
-            >
-              <span className="relative z-10">Start Now! →</span>
-              <span className="absolute inset-0 rounded-full shimmer opacity-0 group-hover:opacity-100" />
-            </Link>
-            <Link
-              to={isLoggedIn ? "/profile" : "/auth"}
-              className="px-6 py-4 rounded-full border-2 border-[var(--garnet)]/20 bg-white/80 backdrop-blur text-garnet hover:bg-white hover:border-[var(--tiger)] transition-colors font-semibold"
-            >
-              View My Score
-            </Link>
           </motion.div>
 
           <motion.div

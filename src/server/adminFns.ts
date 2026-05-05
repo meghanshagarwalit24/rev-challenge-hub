@@ -178,7 +178,7 @@ function generateWinnersSvg(lockDate: string, winners: Array<{ name: string; sco
     .slice(0, 10)
     .map(
       (winner, idx) =>
-        `<text x="70" y="${210 + idx * 52}" font-size="28" font-family="Arial, sans-serif" fill="#5A1E11">#${idx + 1} ${winner.name}</text>
+        `<text x="70" y="${210 + idx * 52}" font-size="31" text-anchor="start" font-family="Duplit SemiBold, Duplit, sans-serif" fill="#5A1E11">#${idx + 1} ${winner.name}</text>
 <text x="980" y="${210 + idx * 52}" text-anchor="end" font-size="28" font-family="Arial, sans-serif" fill="#D97706">${winner.score}</text>`,
     )
     .join("\n");

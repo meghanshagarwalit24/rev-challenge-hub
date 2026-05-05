@@ -170,15 +170,15 @@ export const getPlatformSettingsFn = createServerFn({ method: "GET" }).handler(a
 
 const GMAIL_SMTP_HOST = "smtp.gmail.com";
 const GMAIL_SMTP_PORT = 465;
-const GMAIL_FROM_EMAIL = "revitalenergyuae@gmail.com";
-const GMAIL_APP_PASSWORD = "zkve peto wnre mhmx";
+const GMAIL_FROM_EMAIL = process.env.GMAIL_FROM_EMAIL || "revitalenergyuae@gmail.com";
+const GMAIL_APP_PASSWORD = (process.env.GMAIL_APP_PASSWORD || "zkve peto wnre mhmx").replace(/\s+/g, "");
 
 function generateWinnersSvg(lockDate: string, winners: Array<{ name: string; score: number }>): string {
   const rows = winners
     .slice(0, 10)
     .map(
       (winner, idx) =>
-        `<text x="70" y="${210 + idx * 52}" font-size="28" font-family="Arial, sans-serif" fill="#5A1E11">#${idx + 1} ${winner.name}</text>
+        `<text x="70" y="${210 + idx * 52}" font-size="31" text-anchor="start" font-family="Duplit SemiBold, Duplit, sans-serif" fill="#5A1E11">#${idx + 1} ${winner.name}</text>
 <text x="980" y="${210 + idx * 52}" text-anchor="end" font-size="28" font-family="Arial, sans-serif" fill="#D97706">${winner.score}</text>`,
     )
     .join("\n");
@@ -218,6 +218,9 @@ async function sendViaGmailSmtp(
   await send(`EHLO revital.local`);
   await send(`AUTH LOGIN`);
   await send(Buffer.from(GMAIL_FROM_EMAIL).toString("base64"));
+  if (!GMAIL_FROM_EMAIL || !GMAIL_APP_PASSWORD) {
+    throw new Error("Missing Gmail SMTP credentials. Set GMAIL_FROM_EMAIL and GMAIL_APP_PASSWORD.");
+  }
   await send(Buffer.from(GMAIL_APP_PASSWORD).toString("base64"));
   await send(`MAIL FROM:<${GMAIL_FROM_EMAIL}>`);
   await send(`RCPT TO:<${to}>`);
@@ -240,7 +243,7 @@ async function sendViaGmailSmtp(
 
 const parseAdminEmails = (input: string): string[] =>
   input
-    .split(",")
+    .split(/[;,\n]/)
     .map((email) => email.trim())
     .filter(Boolean);
 

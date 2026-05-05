@@ -88,29 +88,12 @@ function Profile() {
       : `/?ref=${encodeURIComponent(user.userId)}`;
   const hasSavedEmail = Boolean(user.email?.trim());
   const finalPercentage = totalToPercentage(user.total).toFixed(2);
-  const finalPercentageValue = Number(finalPercentage);
   const hasCompletedRun =
     user.scores.reflex !== null && user.scores.memory !== null && user.scores.balance !== null;
   const hasPlayedBefore = Boolean((user.playAttempts?.length ?? 0) > 0 || hasCompletedRun);
   const finalPercentDisplay = hasPlayedBefore ? `${finalPercentage}%` : "—";
   const tierDisplay = hasPlayedBefore ? user.category.split(" ")[0] : "Not started";
   const eligibleDisplay = hasPlayedBefore ? "✓" : "Not yet";
-  const rankBands = [
-    { grade: "D", label: "Recharge Needed", thresholdText: "< 20%", min: 0, max: 20 },
-    { grade: "C", label: "Warming Up", thresholdText: "≥ 20%", min: 20, max: 40 },
-    { grade: "B", label: "Charged Up", thresholdText: "≥ 40%", min: 40, max: 60 },
-    { grade: "A", label: "High Energy", thresholdText: "≥ 60%", min: 60, max: 80 },
-    { grade: "S", label: "Peak Performer", thresholdText: "≥ 80%", min: 80, max: 101 },
-  ] as const;
-
-  const currentBand = hasPlayedBefore
-    ? (rankBands.find(
-        (band) => finalPercentageValue >= band.min && finalPercentageValue < band.max,
-      ) ?? rankBands[0])
-    : null;
-  const currentBandIndex = currentBand
-    ? rankBands.findIndex((band) => band.grade === currentBand.grade)
-    : -1;
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -238,118 +221,6 @@ function Profile() {
               <Stat label="Final %" value={finalPercentDisplay} />
               <Stat label="Tier" value={tierDisplay} />
               <Stat label="Eligible" value={eligibleDisplay} />
-            </div>
-
-            <div className="mt-4 bg-background/40 rounded-2xl p-4 text-left">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Energy Rank Roadmap
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {hasPlayedBefore
-                  ? `You are currently in ${currentBand?.grade} (${currentBand?.label}) at ${finalPercentage}%.`
-                  : "Complete all 3 games once to get your first rank. Start from D and move upward to S."}
-              </p>
-              <div className="mt-3 rounded-2xl border border-border/70 bg-[#d9dde3] p-3 sm:p-4">
-                <div className="relative h-40 sm:h-44 overflow-hidden rounded-xl bg-[#d0d4da]">
-                  <svg viewBox="0 0 720 220" className="absolute inset-0 h-full w-full" aria-hidden="true">
-                    <path
-                      d="M20 185 C80 115, 150 200, 230 130 C300 70, 360 120, 430 150 C500 178, 560 85, 700 52"
-                      fill="none"
-                      stroke="#7A160D"
-                      strokeWidth="42"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M20 185 C80 115, 150 200, 230 130 C300 70, 360 120, 430 150 C500 178, 560 85, 700 52"
-                      fill="none"
-                      stroke="#A7B0BA"
-                      strokeWidth="6"
-                      strokeDasharray="20 14"
-                      strokeLinecap="round"
-                    />
-                    <text x="26" y="170" fill="#fff" fontSize="18" fontWeight="700">START</text>
-                    <text x="650" y="32" fill="#3D3D3D" fontSize="18" fontWeight="700">🏁</text>
-                  </svg>
-
-                  {[
-                    { grade: 'D', x: '10%', y: '66%', color: '#ffe500', textColor: '#6b2100' },
-                    { grade: 'C', x: '26%', y: '40%', color: '#ff7a00', textColor: '#3f1000' },
-                    { grade: 'B', x: '46%', y: '47%', color: '#d5d9df', textColor: '#7A160D' },
-                    { grade: 'A', x: '65%', y: '42%', color: '#a44f1a', textColor: '#fff' },
-                    { grade: 'S', x: '88%', y: '18%', color: '#7A160D', textColor: '#fff' },
-                  ].map((marker) => {
-                    const isCurrent = hasPlayedBefore && currentBand?.grade === marker.grade;
-                    const isUnlocked = hasPlayedBefore && currentBandIndex >= rankBands.findIndex((b) => b.grade === marker.grade);
-                    return (
-                      <div
-                        key={marker.grade}
-                        className="absolute -translate-x-1/2 -translate-y-1/2"
-                        style={{ left: marker.x, top: marker.y }}
-                      >
-                        <div
-                          className="flex h-12 w-12 items-center justify-center rounded-full border-2 text-lg font-black shadow"
-                          style={{
-                            backgroundColor: marker.color,
-                            color: marker.textColor,
-                            opacity: isUnlocked || !hasPlayedBefore ? 1 : 0.6,
-                            transform: isCurrent ? 'scale(1.08)' : 'scale(1)',
-                          }}
-                        >
-                          {marker.grade}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="mt-3 space-y-2">
-                {rankBands
-                  .slice()
-                  .reverse()
-                  .map((band) => {
-                    const index = rankBands.findIndex((item) => item.grade === band.grade);
-                  const isUnlocked = hasPlayedBefore && index <= currentBandIndex;
-                  const isCurrent = hasPlayedBefore && currentBand?.grade === band.grade;
-                  return (
-                    <div
-                      key={band.grade}
-                      className={`rounded-xl border px-3 py-2 transition-colors ${
-                        isCurrent
-                          ? "border-[var(--garnet)] bg-[var(--marigold)]/30"
-                          : isUnlocked
-                            ? "border-border bg-background/80"
-                            : "border-border/60 bg-background/40"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${
-                              isCurrent
-                                ? "bg-[var(--garnet)] text-white"
-                                : isUnlocked
-                                  ? "bg-[var(--garnet)]/80 text-white"
-                                  : "bg-muted text-muted-foreground"
-                            }`}
-                          >
-                            {band.grade}
-                          </span>
-                          <div>
-                            <p className="text-sm font-bold text-garnet">{band.label}</p>
-                            <p className="text-[11px] text-muted-foreground">
-                              Target: {band.thresholdText}
-                            </p>
-                          </div>
-                        </div>
-                        <span className="text-xs font-semibold text-muted-foreground">
-                          {isCurrent ? "Current" : isUnlocked ? "Completed" : "Locked"}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                  })}
-              </div>
             </div>
 
             <div className="mt-4 bg-background/40 rounded-2xl p-4 text-left space-y-2">

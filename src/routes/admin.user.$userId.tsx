@@ -101,7 +101,7 @@ function AdminUserDetail() {
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }, [allUsers, user]);
 
-  const totalPlayDays = (user.playDates ?? []).length;
+  const totalPlayDays = (user?.playDates ?? []).length;
 
   // ── Login Screen ────────────────────────────────────────────────────────────
   if (!authenticated) {

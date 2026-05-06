@@ -151,7 +151,7 @@ export const saveGameScore = (game: GameKey, score: number) => {
         scores: cur,
         total,
         category: nextCategory,
-        consent: user.consent ?? true,
+        consent: user.consent ?? false,
       }).catch((error) => {
         console.warn("Auto-save after completing balance failed", error);
       });

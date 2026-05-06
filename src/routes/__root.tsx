@@ -95,6 +95,33 @@ function RootComponent() {
   const isAdminRoute = location.pathname.startsWith("/admin");
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const w = window as typeof window & {
+      fbq?: (...args: unknown[]) => void;
+      gtag?: (...args: unknown[]) => void;
+      dataLayer?: unknown[];
+    };
+    const fbq = w.fbq;
+    if (typeof fbq === "function") {
+      fbq("track", "PageView");
+    }
+
+    // Keep GA4 page views in sync for SPA navigations.
+    if (typeof w.gtag === "function") {
+      w.gtag("event", "page_view", {
+        page_path: `${location.pathname}${location.search}`,
+        page_title: document.title,
+      });
+    } else if (Array.isArray(w.dataLayer)) {
+      w.dataLayer.push({
+        event: "page_view",
+        page_path: `${location.pathname}${location.search}`,
+        page_title: document.title,
+      });
+    }
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
     // Persist referral code from URL so it can be auto-filled later in the signup popup
     // even after route changes during gameplay.
     if (typeof window !== "undefined") {
@@ -123,18 +150,38 @@ function RootComponent() {
       try {
         const { getPlatformSettingsFn } = await import("@/server/adminFns");
         const s = await getPlatformSettingsFn();
+        const ga4FromEnv = (import.meta.env.VITE_GA4_ID as string | undefined)?.trim() || "";
+        const ga4Id = (s.ga4 || ga4FromEnv).trim();
 
         // Google Analytics (GA4)
-        if (s.ga4 && !document.getElementById("_ga4")) {
+        if (ga4Id && !document.getElementById("_ga4")) {
           const gScript = document.createElement("script");
           gScript.id = "_ga4";
           gScript.async = true;
-          gScript.src = `https://www.googletagmanager.com/gtag/js?id=${s.ga4}`;
+          gScript.src = `https://www.googletagmanager.com/gtag/js?id=${ga4Id}`;
           document.head.appendChild(gScript);
           const gInline = document.createElement("script");
           gInline.id = "_ga4_inline";
-          gInline.textContent = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${s.ga4}');`;
+          gInline.textContent = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${ga4Id}');`;
           document.head.appendChild(gInline);
+
+          // Mirror GA4 `gtag('event', ...)` calls into Meta Pixel custom events.
+          const w = window as typeof window & {
+            gtag?: (...args: unknown[]) => void;
+            fbq?: (...args: unknown[]) => void;
+            __revitalMetaBridgeInstalled?: boolean;
+          };
+          if (!w.__revitalMetaBridgeInstalled) {
+            const previousGtag = w.gtag;
+            w.gtag = (...args: unknown[]) => {
+              previousGtag?.(...args);
+              const [kind, eventName, params] = args;
+              if (kind === "event" && typeof eventName === "string" && typeof w.fbq === "function") {
+                w.fbq("trackCustom", eventName, params && typeof params === "object" ? params : {});
+              }
+            };
+            w.__revitalMetaBridgeInstalled = true;
+          }
         }
 
         // Meta Pixel
@@ -153,7 +200,20 @@ function RootComponent() {
           document.head.appendChild(clScript);
         }
       } catch (e) {
-        // Tracking injection is best-effort — never throw to the user
+        // Tracking injection is best-effort — never throw to the user.
+        // If settings API fails, still try GA4 from env for resiliency.
+        const ga4FromEnv = (import.meta.env.VITE_GA4_ID as string | undefined)?.trim() || "";
+        if (ga4FromEnv && !document.getElementById("_ga4")) {
+          const gScript = document.createElement("script");
+          gScript.id = "_ga4";
+          gScript.async = true;
+          gScript.src = `https://www.googletagmanager.com/gtag/js?id=${ga4FromEnv}`;
+          document.head.appendChild(gScript);
+          const gInline = document.createElement("script");
+          gInline.id = "_ga4_inline";
+          gInline.textContent = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${ga4FromEnv}');`;
+          document.head.appendChild(gInline);
+        }
         if (import.meta.env.DEV) console.warn("Tracking injection failed:", e);
       }
     };

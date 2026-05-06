@@ -133,10 +133,15 @@ function Profile() {
       email: emailToPersist,
       address: address.trim(),
     };
-    await saveUserRemote(updated);
-    setUser(updated);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      await saveUserRemote(updated);
+      const latest = await findUserByContactRemote(updated.contact);
+      setUser(latest ?? updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      setError("Could not save profile right now. Please try again.");
+    }
   };
 
   const copyToClipboard = async (value: string): Promise<boolean> => {

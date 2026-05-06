@@ -95,6 +95,13 @@ function RootComponent() {
   const isAdminRoute = location.pathname.startsWith("/admin");
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const fbq = (window as typeof window & { fbq?: (...args: unknown[]) => void }).fbq;
+    if (typeof fbq !== "function") return;
+    fbq("track", "PageView");
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
     // Persist referral code from URL so it can be auto-filled later in the signup popup
     // even after route changes during gameplay.
     if (typeof window !== "undefined") {
@@ -135,6 +142,24 @@ function RootComponent() {
           gInline.id = "_ga4_inline";
           gInline.textContent = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${s.ga4}');`;
           document.head.appendChild(gInline);
+
+          // Mirror GA4 `gtag('event', ...)` calls into Meta Pixel custom events.
+          const w = window as typeof window & {
+            gtag?: (...args: unknown[]) => void;
+            fbq?: (...args: unknown[]) => void;
+            __revitalMetaBridgeInstalled?: boolean;
+          };
+          if (!w.__revitalMetaBridgeInstalled) {
+            const previousGtag = w.gtag;
+            w.gtag = (...args: unknown[]) => {
+              previousGtag?.(...args);
+              const [kind, eventName, params] = args;
+              if (kind === "event" && typeof eventName === "string" && typeof w.fbq === "function") {
+                w.fbq("trackCustom", eventName, params && typeof params === "object" ? params : {});
+              }
+            };
+            w.__revitalMetaBridgeInstalled = true;
+          }
         }
 
         // Meta Pixel

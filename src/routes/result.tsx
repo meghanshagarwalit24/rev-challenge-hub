@@ -139,6 +139,7 @@ function Result() {
 
   useEffect(() => {
     if (!unlocked) return;
+    if (scores.reflex === null || scores.memory === null || scores.balance === null) return;
     const user = getUser();
     if (!user) return;
     const nextTotal = computeTotal(scores);

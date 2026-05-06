@@ -143,7 +143,7 @@ export const saveGameScore = (game: GameKey, score: number) => {
   if (game === "balance") {
     localStorage.setItem(RUN_COMPLETED_AT_KEY, new Date().toISOString());
     const user = getUser();
-    if (user) {
+    if (user?.consent) {
       const total = computeTotal(cur);
       const nextCategory = categorize(total).label;
       void saveUserRemote({
@@ -151,7 +151,7 @@ export const saveGameScore = (game: GameKey, score: number) => {
         scores: cur,
         total,
         category: nextCategory,
-        consent: user.consent ?? false,
+        consent: user.consent,
       }).catch((error) => {
         console.warn("Auto-save after completing balance failed", error);
       });

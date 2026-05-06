@@ -12,6 +12,8 @@ import {
   saveUser,
   saveUserRemote,
 } from "@/lib/storage";
+import { trackEvent } from "@/lib/analytics";
+import { executeRecaptcha } from "@/lib/recaptcha";
 
 interface SignupGateProps {
   onSuccess: () => void;
@@ -95,6 +97,7 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
       // Persist local auth state immediately so Header updates to the account icon right away.
       saveUser(payload);
       await saveUserRemote(payload);
+      trackEvent("signup_complete", { is_new_user: !existing, total: payload.total, category: payload.category });
       onSuccess();
     } catch {
       setErr("Failed to save your score. Please try again.");
@@ -102,13 +105,28 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
     }
   };
 
-  const sendOtp = (e: React.FormEvent) => {
+  const sendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
     if (!name.trim()) return setErr("Please enter your name");
     if (!isValidUaePhone(contact)) return setErr("Enter a valid UAE mobile number");
     if (!consent) return setErr("Please accept the consent to continue");
     setLoading(true);
+    try {
+      const token = await executeRecaptcha("send_otp");
+      if (token) {
+        const { verifyCaptchaFn } = await import("@/server/userFns");
+        const result = await verifyCaptchaFn({ data: { token } });
+        if (!result.ok) {
+          setErr("Security check failed. Please refresh and try again.");
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {
+      // Best-effort — never block the user if reCAPTCHA errors.
+    }
+    trackEvent("otp_requested", { source: "result_gate" });
     setTimeout(() => {
       setLoading(false);
       setStep("otp");

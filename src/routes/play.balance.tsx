@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { ProgressDots } from "@/components/ProgressDots";
 import { StartOverlay } from "@/components/StartOverlay";
 import { isGameUnlocked, saveGameScore } from "@/lib/storage";
+import { trackEvent } from "@/lib/analytics";
 
 export const Route = createFileRoute("/play/balance")({
   component: BalanceGame,
@@ -39,6 +40,7 @@ function BalanceGame() {
     startedAt.current = performance.now();
     lastFrame.current = performance.now();
     setRunning(true);
+    trackEvent("game_start", { game_type: "balance" });
   };
 
   useEffect(() => {
@@ -78,6 +80,7 @@ function BalanceGame() {
       const rawScore = (hold / 15000) * 1500;
       const score = Math.round(Math.max(0, Math.min(1500, rawScore)));
       saveGameScore("balance", score);
+      trackEvent("game_complete", { game_type: "balance", score });
       const t = setTimeout(() => nav({ to: "/result" }), 1500);
       return () => clearTimeout(t);
     }

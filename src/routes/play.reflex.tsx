@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { ProgressDots } from "@/components/ProgressDots";
 import { StartOverlay } from "@/components/StartOverlay";
 import { saveGameScore } from "@/lib/storage";
+import { trackEvent } from "@/lib/analytics";
 import logo from "@/assets/revital-logo.png";
 
 export const Route = createFileRoute("/play/reflex")({
@@ -53,6 +54,7 @@ function ReflexGame() {
     const rawScore = 1500 * (1 - bestTime / 15000);
     const score = Math.round(Math.max(0, Math.min(1500, rawScore)));
     saveGameScore("reflex", score);
+    trackEvent("game_complete", { game_type: "reflex", score });
     setPhase("done");
     setTimeout(() => nav({ to: "/play/memory" }), 1500);
   };
@@ -124,7 +126,7 @@ function ReflexGame() {
             "The faster you react, the higher your score.",
             "Don’t tap too early!",
           ]}
-          onStart={() => setShowStart(false)}
+          onStart={() => { setShowStart(false); trackEvent("game_start", { game_type: "reflex" }); }}
         />
       )}
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 flex flex-col">

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { Header } from "@/components/Header";
 import { getUser } from "@/lib/storage";
 import { Leaderboard } from "@/components/Leaderboard";
@@ -16,8 +17,9 @@ function Landing() {
   const [daily, setDaily] = useState<LeaderEntry[]>([]);
   const [global, setGlobal] = useState<LeaderEntry[]>([]);
   const [announcements, setAnnouncements] = useState<string[]>([defaultAnnouncement]);
-  const [isLoggedIn, setIsLoggedIn] = useState(Boolean(getUser()));
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   useEffect(() => {
+    setIsLoggedIn(Boolean(getUser()));
     const syncAuth = () => setIsLoggedIn(Boolean(getUser()));
     window.addEventListener("revital-auth-changed", syncAuth);
 
@@ -125,6 +127,7 @@ function Landing() {
           >
             <Link
               to="/play/reflex"
+              onClick={() => trackEvent("cta_click", { cta_label: "start_now" })}
               className="group relative inline-flex items-center justify-center px-8 py-4 rounded-full bg-gradient-energy text-white font-bold text-lg shadow-button glow-pulse hover:scale-105 active:scale-95 transition-transform"
             >
               <span className="relative z-10">Start Now! →</span>
@@ -132,6 +135,7 @@ function Landing() {
             </Link>
             <Link
               to={isLoggedIn ? "/profile" : "/auth"}
+              onClick={() => trackEvent("cta_click", { cta_label: "view_score" })}
               className="px-6 py-4 rounded-full border-2 border-[var(--garnet)]/20 bg-white/80 backdrop-blur text-garnet hover:bg-white hover:border-[var(--tiger)] transition-colors font-semibold"
             >
               View My Score
@@ -263,6 +267,7 @@ function Landing() {
           >
             <Link
               to="/play/reflex"
+              onClick={() => trackEvent("cta_click", { cta_label: "im_ready" })}
               className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-energy text-white font-bold text-lg shadow-button glow-pulse hover:scale-105 active:scale-95 transition-transform"
             >
               I'm Ready — Let's Go! →
@@ -310,6 +315,7 @@ function Landing() {
           <div className="mt-8 text-center">
             <Link
               to="/play/reflex"
+              onClick={() => trackEvent("cta_click", { cta_label: "join_leaderboard" })}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--garnet)] text-white font-bold hover:scale-105 active:scale-95 transition-transform shadow-button"
             >
               Join the Leaderboard →

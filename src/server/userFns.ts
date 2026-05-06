@@ -12,9 +12,9 @@ const gameScoresSchema = z.object({
 const userRecordSchema = z.object({
   userId: z.string(),
   contact: z.string().min(1),
-  email: z.string().optional(),
-  name: z.string().optional(),
-  address: z.string().optional(),
+  email: z.string().nullish(),
+  name: z.string().nullish(),
+  address: z.string().nullish(),
   scores: gameScoresSchema,
   total: z.number(),
   category: z.string(),
@@ -32,7 +32,7 @@ const userRecordSchema = z.object({
       }),
     )
     .optional(),
-  referredBy: z.string().optional(),
+  referredBy: z.string().nullish(),
   referCount: z.number().optional(),
   utmSource: z.string().optional(),
   utmMedium: z.string().optional(),
@@ -124,6 +124,30 @@ export const getUserByIdFn = createServerFn({ method: "POST" })
     if (!user) return null;
     const { _id: _unused, ...rest } = user;
     return rest as UserRecord;
+  });
+
+// ── reCAPTCHA verification ────────────────────────────────────────────────────
+export const verifyCaptchaFn = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => z.object({ token: z.string() }).parse(data))
+  .handler(async ({ data }) => {
+    const db = await getDb();
+    const settings = await db.collection("platform_settings").findOne({ _key: "main" });
+    const secret = (settings as Record<string, unknown> | null)?.recaptchaSecret as string | undefined;
+
+    // If reCAPTCHA is not configured, pass through.
+    if (!secret) return { ok: true, skipped: true };
+    // Empty token means the script hasn't loaded yet — pass through rather than block user.
+    if (!data.token) return { ok: true, skipped: true };
+
+    const res = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ secret, response: data.token }).toString(),
+    });
+    const json = (await res.json()) as { success: boolean; score?: number; "error-codes"?: string[] };
+    // v3: also require a human-like score (≥ 0.5). v2 doesn't include a score.
+    const scoreOk = json.score === undefined || json.score >= 0.5;
+    return { ok: json.success && scoreOk };
   });
 
 // ── get all ────────────────────────────────────────────────────────────────────

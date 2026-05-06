@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { SignupGate } from "@/components/SignupGate";
 import { categorize, computeTotal, getCurrentScores, getUser, isLoggedIn, resetScores, saveUserRemote, totalToPercentage, type GameScores } from "@/lib/storage";
 import { buildShareCard } from "@/lib/shareCard";
+import { trackEvent } from "@/lib/analytics";
 
 export const Route = createFileRoute("/result")({
   component: Result,
@@ -32,6 +33,11 @@ function Result() {
   useEffect(() => {
     if (!unlocked) return;
     const total = computeTotal(scores);
+    trackEvent("score_revealed", {
+      total,
+      category: categorize(total).label,
+      percentage: totalToPercentage(total),
+    });
     let cur = 0;
     setAnimatedTotal(0);
     setAnimatedPct(0);
@@ -133,8 +139,8 @@ function Result() {
     }
   };
 
-  const share = () => generateAndShare(false);
-  const shareInstagram = () => generateAndShare(true);
+  const share = () => { trackEvent("share_clicked", { method: "generic" }); generateAndShare(false); };
+  const shareInstagram = () => { trackEvent("share_clicked", { method: "instagram" }); generateAndShare(true); };
 
 
   useEffect(() => {
@@ -221,7 +227,7 @@ function Result() {
             <button onClick={share} className="flex-1 py-3 rounded-full bg-card border border-border font-semibold hover:bg-muted/50 transition-colors">
               Share
             </button>
-            <button onClick={() => { resetScores(); nav({ to: "/challenges" }); }} className="flex-1 py-3 rounded-full bg-card border border-border font-semibold hover:bg-muted/50 transition-colors">
+            <button onClick={() => { trackEvent("play_again"); resetScores(); nav({ to: "/challenges" }); }} className="flex-1 py-3 rounded-full bg-card border border-border font-semibold hover:bg-muted/50 transition-colors">
               Play Again
             </button>
           </div>

@@ -6,7 +6,7 @@ import { getUser, logout, type UserRecord } from "@/lib/storage";
 export function Header() {
   const nav = useNavigate();
   const routerState = useRouterState();
-  const [user, setUser] = useState<UserRecord | null>(getUser());
+  const [user, setUser] = useState<UserRecord | null>(null);
   const isHomePage = routerState.location.pathname === "/";
 
   // Refresh user state on every route change

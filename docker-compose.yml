@@ -3,6 +3,12 @@ services:
     build: .
     ports:
       - "3000:3000"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.rev-challenge-hub.rule=Host(`revital.revtilabs.com`)
+      - traefik.http.routers.rev-challenge-hub.entrypoints=websecure
+      - traefik.http.routers.rev-challenge-hub.tls.certresolver=letsencrypt
+      - traefik.http.services.rev-challenge-hub.loadbalancer.server.port=3000
     environment:
       - PORT=3000
       - MONGODB_URI=mongodb://mongo:27017/rev-challenge-hub

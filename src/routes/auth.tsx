@@ -14,6 +14,8 @@ import {
   saveUser,
   saveUserRemote,
 } from "@/lib/storage";
+import { trackEvent } from "@/lib/analytics";
+import { executeRecaptcha } from "@/lib/recaptcha";
 
 export const Route = createFileRoute("/auth")({
   component: Auth,
@@ -65,7 +67,7 @@ function Auth() {
     }
   };
 
-  const sendOtp = (e: React.FormEvent) => {
+  const sendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
     if (!isValidUaePhone(contact)) {
@@ -77,6 +79,21 @@ function Auth() {
       return;
     }
     setLoading(true);
+    try {
+      const token = await executeRecaptcha("send_otp");
+      if (token) {
+        const { verifyCaptchaFn } = await import("@/server/userFns");
+        const result = await verifyCaptchaFn({ data: { token } });
+        if (!result.ok) {
+          setErr("Security check failed. Please refresh and try again.");
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {
+      // Best-effort — never block the user if reCAPTCHA errors.
+    }
+    trackEvent("otp_requested", { source: "auth_page" });
     setTimeout(() => {
       setLoading(false);
       setStep("otp");
@@ -117,6 +134,7 @@ function Auth() {
     };
     try {
       await saveUserRemote(payload);
+      trackEvent("otp_verified", { source: "auth_page", is_new_user: !existing });
       await goToProfile();
     } catch (e) {
       console.warn("Save encountered an issue after OTP verification", e);

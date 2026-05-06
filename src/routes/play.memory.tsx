@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { ProgressDots } from "@/components/ProgressDots";
 import { StartOverlay } from "@/components/StartOverlay";
 import { isGameUnlocked, saveGameScore } from "@/lib/storage";
+import { trackEvent } from "@/lib/analytics";
 import revitalLogo from "@/assets/revital-logo.png";
 
 export const Route = createFileRoute("/play/memory")({
@@ -126,6 +127,7 @@ function MemoryGame() {
     const finalScore = Math.round(Math.max(0, Math.min(1500, rawScore)));
 
     saveGameScore("memory", finalScore);
+    trackEvent("game_complete", { game_type: "memory", score: finalScore, matched_pairs: matchedPairs });
     const t = setTimeout(() => nav({ to: "/play/balance" }), 1500);
     return () => clearTimeout(t);
   }, [done, matchedPairs, seconds, capsulesLeft, nav]);
@@ -166,6 +168,7 @@ function MemoryGame() {
           onStart={() => {
             setShowStart(false);
             setIsPreviewing(true);
+            trackEvent("game_start", { game_type: "memory" });
           }}
         />
       )}

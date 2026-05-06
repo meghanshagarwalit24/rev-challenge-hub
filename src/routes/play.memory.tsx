@@ -65,12 +65,15 @@ function MemoryGame() {
 
   useEffect(() => {
     if (done || showStart || isPreviewing) return;
-    const t = setInterval(() =>
-      setSeconds((s) => {
-        const next = s + 1;
-        if (next >= MAX_DURATION) setDone(true);
-        return next;
-      }), 1000);
+    const t = setInterval(
+      () =>
+        setSeconds((s) => {
+          const next = s + 1;
+          if (next >= MAX_DURATION) setDone(true);
+          return next;
+        }),
+      1000,
+    );
     return () => clearInterval(t);
   }, [done, showStart, isPreviewing]);
 
@@ -88,11 +91,7 @@ function MemoryGame() {
     const cb = deck.find((c) => c.id === b)!;
     if (ca.key === cb.key) {
       setTimeout(() => {
-        setDeck((d) =>
-          d.map((c) =>
-            c.id === a || c.id === b ? { ...c, matched: true } : c,
-          ),
-        );
+        setDeck((d) => d.map((c) => (c.id === a || c.id === b ? { ...c, matched: true } : c)));
         setFlipped([]);
       }, 350);
     } else {
@@ -109,10 +108,10 @@ function MemoryGame() {
     if (capsulesLeft <= 0 && !done) setDone(true);
   }, [capsulesLeft, done]);
 
-  const matchedPairs = useMemo(
-    () => deck.filter((c) => c.matched).length / 2,
-    [deck],
-  );
+  const matchedPairs = useMemo(() => deck.filter((c) => c.matched).length / 2, [deck]);
+  const wrongMoves = STARTING_CAPSULES - capsulesLeft;
+  const hasMatchedAllPairs = matchedPairs === TOTAL_PAIRS;
+  const endMessage = hasMatchedAllPairs && wrongMoves <= 1 ? "Nice work" : "You can do better";
 
   useEffect(() => {
     if (!done) return;
@@ -141,9 +140,15 @@ function MemoryGame() {
 
   // 3x3 layout with fixed center logo
   const grid: (Card | "center")[] = [
-    deck[0], deck[1], deck[2],
-    deck[3], "center", deck[4],
-    deck[5], deck[6], deck[7],
+    deck[0],
+    deck[1],
+    deck[2],
+    deck[3],
+    "center",
+    deck[4],
+    deck[5],
+    deck[6],
+    deck[7],
   ];
 
   return (
@@ -167,8 +172,14 @@ function MemoryGame() {
       <main className="max-w-2xl mx-auto px-4 py-4 md:py-3">
         <div className="text-center">
           <h1 className="text-2xl md:text-4xl font-black">🧠 Memory Match</h1>
-          <p className="text-sm text-muted-foreground mt-1">Match all {TOTAL_PAIRS} pairs · {Math.max(0, MAX_DURATION - seconds)}s left</p>
-          {isPreviewing && <p className="text-xs text-garnet mt-1">Memorize the cards… they flip in {PREVIEW_DURATION_MS / 1000}s</p>}
+          <p className="text-sm text-muted-foreground mt-1">
+            Match all {TOTAL_PAIRS} pairs · {Math.max(0, MAX_DURATION - seconds)}s left
+          </p>
+          {isPreviewing && (
+            <p className="text-xs text-garnet mt-1">
+              Memorize the cards… they flip in {PREVIEW_DURATION_MS / 1000}s
+            </p>
+          )}
           <ProgressDots current="memory" />
         </div>
 
@@ -205,7 +216,9 @@ function MemoryGame() {
                 disabled={card.matched || done || showStart || isPreviewing}
                 aria-label="card"
               >
-                <div className={`relative w-full h-full preserve-3d transition-transform duration-500 ${isUp ? "[transform:rotateY(180deg)]" : ""}`}>
+                <div
+                  className={`relative w-full h-full preserve-3d transition-transform duration-500 ${isUp ? "[transform:rotateY(180deg)]" : ""}`}
+                >
                   <div className="absolute inset-0 backface-hidden rounded-2xl bg-gradient-energy shadow-card group-active:scale-95 transition-transform flex items-center justify-center">
                     <span className="text-2xl text-energy-foreground/40 font-black">?</span>
                   </div>
@@ -213,7 +226,9 @@ function MemoryGame() {
                     className={`absolute inset-0 backface-hidden [transform:rotateY(180deg)] rounded-2xl ${card.matched ? "bg-accent/30 ring-2 ring-accent" : "bg-card"} border border-border flex flex-col items-center justify-center text-center px-1`}
                   >
                     <span className="text-2xl md:text-4xl leading-none">{card.icon}</span>
-                    <span className="mt-1 text-[10px] md:text-xs font-bold uppercase tracking-wide text-foreground/90">{card.label}</span>
+                    <span className="mt-1 text-[10px] md:text-xs font-bold uppercase tracking-wide text-foreground/90">
+                      {card.label}
+                    </span>
                   </div>
                 </div>
               </button>
@@ -223,17 +238,24 @@ function MemoryGame() {
 
         <AnimatePresence>
           {done && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[90] flex items-center justify-center bg-background/85 backdrop-blur-md px-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="fixed inset-0 z-[90] flex items-center justify-center bg-background/85 backdrop-blur-md px-4"
+            >
               <div className="bg-gradient-card border border-border rounded-3xl p-8 text-center shadow-card max-w-sm w-full">
                 <div className="text-5xl mb-3">🧠</div>
-                <h2 className="text-2xl font-black text-gradient-energy">You can do better</h2>
+                <h2 className="text-2xl font-black text-gradient-energy">{endMessage}</h2>
                 <p className="mt-3 text-sm text-muted-foreground">Loading next challenge…</p>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <Link to="/challenges" className="mt-4 block text-center text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <Link
+          to="/challenges"
+          className="mt-4 block text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
           ← Back to challenges
         </Link>
       </main>

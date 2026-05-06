@@ -413,6 +413,18 @@ function exportPdf(rows: (string | number)[][], filename: string) {
   printWindow.print();
 }
 
+function getCountryNameFromCode(countryCode?: string): string {
+  if (!countryCode || countryCode === "Unknown" || countryCode === "—") return "Unknown";
+
+  try {
+    return (
+      new Intl.DisplayNames(["en"], { type: "region" }).of(countryCode.toUpperCase()) ?? countryCode
+    );
+  } catch {
+    return countryCode;
+  }
+}
+
 // ── Main Admin Component ───────────────────────────────────────────────────────
 function Admin() {
   const matchRoute = useMatchRoute();
@@ -454,6 +466,8 @@ function Admin() {
     leaderboardAdminEmail: "",
   });
   const [savedFlash, setSavedFlash] = useState(false);
+  const [leaderboardEmailSending, setLeaderboardEmailSending] = useState(false);
+  const [leaderboardEmailStatus, setLeaderboardEmailStatus] = useState("");
   const [otpSettingsUnlocked, setOtpSettingsUnlocked] = useState(false);
   const [otpPasswordInput, setOtpPasswordInput] = useState("");
   const [otpPasswordError, setOtpPasswordError] = useState(false);
@@ -789,7 +803,10 @@ function Admin() {
       (l) =>
         l.action.toLowerCase().includes(q) ||
         l.details.toLowerCase().includes(q) ||
-        (l.country ?? "").toLowerCase().includes(q),
+        (l.country ?? "").toLowerCase().includes(q) ||
+        (l.countryName ?? "").toLowerCase().includes(q) ||
+        getCountryNameFromCode(l.country).toLowerCase().includes(q) ||
+        (l.ip ?? "").toLowerCase().includes(q),
     );
   }, [logs, logSearch]);
 
@@ -977,6 +994,36 @@ function Admin() {
       setLogs(await getAdminLogsFn());
     } catch (e) {
       console.error("Save settings error", e);
+    }
+  };
+
+  const handleLeaderboardEmailSend = async () => {
+    setLeaderboardEmailSending(true);
+    setLeaderboardEmailStatus("");
+    try {
+      const { savePlatformSettingsFn, lockDailyTopTenAndNotifyFn } =
+        await import("@/server/adminFns");
+      await savePlatformSettingsFn({ data: settings });
+      const result = await lockDailyTopTenAndNotifyFn();
+
+      if (!result.winners) {
+        setLeaderboardEmailStatus(`No winners found for ${result.lockDate}. Email not sent.`);
+      } else if (!result.mailed) {
+        setLeaderboardEmailStatus(
+          `Locked ${result.winners} winners for ${result.lockDate}, but no admin email is configured.`,
+        );
+      } else {
+        setLeaderboardEmailStatus(
+          `Email sent to ${result.adminEmails?.length ?? 0} recipient(s) for ${result.lockDate}.`,
+        );
+      }
+      await addLog("LEADERBOARD_EMAIL_SEND", `Manual leaderboard email run for ${result.lockDate}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to send leaderboard email.";
+      setLeaderboardEmailStatus(message);
+      console.error("Leaderboard email error", error);
+    } finally {
+      setLeaderboardEmailSending(false);
     }
   };
 
@@ -1795,9 +1842,7 @@ function Admin() {
                                         <Td className="font-bold text-gradient-energy">
                                           {u.total}
                                         </Td>
-                                        <Td className="text-center">
-                                          {u.completedAll3Today}
-                                        </Td>
+                                        <Td className="text-center">{u.completedAll3Today}</Td>
                                         <Td>
                                           <CategoryBadge cat={u.category} />
                                         </Td>
@@ -2000,11 +2045,13 @@ function Admin() {
                   </div>
 
                   <div className="bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
-                    <table className="w-full text-sm min-w-[640px]">
+                    <table className="w-full text-sm min-w-[900px]">
                       <thead>
                         <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10 text-left">
                           <Th>Timestamp</Th>
                           <Th>Country</Th>
+                          <Th>Country Name</Th>
+                          <Th>IP</Th>
                           <Th>Action</Th>
                           <Th>Details</Th>
                         </tr>
@@ -2013,7 +2060,7 @@ function Admin() {
                         {filteredLogs.length === 0 && (
                           <tr>
                             <td
-                              colSpan={4}
+                              colSpan={6}
                               className="py-10 text-center text-muted-foreground text-sm"
                             >
                               No logs yet.
@@ -2030,6 +2077,12 @@ function Admin() {
                             </Td>
                             <Td className="font-mono text-[11px] text-muted-foreground whitespace-nowrap">
                               {l.country ?? "—"}
+                            </Td>
+                            <Td className="text-[11px] text-muted-foreground whitespace-nowrap">
+                              {l.countryName ?? getCountryNameFromCode(l.country)}
+                            </Td>
+                            <Td className="font-mono text-[11px] text-muted-foreground whitespace-nowrap">
+                              {l.ip ?? "—"}
                             </Td>
                             <Td>
                               <span className="font-mono text-[11px] bg-accent/10 text-accent px-2 py-0.5 rounded">
@@ -2264,9 +2317,24 @@ function Admin() {
                           hint="Use comma-separated emails. At 11:59:59 PM UAE time, top 10 winners will be mailed to all."
                         />
                       </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={handleLeaderboardEmailSend}
+                          disabled={leaderboardEmailSending}
+                          className="px-4 py-2 rounded-full border border-accent/50 bg-accent/10 text-accent font-bold text-xs hover:bg-accent/20 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {leaderboardEmailSending ? "Sending…" : "Lock & send email now"}
+                        </button>
+                        {leaderboardEmailStatus && (
+                          <span className="text-xs text-muted-foreground">
+                            {leaderboardEmailStatus}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        Run server function <code>lockDailyTopTenAndNotifyFn</code> at 11:59:59 PM
-                        Asia/Dubai every day to lock top 10 winners for that UAE date.
+                        This locks the top 10 winners for the current Asia/Dubai date and sends the
+                        email to the configured admin addresses.
                       </p>
                     </SettingsSection>
 
@@ -2322,7 +2390,7 @@ function KpiCard({
           >
             <CircleHelp className="w-3.5 h-3.5" />
           </span>
-          <div className="pointer-events-none absolute right-0 top-6 z-[80] hidden w-56 max-w-[calc(100%-0.5rem)] rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
+          <div className="pointer-events-none absolute right-0 top-6 z-[80] hidden w-64 max-w-[calc(100vw-2rem)] whitespace-normal rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
             {info}
           </div>
         </div>

@@ -29,6 +29,8 @@ export interface AdminLog {
   action: string;
   details: string;
   country?: string;
+  countryName?: string;
+  ip?: string;
 }
 
 const addLogSchema = z.object({
@@ -47,17 +49,46 @@ const getClientCountry = (): string => {
   );
 };
 
+const getCountryName = (countryCode: string): string => {
+  if (!countryCode || countryCode === "Unknown") return "Unknown";
+
+  try {
+    return (
+      new Intl.DisplayNames(["en"], { type: "region" }).of(countryCode.toUpperCase()) ?? countryCode
+    );
+  } catch {
+    return countryCode;
+  }
+};
+
+const getClientIp = (): string => {
+  const headers = getRequestHeaders();
+  const forwardedFor = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+
+  return (
+    headers.get("cf-connecting-ip") ??
+    headers.get("true-client-ip") ??
+    headers.get("x-real-ip") ??
+    headers.get("x-client-ip") ??
+    forwardedFor ??
+    "Unknown"
+  );
+};
+
 /** Append a new admin log entry — logs are never deleted. */
 export const addAdminLogFn = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => addLogSchema.parse(data))
   .handler(async ({ data }) => {
     const db = await getDb();
+    const country = getClientCountry();
     const entry: AdminLog = {
       logId: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
       action: data.action,
       details: data.details,
-      country: getClientCountry(),
+      country,
+      countryName: getCountryName(country),
+      ip: getClientIp(),
     };
     await db.collection("admin_logs").insertOne(entry);
     return { ok: true };
@@ -185,9 +216,15 @@ export const getPlatformSettingsFn = createServerFn({ method: "GET" }).handler(a
 const GMAIL_SMTP_HOST = "smtp.gmail.com";
 const GMAIL_SMTP_PORT = 465;
 const GMAIL_FROM_EMAIL = process.env.GMAIL_FROM_EMAIL || "revitalenergyuae@gmail.com";
-const GMAIL_APP_PASSWORD = (process.env.GMAIL_APP_PASSWORD || "zkve peto wnre mhmx").replace(/\s+/g, "");
+const GMAIL_APP_PASSWORD = (process.env.GMAIL_APP_PASSWORD || "zkve peto wnre mhmx").replace(
+  /\s+/g,
+  "",
+);
 
-function generateWinnersSvg(lockDate: string, winners: Array<{ name: string; score: number }>): string {
+function generateWinnersSvg(
+  lockDate: string,
+  winners: Array<{ name: string; score: number }>,
+): string {
   const rows = winners
     .slice(0, 10)
     .map(
@@ -205,54 +242,120 @@ function generateWinnersSvg(lockDate: string, winners: Array<{ name: string; sco
 </svg>`;
 }
 
+type SmtpResponse = {
+  code: number;
+  text: string;
+};
+
+const SMTP_TIMEOUT_MS = 20_000;
+
+function readSmtpResponse(socket: tls.TLSSocket): Promise<SmtpResponse> {
+  return new Promise((resolve, reject) => {
+    let buffer = "";
+
+    const cleanup = () => {
+      socket.off("data", onData);
+      socket.off("error", onError);
+      socket.off("timeout", onTimeout);
+    };
+
+    const onError = (error: Error) => {
+      cleanup();
+      reject(error);
+    };
+
+    const onTimeout = () => {
+      cleanup();
+      reject(new Error("Timed out waiting for SMTP response."));
+    };
+
+    const onData = (chunk: Buffer) => {
+      buffer += chunk.toString("utf8");
+      const lines = buffer.split(/\r?\n/).filter(Boolean);
+      const finalLine = [...lines].reverse().find((line) => /^\d{3}\s/.test(line));
+      if (!finalLine) return;
+
+      cleanup();
+      resolve({ code: Number(finalLine.slice(0, 3)), text: buffer });
+    };
+
+    socket.on("data", onData);
+    socket.once("error", onError);
+    socket.once("timeout", onTimeout);
+  });
+}
+
+async function expectSmtp(
+  socket: tls.TLSSocket,
+  expectedCodes: number[],
+  command?: string,
+): Promise<SmtpResponse> {
+  if (command) socket.write(`${command}\r\n`);
+  const response = await readSmtpResponse(socket);
+  if (!expectedCodes.includes(response.code)) {
+    throw new Error(`SMTP command failed (${response.code}): ${response.text.trim()}`);
+  }
+  return response;
+}
+
+const sanitizeMailHeader = (value: string): string => value.replace(/[\r\n]+/g, " ").trim();
+const dotStuff = (value: string): string => value.replace(/^\./gm, "..");
+const chunkBase64 = (value: string): string => value.match(/.{1,76}/g)?.join("\r\n") ?? "";
+
 async function sendViaGmailSmtp(
   to: string,
   subject: string,
   body: string,
   attachment?: { filename: string; contentType: string; content: string },
 ): Promise<void> {
-  const socket = tls.connect({ host: GMAIL_SMTP_HOST, port: GMAIL_SMTP_PORT, servername: GMAIL_SMTP_HOST });
-  const readResponse = () =>
-    new Promise<string>((resolve, reject) => {
-      const onData = (chunk: Buffer) => {
-        const text = chunk.toString("utf8");
-        if (/^\d{3}[\s-]/m.test(text)) {
-          socket.off("data", onData);
-          resolve(text);
-        }
-      };
-      socket.on("data", onData);
-      socket.once("error", reject);
-    });
-  const send = async (line: string) => {
-    socket.write(`${line}\r\n`);
-    await readResponse();
-  };
-  await readResponse();
-  await send(`EHLO revital.local`);
-  await send(`AUTH LOGIN`);
-  await send(Buffer.from(GMAIL_FROM_EMAIL).toString("base64"));
   if (!GMAIL_FROM_EMAIL || !GMAIL_APP_PASSWORD) {
     throw new Error("Missing Gmail SMTP credentials. Set GMAIL_FROM_EMAIL and GMAIL_APP_PASSWORD.");
   }
-  await send(Buffer.from(GMAIL_APP_PASSWORD).toString("base64"));
-  await send(`MAIL FROM:<${GMAIL_FROM_EMAIL}>`);
-  await send(`RCPT TO:<${to}>`);
-  await send(`DATA`);
-  if (!attachment) {
-    socket.write(
-      `Subject: ${subject}\r\nFrom: ${GMAIL_FROM_EMAIL}\r\nTo: ${to}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}\r\n.\r\n`,
-    );
-  } else {
-    const boundary = `revital_${Date.now()}`;
-    const encoded = Buffer.from(attachment.content, "utf8").toString("base64");
-    socket.write(
-      `Subject: ${subject}\r\nFrom: ${GMAIL_FROM_EMAIL}\r\nTo: ${to}\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n--${boundary}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}\r\n\r\n--${boundary}\r\nContent-Type: ${attachment.contentType}; name="${attachment.filename}"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename="${attachment.filename}"\r\n\r\n${encoded}\r\n--${boundary}--\r\n.\r\n`,
-    );
+
+  const socket = tls.connect({
+    host: GMAIL_SMTP_HOST,
+    port: GMAIL_SMTP_PORT,
+    servername: GMAIL_SMTP_HOST,
+  });
+  socket.setTimeout(SMTP_TIMEOUT_MS);
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      socket.once("secureConnect", resolve);
+      socket.once("error", reject);
+    });
+
+    await expectSmtp(socket, [220]);
+    await expectSmtp(socket, [250], "EHLO revital.local");
+    await expectSmtp(socket, [334], "AUTH LOGIN");
+    await expectSmtp(socket, [334], Buffer.from(GMAIL_FROM_EMAIL).toString("base64"));
+    await expectSmtp(socket, [235], Buffer.from(GMAIL_APP_PASSWORD).toString("base64"));
+    await expectSmtp(socket, [250], `MAIL FROM:<${GMAIL_FROM_EMAIL}>`);
+    await expectSmtp(socket, [250, 251], `RCPT TO:<${to}>`);
+    await expectSmtp(socket, [354], "DATA");
+
+    const safeSubject = sanitizeMailHeader(subject);
+    const safeFrom = sanitizeMailHeader(GMAIL_FROM_EMAIL);
+    const safeTo = sanitizeMailHeader(to);
+    const safeBody = dotStuff(body);
+
+    if (!attachment) {
+      socket.write(
+        `Subject: ${safeSubject}\r\nFrom: ${safeFrom}\r\nTo: ${safeTo}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${safeBody}\r\n.\r\n`,
+      );
+    } else {
+      const boundary = `revital_${Date.now()}`;
+      const encoded = chunkBase64(Buffer.from(attachment.content, "utf8").toString("base64"));
+      socket.write(
+        `Subject: ${safeSubject}\r\nFrom: ${safeFrom}\r\nTo: ${safeTo}\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n--${boundary}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${safeBody}\r\n\r\n--${boundary}\r\nContent-Type: ${attachment.contentType}; name="${sanitizeMailHeader(attachment.filename)}"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename="${sanitizeMailHeader(attachment.filename)}"\r\n\r\n${encoded}\r\n--${boundary}--\r\n.\r\n`,
+      );
+    }
+
+    await expectSmtp(socket, [250]);
+    await expectSmtp(socket, [221], "QUIT");
+  } finally {
+    socket.end();
   }
-  await readResponse();
-  await send("QUIT");
-  socket.end();
 }
 
 const parseAdminEmails = (input: string): string[] =>
@@ -268,7 +371,7 @@ export const lockDailyTopTenAndNotifyFn = createServerFn({ method: "POST" }).han
   const db = await getDb();
   const settingsDoc = await db.collection("platform_settings").findOne({ _key: "main" });
   const settings = (settingsDoc ?? {}) as Partial<PlatformSettings>;
-  const lockDate = formatUaeDate(new Date(Date.now() - 24 * 60 * 60 * 1000));
+  const lockDate = formatUaeDate(new Date());
 
   const users = await db.collection<UserRecord>("users").find({}).toArray();
   const ranked = users
@@ -286,10 +389,9 @@ export const lockDailyTopTenAndNotifyFn = createServerFn({ method: "POST" }).han
 
   await Promise.all(
     ranked.map((winner) =>
-      db.collection<UserRecord>("users").updateOne(
-        { userId: winner.userId },
-        { $addToSet: { winnerLockDates: lockDate } },
-      ),
+      db
+        .collection<UserRecord>("users")
+        .updateOne({ userId: winner.userId }, { $addToSet: { winnerLockDates: lockDate } }),
     ),
   );
 

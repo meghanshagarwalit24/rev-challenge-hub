@@ -791,7 +791,8 @@ function Admin() {
       (l) =>
         l.action.toLowerCase().includes(q) ||
         l.details.toLowerCase().includes(q) ||
-        (l.country ?? "").toLowerCase().includes(q),
+        (l.country ?? "").toLowerCase().includes(q) ||
+        (l.ip ?? "").toLowerCase().includes(q),
     );
   }, [logs, logSearch]);
 
@@ -2030,11 +2031,12 @@ function Admin() {
                   </div>
 
                   <div className="bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
-                    <table className="w-full text-sm min-w-[640px]">
+                    <table className="w-full text-sm min-w-[760px]">
                       <thead>
                         <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10 text-left">
                           <Th>Timestamp</Th>
                           <Th>Country</Th>
+                          <Th>IP</Th>
                           <Th>Action</Th>
                           <Th>Details</Th>
                         </tr>
@@ -2043,7 +2045,7 @@ function Admin() {
                         {filteredLogs.length === 0 && (
                           <tr>
                             <td
-                              colSpan={4}
+                              colSpan={5}
                               className="py-10 text-center text-muted-foreground text-sm"
                             >
                               No logs yet.
@@ -2060,6 +2062,9 @@ function Admin() {
                             </Td>
                             <Td className="font-mono text-[11px] text-muted-foreground whitespace-nowrap">
                               {l.country ?? "—"}
+                            </Td>
+                            <Td className="font-mono text-[11px] text-muted-foreground whitespace-nowrap">
+                              {l.ip ?? "—"}
                             </Td>
                             <Td>
                               <span className="font-mono text-[11px] bg-accent/10 text-accent px-2 py-0.5 rounded">

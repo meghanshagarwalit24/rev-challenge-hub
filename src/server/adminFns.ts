@@ -29,6 +29,7 @@ export interface AdminLog {
   action: string;
   details: string;
   country?: string;
+  ip?: string;
 }
 
 const addLogSchema = z.object({
@@ -47,6 +48,20 @@ const getClientCountry = (): string => {
   );
 };
 
+const getClientIp = (): string => {
+  const headers = getRequestHeaders();
+  const forwardedFor = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+
+  return (
+    headers.get("cf-connecting-ip") ??
+    headers.get("true-client-ip") ??
+    headers.get("x-real-ip") ??
+    headers.get("x-client-ip") ??
+    forwardedFor ??
+    "Unknown"
+  );
+};
+
 /** Append a new admin log entry — logs are never deleted. */
 export const addAdminLogFn = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => addLogSchema.parse(data))
@@ -58,6 +73,7 @@ export const addAdminLogFn = createServerFn({ method: "POST" })
       action: data.action,
       details: data.details,
       country: getClientCountry(),
+      ip: getClientIp(),
     };
     await db.collection("admin_logs").insertOne(entry);
     return { ok: true };

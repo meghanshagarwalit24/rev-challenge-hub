@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeaders } from "@tanstack/start-server-core";
 import { z } from "zod";
 import { getDb } from "./db";
 import type { UserRecord } from "@/lib/storage";
@@ -27,12 +28,24 @@ export interface AdminLog {
   timestamp: string;
   action: string;
   details: string;
+  country?: string;
 }
 
 const addLogSchema = z.object({
   action: z.string().min(1),
   details: z.string(),
 });
+
+const getClientCountry = (): string => {
+  const headers = getRequestHeaders();
+
+  return (
+    headers.get("cf-ipcountry") ??
+    headers.get("x-vercel-ip-country") ??
+    headers.get("x-country-code") ??
+    "Unknown"
+  );
+};
 
 /** Append a new admin log entry — logs are never deleted. */
 export const addAdminLogFn = createServerFn({ method: "POST" })
@@ -44,6 +57,7 @@ export const addAdminLogFn = createServerFn({ method: "POST" })
       timestamp: new Date().toISOString(),
       action: data.action,
       details: data.details,
+      country: getClientCountry(),
     };
     await db.collection("admin_logs").insertOne(entry);
     return { ok: true };

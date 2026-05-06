@@ -17,6 +17,18 @@ export const Route = createFileRoute("/profile")({
   component: Profile,
 });
 
+function formatAttemptTime(playedAt: string): string {
+  const playedDate = new Date(playedAt);
+  if (Number.isNaN(playedDate.getTime())) return "—";
+
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Dubai",
+  }).format(playedDate);
+}
+
 function Profile() {
   const nav = useNavigate();
   const [user, setUser] = useState<UserRecord | null>(null);
@@ -338,7 +350,7 @@ function Profile() {
               <thead>
                 <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
                   <th className="py-2 pr-3">Date</th>
-                  <th className="py-2 pr-3">Time</th>
+                  <th className="py-2 pr-3">Time (UAE)</th>
                   <th className="py-2 pr-3">Final %</th>
                   <th className="py-2 pr-3">Category</th>
                 </tr>
@@ -355,7 +367,7 @@ function Profile() {
                     <tr key={`${attempt.playedAt}-${idx}`} className="border-b border-border/40">
                       <td className="py-2 pr-3">{attempt.date}</td>
                       <td className="py-2 pr-3 text-muted-foreground text-xs">
-                        {new Date(attempt.playedAt).toLocaleTimeString()}
+                        {formatAttemptTime(attempt.playedAt)}
                       </td>
                       <td className="py-2 pr-3 font-bold text-gradient-energy">
                         {totalToPercentage(attempt.total).toFixed(2)}%

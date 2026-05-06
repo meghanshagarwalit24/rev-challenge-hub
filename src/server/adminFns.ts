@@ -4,7 +4,10 @@ import { z } from "zod";
 import { getDb } from "./db";
 import type { UserRecord } from "@/lib/storage";
 import tls from "node:tls";
-import { Resvg } from "@resvg/resvg-js";
+import sharp from "sharp";
+import { readFile } from "node:fs/promises";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 // ── Admin Auth ─────────────────────────────────────────────────────────────────
 /** Verify admin password on the server (compares against ADMIN_PASSWORD env var). */
@@ -222,31 +225,61 @@ const GMAIL_APP_PASSWORD = (process.env.GMAIL_APP_PASSWORD || "zkve peto wnre mh
   "",
 );
 
-function generateWinnersSvg(
-  lockDate: string,
-  winners: Array<{ name: string; score: number }>,
-): string {
-  const rows = winners
-    .slice(0, 10)
-    .map(
-      (winner, idx) =>
-        `<text x="70" y="${210 + idx * 52}" font-size="31" text-anchor="start" font-family="sans-serif" font-weight="bold" fill="#5A1E11">#${idx + 1} ${winner.name}</text>
-<text x="980" y="${210 + idx * 52}" text-anchor="end" font-size="28" font-family="sans-serif" fill="#D97706">${winner.score} pts</text>`,
-    )
-    .join("\n");
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080">
-  <rect width="100%" height="100%" fill="#FFF7ED"/>
-  <rect x="0" y="0" width="1080" height="170" fill="#7C2D12"/>
-  <text x="540" y="95" text-anchor="middle" font-size="48" font-family="sans-serif" font-weight="bold" fill="#FFFFFF">🏆 Revital Daily Winners</text>
-  <text x="540" y="145" text-anchor="middle" font-size="26" font-family="sans-serif" fill="#FBBF24">${lockDate}</text>
-  ${rows}
-</svg>`;
+const NAME_SLOTS = [
+  { x: 321.5, y: 735.5 },
+  { x: 779.5, y: 735.5 },
+  { x: 321.5, y: 842.5 },
+  { x: 779.5, y: 842.5 },
+  { x: 321.5, y: 949.5 },
+  { x: 779.5, y: 949.5 },
+  { x: 321.5, y: 1056.5 },
+  { x: 779.5, y: 1056.5 },
+  { x: 321.5, y: 1163.5 },
+  { x: 779.5, y: 1163.5 },
+];
+
+const TEMPLATE_WIDTH = 1080;
+const TEMPLATE_HEIGHT = 1920;
+
+function escapeXml(str: string): string {
+  return str.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[c] ?? c));
 }
 
-async function svgToPng(svg: string): Promise<Buffer> {
-  const resvg = new Resvg(svg, { fitTo: { mode: "width", value: 1080 } });
-  return Buffer.from(resvg.render().asPng());
+async function generateWinnersPng(
+  winners: Array<{ name: string; score: number; contact?: string }>,
+): Promise<Buffer> {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  // In the Docker build, server.js is at dist/server/server.js
+  // and public/ is copied alongside dist/ — so look in ../../public relative to this file,
+  // or fall back to process.cwd()/public
+  const templatePath = join(__dirname, "../../public/winners-template.png");
+  let templateBuffer: Buffer;
+  try {
+    templateBuffer = await readFile(templatePath);
+  } catch {
+    templateBuffer = await readFile(join(process.cwd(), "public/winners-template.png"));
+  }
+
+  const { width = TEMPLATE_WIDTH, height = TEMPLATE_HEIGHT } = await sharp(templateBuffer).metadata();
+  const scaleX = width / TEMPLATE_WIDTH;
+  const scaleY = height / TEMPLATE_HEIGHT;
+  const fontSize = Math.round(30 * Math.min(scaleX, scaleY));
+
+  const textElements = winners.slice(0, 10).map((winner, i) => {
+    const slot = NAME_SLOTS[i];
+    if (!slot) return "";
+    const displayName = (winner.name?.trim() || winner.contact || "").slice(0, 30);
+    const x = Math.round(slot.x * scaleX);
+    const y = Math.round(slot.y * scaleY);
+    return `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" font-size="${fontSize}" font-family="sans-serif" font-weight="600" fill="#461901">${escapeXml(displayName)}</text>`;
+  }).join("\n");
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">${textElements}</svg>`;
+
+  return sharp(templateBuffer)
+    .composite([{ input: Buffer.from(svg), gravity: "northwest" }])
+    .png()
+    .toBuffer();
 }
 
 type SmtpResponse = {
@@ -416,8 +449,7 @@ export const lockDailyTopTenAndNotifyFn = createServerFn({ method: "POST" }).han
     weekday: "long",
   }).format(new Date(`${lockDate}T12:00:00+04:00`));
   const enrichedSubject = `Winners Locked: ${lockDate} (${dayName}) UAE`;
-  const winnersSvg = generateWinnersSvg(lockDate, ranked);
-  const winnersPng = await svgToPng(winnersSvg);
+  const winnersPng = await generateWinnersPng(ranked);
   await Promise.all(
     adminEmails.map((email) =>
       sendViaGmailSmtp(email, enrichedSubject, text, {

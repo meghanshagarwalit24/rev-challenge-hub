@@ -4,7 +4,7 @@ import { z } from "zod";
 import { getDb } from "./db";
 import type { UserRecord } from "@/lib/storage";
 import tls from "node:tls";
-import sharp from "sharp";
+import { createCanvas, loadImage } from "canvas";
 import { readFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -241,45 +241,60 @@ const NAME_SLOTS = [
 const TEMPLATE_WIDTH = 1080;
 const TEMPLATE_HEIGHT = 1920;
 
-function escapeXml(str: string): string {
-  return str.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[c] ?? c));
+async function getTemplatePath(): Promise<string> {
+  const __dir = dirname(fileURLToPath(import.meta.url));
+  // dist/server/assets/adminFns-*.js → ../../public
+  const candidate = join(__dir, "../../public/winners-template.png");
+  try {
+    await readFile(candidate);
+    return candidate;
+  } catch {
+    return join(process.cwd(), "public/winners-template.png");
+  }
 }
 
 async function generateWinnersPng(
   winners: Array<{ name: string; score: number; contact?: string }>,
 ): Promise<Buffer> {
-  const __dirname = dirname(fileURLToPath(import.meta.url));
-  // In the Docker build, server.js is at dist/server/server.js
-  // and public/ is copied alongside dist/ — so look in ../../public relative to this file,
-  // or fall back to process.cwd()/public
-  const templatePath = join(__dirname, "../../public/winners-template.png");
-  let templateBuffer: Buffer;
-  try {
-    templateBuffer = await readFile(templatePath);
-  } catch {
-    templateBuffer = await readFile(join(process.cwd(), "public/winners-template.png"));
-  }
+  const templatePath = await getTemplatePath();
+  const templateData = await readFile(templatePath);
+  const img = await loadImage(templateData);
 
-  const { width = TEMPLATE_WIDTH, height = TEMPLATE_HEIGHT } = await sharp(templateBuffer).metadata();
-  const scaleX = width / TEMPLATE_WIDTH;
-  const scaleY = height / TEMPLATE_HEIGHT;
-  const fontSize = Math.round(30 * Math.min(scaleX, scaleY));
+  const canvas = createCanvas(img.width, img.height);
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0);
 
-  const textElements = winners.slice(0, 10).map((winner, i) => {
-    const slot = NAME_SLOTS[i];
-    if (!slot) return "";
-    const displayName = (winner.name?.trim() || winner.contact || "").slice(0, 30);
-    const x = Math.round(slot.x * scaleX);
-    const y = Math.round(slot.y * scaleY);
-    return `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" font-size="${fontSize}" font-family="sans-serif" font-weight="600" fill="#461901">${escapeXml(displayName)}</text>`;
-  }).join("\n");
+  const scaleX = img.width / TEMPLATE_WIDTH;
+  const scaleY = img.height / TEMPLATE_HEIGHT;
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">${textElements}</svg>`;
+  winners.slice(0, 10).forEach((winner, index) => {
+    const slot = NAME_SLOTS[index];
+    if (!slot) return;
 
-  return sharp(templateBuffer)
-    .composite([{ input: Buffer.from(svg), gravity: "northwest" }])
-    .png()
-    .toBuffer();
+    const displayName = winner.name?.trim() || winner.contact || "";
+    const nameX = slot.x * scaleX;
+    const nameY = slot.y * scaleY;
+    const maxTextWidth = 280 * scaleX;
+    const fontSize = Math.round(30 * Math.min(scaleX, scaleY));
+    const ellipsis = "...";
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#461901";
+    ctx.font = `600 ${fontSize}px sans-serif`;
+
+    let textToDraw = displayName;
+    if (ctx.measureText(textToDraw).width > maxTextWidth) {
+      while (textToDraw.length > 0 && ctx.measureText(`${textToDraw}${ellipsis}`).width > maxTextWidth) {
+        textToDraw = textToDraw.slice(0, -1);
+      }
+      textToDraw = textToDraw ? `${textToDraw}${ellipsis}` : ellipsis;
+    }
+
+    ctx.fillText(textToDraw, nameX, nameY);
+  });
+
+  return canvas.toBuffer("image/png");
 }
 
 type SmtpResponse = {

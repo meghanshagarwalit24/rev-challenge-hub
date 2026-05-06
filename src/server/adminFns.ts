@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getDb } from "./db";
 import type { UserRecord } from "@/lib/storage";
 import tls from "node:tls";
+import { Resvg } from "@resvg/resvg-js";
 
 // ── Admin Auth ─────────────────────────────────────────────────────────────────
 /** Verify admin password on the server (compares against ADMIN_PASSWORD env var). */
@@ -229,17 +230,23 @@ function generateWinnersSvg(
     .slice(0, 10)
     .map(
       (winner, idx) =>
-        `<text x="70" y="${210 + idx * 52}" font-size="31" text-anchor="start" font-family="Duplit SemiBold, Duplit, sans-serif" fill="#5A1E11">#${idx + 1} ${winner.name}</text>
-<text x="980" y="${210 + idx * 52}" text-anchor="end" font-size="28" font-family="Arial, sans-serif" fill="#D97706">${winner.score}</text>`,
+        `<text x="70" y="${210 + idx * 52}" font-size="31" text-anchor="start" font-family="sans-serif" font-weight="bold" fill="#5A1E11">#${idx + 1} ${winner.name}</text>
+<text x="980" y="${210 + idx * 52}" text-anchor="end" font-size="28" font-family="sans-serif" fill="#D97706">${winner.score} pts</text>`,
     )
     .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080">
   <rect width="100%" height="100%" fill="#FFF7ED"/>
-  <text x="540" y="90" text-anchor="middle" font-size="44" font-family="Arial, sans-serif" fill="#7C2D12">Revital Daily Winners</text>
-  <text x="540" y="140" text-anchor="middle" font-size="24" font-family="Arial, sans-serif" fill="#9A3412">${lockDate}</text>
+  <rect x="0" y="0" width="1080" height="170" fill="#7C2D12"/>
+  <text x="540" y="95" text-anchor="middle" font-size="48" font-family="sans-serif" font-weight="bold" fill="#FFFFFF">🏆 Revital Daily Winners</text>
+  <text x="540" y="145" text-anchor="middle" font-size="26" font-family="sans-serif" fill="#FBBF24">${lockDate}</text>
   ${rows}
 </svg>`;
+}
+
+async function svgToPng(svg: string): Promise<Buffer> {
+  const resvg = new Resvg(svg, { fitTo: { mode: "width", value: 1080 } });
+  return Buffer.from(resvg.render().asPng());
 }
 
 type SmtpResponse = {
@@ -306,7 +313,7 @@ async function sendViaGmailSmtp(
   to: string,
   subject: string,
   body: string,
-  attachment?: { filename: string; contentType: string; content: string },
+  attachment?: { filename: string; contentType: string; content: string | Buffer },
 ): Promise<void> {
   if (!GMAIL_FROM_EMAIL || !GMAIL_APP_PASSWORD) {
     throw new Error("Missing Gmail SMTP credentials. Set GMAIL_FROM_EMAIL and GMAIL_APP_PASSWORD.");
@@ -345,7 +352,10 @@ async function sendViaGmailSmtp(
       );
     } else {
       const boundary = `revital_${Date.now()}`;
-      const encoded = chunkBase64(Buffer.from(attachment.content, "utf8").toString("base64"));
+      const rawContent = attachment.content;
+      const encoded = chunkBase64(
+        (Buffer.isBuffer(rawContent) ? rawContent : Buffer.from(rawContent, "utf8")).toString("base64"),
+      );
       socket.write(
         `Subject: ${safeSubject}\r\nFrom: ${safeFrom}\r\nTo: ${safeTo}\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n--${boundary}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${safeBody}\r\n\r\n--${boundary}\r\nContent-Type: ${attachment.contentType}; name="${sanitizeMailHeader(attachment.filename)}"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename="${sanitizeMailHeader(attachment.filename)}"\r\n\r\n${encoded}\r\n--${boundary}--\r\n.\r\n`,
       );
@@ -407,12 +417,13 @@ export const lockDailyTopTenAndNotifyFn = createServerFn({ method: "POST" }).han
   }).format(new Date(`${lockDate}T12:00:00+04:00`));
   const enrichedSubject = `Winners Locked: ${lockDate} (${dayName}) UAE`;
   const winnersSvg = generateWinnersSvg(lockDate, ranked);
+  const winnersPng = await svgToPng(winnersSvg);
   await Promise.all(
     adminEmails.map((email) =>
       sendViaGmailSmtp(email, enrichedSubject, text, {
-        filename: `revital-winners-${lockDate}.svg`,
-        contentType: "image/svg+xml",
-        content: winnersSvg,
+        filename: `revital-winners-${lockDate}.png`,
+        contentType: "image/png",
+        content: winnersPng,
       }),
     ),
   );

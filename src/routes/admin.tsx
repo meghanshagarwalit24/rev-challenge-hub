@@ -454,6 +454,8 @@ function Admin() {
     leaderboardAdminEmail: "",
   });
   const [savedFlash, setSavedFlash] = useState(false);
+  const [leaderboardEmailSending, setLeaderboardEmailSending] = useState(false);
+  const [leaderboardEmailStatus, setLeaderboardEmailStatus] = useState("");
   const [otpSettingsUnlocked, setOtpSettingsUnlocked] = useState(false);
   const [otpPasswordInput, setOtpPasswordInput] = useState("");
   const [otpPasswordError, setOtpPasswordError] = useState(false);
@@ -977,6 +979,36 @@ function Admin() {
       setLogs(await getAdminLogsFn());
     } catch (e) {
       console.error("Save settings error", e);
+    }
+  };
+
+  const handleLeaderboardEmailSend = async () => {
+    setLeaderboardEmailSending(true);
+    setLeaderboardEmailStatus("");
+    try {
+      const { savePlatformSettingsFn, lockDailyTopTenAndNotifyFn } =
+        await import("@/server/adminFns");
+      await savePlatformSettingsFn({ data: settings });
+      const result = await lockDailyTopTenAndNotifyFn();
+
+      if (!result.winners) {
+        setLeaderboardEmailStatus(`No winners found for ${result.lockDate}. Email not sent.`);
+      } else if (!result.mailed) {
+        setLeaderboardEmailStatus(
+          `Locked ${result.winners} winners for ${result.lockDate}, but no admin email is configured.`,
+        );
+      } else {
+        setLeaderboardEmailStatus(
+          `Email sent to ${result.adminEmails?.length ?? 0} recipient(s) for ${result.lockDate}.`,
+        );
+      }
+      await addLog("LEADERBOARD_EMAIL_SEND", `Manual leaderboard email run for ${result.lockDate}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to send leaderboard email.";
+      setLeaderboardEmailStatus(message);
+      console.error("Leaderboard email error", error);
+    } finally {
+      setLeaderboardEmailSending(false);
     }
   };
 
@@ -2262,9 +2294,24 @@ function Admin() {
                           hint="Use comma-separated emails. At 11:59:59 PM UAE time, top 10 winners will be mailed to all."
                         />
                       </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={handleLeaderboardEmailSend}
+                          disabled={leaderboardEmailSending}
+                          className="px-4 py-2 rounded-full border border-accent/50 bg-accent/10 text-accent font-bold text-xs hover:bg-accent/20 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {leaderboardEmailSending ? "Sending…" : "Lock & send email now"}
+                        </button>
+                        {leaderboardEmailStatus && (
+                          <span className="text-xs text-muted-foreground">
+                            {leaderboardEmailStatus}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        Run server function <code>lockDailyTopTenAndNotifyFn</code> at 11:59:59 PM
-                        Asia/Dubai every day to lock top 10 winners for that UAE date.
+                        This locks the top 10 winners for the current Asia/Dubai date and sends the
+                        email to the configured admin addresses.
                       </p>
                     </SettingsSection>
 

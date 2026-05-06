@@ -91,31 +91,43 @@ function Profile() {
     loadReferralData();
   }, [nav]);
 
+  const safeUser = useMemo(() => {
+    if (!user) return null;
+    return {
+      ...user,
+      scores: {
+        reflex: user.scores?.reflex ?? null,
+        memory: user.scores?.memory ?? null,
+        balance: user.scores?.balance ?? null,
+      },
+    };
+  }, [user]);
+
   const attempts = useMemo(() => {
-    if (!user) return [];
-    const historic = dedupeAttempts([...(user.playAttempts ?? [])]);
+    if (!safeUser) return [];
+    const historic = dedupeAttempts([...(safeUser.playAttempts ?? [])]);
     if (historic.length > 0) {
       return [...historic].sort((a, b) => b.playedAt.localeCompare(a.playedAt));
     }
     return [];
-  }, [user]);
+  }, [safeUser]);
 
-  if (!user) return null;
+  if (!safeUser) return null;
 
   const referralUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/?ref=${encodeURIComponent(user.userId)}`
-      : `/?ref=${encodeURIComponent(user.userId)}`;
-  const hasSavedEmail = Boolean(user.email?.trim());
-  const finalPercentage = totalToPercentage(user.total).toFixed(2);
+      ? `${window.location.origin}/?ref=${encodeURIComponent(safeUser.userId)}`
+      : `/?ref=${encodeURIComponent(safeUser.userId)}`;
+  const hasSavedEmail = Boolean(safeUser.email?.trim());
+  const finalPercentage = totalToPercentage(safeUser.total).toFixed(2);
   const hasCompletedRun =
-    user.scores.reflex !== null && user.scores.memory !== null && user.scores.balance !== null;
-  const hasPlayedBefore = Boolean((user.playAttempts?.length ?? 0) > 0 || hasCompletedRun);
+    safeUser.scores.reflex !== null && safeUser.scores.memory !== null && safeUser.scores.balance !== null;
+  const hasPlayedBefore = Boolean((safeUser.playAttempts?.length ?? 0) > 0 || hasCompletedRun);
   const finalPercentDisplay = hasPlayedBefore ? `${finalPercentage}%` : "—";
-  const tierDisplay = hasPlayedBefore ? user.category : "Not started";
+  const tierDisplay = hasPlayedBefore ? safeUser.category : "Not started";
   const eligibleDisplay = hasPlayedBefore ? "✓" : "Not yet";
   const currentScoreTier = hasPlayedBefore
-    ? SCORE_TIERS.find((tier) => tier.label === user.category)?.tier
+    ? SCORE_TIERS.find((tier) => tier.label === safeUser.category)?.tier
     : null;
 
   const save = async (e: React.FormEvent) => {
@@ -126,9 +138,9 @@ function Profile() {
       setError("Please enter a valid email address.");
       return;
     }
-    const emailToPersist = hasSavedEmail ? user.email : normalizedEmail || undefined;
+    const emailToPersist = hasSavedEmail ? safeUser.email : normalizedEmail || undefined;
     const updated = {
-      ...user,
+      ...safeUser,
       name: name.trim(),
       email: emailToPersist,
       address: address.trim(),
@@ -182,7 +194,7 @@ function Profile() {
 
   const copyUserId = async () => {
     try {
-      const success = await copyToClipboard(user.userId);
+      const success = await copyToClipboard(safeUser.userId);
       if (!success) throw new Error("Copy failed");
       setCopiedUserId(true);
       setTimeout(() => setCopiedUserId(false), 1500);

@@ -102,8 +102,9 @@ function RootComponent() {
       dataLayer?: unknown[];
     };
     const fbq = w.fbq;
-    if (typeof fbq !== "function") return;
-    fbq("track", "PageView");
+    if (typeof fbq === "function") {
+      fbq("track", "PageView");
+    }
 
     // Keep GA4 page views in sync for SPA navigations.
     if (typeof w.gtag === "function") {
@@ -149,17 +150,19 @@ function RootComponent() {
       try {
         const { getPlatformSettingsFn } = await import("@/server/adminFns");
         const s = await getPlatformSettingsFn();
+        const ga4FromEnv = (import.meta.env.VITE_GA4_ID as string | undefined)?.trim() || "";
+        const ga4Id = (s.ga4 || ga4FromEnv).trim();
 
         // Google Analytics (GA4)
-        if (s.ga4 && !document.getElementById("_ga4")) {
+        if (ga4Id && !document.getElementById("_ga4")) {
           const gScript = document.createElement("script");
           gScript.id = "_ga4";
           gScript.async = true;
-          gScript.src = `https://www.googletagmanager.com/gtag/js?id=${s.ga4}`;
+          gScript.src = `https://www.googletagmanager.com/gtag/js?id=${ga4Id}`;
           document.head.appendChild(gScript);
           const gInline = document.createElement("script");
           gInline.id = "_ga4_inline";
-          gInline.textContent = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${s.ga4}');`;
+          gInline.textContent = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${ga4Id}');`;
           document.head.appendChild(gInline);
 
           // Mirror GA4 `gtag('event', ...)` calls into Meta Pixel custom events.
@@ -197,7 +200,20 @@ function RootComponent() {
           document.head.appendChild(clScript);
         }
       } catch (e) {
-        // Tracking injection is best-effort — never throw to the user
+        // Tracking injection is best-effort — never throw to the user.
+        // If settings API fails, still try GA4 from env for resiliency.
+        const ga4FromEnv = (import.meta.env.VITE_GA4_ID as string | undefined)?.trim() || "";
+        if (ga4FromEnv && !document.getElementById("_ga4")) {
+          const gScript = document.createElement("script");
+          gScript.id = "_ga4";
+          gScript.async = true;
+          gScript.src = `https://www.googletagmanager.com/gtag/js?id=${ga4FromEnv}`;
+          document.head.appendChild(gScript);
+          const gInline = document.createElement("script");
+          gInline.id = "_ga4_inline";
+          gInline.textContent = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${ga4FromEnv}');`;
+          document.head.appendChild(gInline);
+        }
         if (import.meta.env.DEV) console.warn("Tracking injection failed:", e);
       }
     };

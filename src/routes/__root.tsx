@@ -96,9 +96,28 @@ function RootComponent() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const fbq = (window as typeof window & { fbq?: (...args: unknown[]) => void }).fbq;
+    const w = window as typeof window & {
+      fbq?: (...args: unknown[]) => void;
+      gtag?: (...args: unknown[]) => void;
+      dataLayer?: unknown[];
+    };
+    const fbq = w.fbq;
     if (typeof fbq !== "function") return;
     fbq("track", "PageView");
+
+    // Keep GA4 page views in sync for SPA navigations.
+    if (typeof w.gtag === "function") {
+      w.gtag("event", "page_view", {
+        page_path: `${location.pathname}${location.search}`,
+        page_title: document.title,
+      });
+    } else if (Array.isArray(w.dataLayer)) {
+      w.dataLayer.push({
+        event: "page_view",
+        page_path: `${location.pathname}${location.search}`,
+        page_title: document.title,
+      });
+    }
   }, [location.pathname, location.search]);
 
   useEffect(() => {

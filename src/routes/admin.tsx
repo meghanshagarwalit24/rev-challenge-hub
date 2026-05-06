@@ -413,6 +413,18 @@ function exportPdf(rows: (string | number)[][], filename: string) {
   printWindow.print();
 }
 
+function getCountryNameFromCode(countryCode?: string): string {
+  if (!countryCode || countryCode === "Unknown" || countryCode === "—") return "Unknown";
+
+  try {
+    return (
+      new Intl.DisplayNames(["en"], { type: "region" }).of(countryCode.toUpperCase()) ?? countryCode
+    );
+  } catch {
+    return countryCode;
+  }
+}
+
 // ── Main Admin Component ───────────────────────────────────────────────────────
 function Admin() {
   const matchRoute = useMatchRoute();
@@ -792,6 +804,8 @@ function Admin() {
         l.action.toLowerCase().includes(q) ||
         l.details.toLowerCase().includes(q) ||
         (l.country ?? "").toLowerCase().includes(q) ||
+        (l.countryName ?? "").toLowerCase().includes(q) ||
+        getCountryNameFromCode(l.country).toLowerCase().includes(q) ||
         (l.ip ?? "").toLowerCase().includes(q),
     );
   }, [logs, logSearch]);
@@ -2031,11 +2045,12 @@ function Admin() {
                   </div>
 
                   <div className="bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
-                    <table className="w-full text-sm min-w-[760px]">
+                    <table className="w-full text-sm min-w-[900px]">
                       <thead>
                         <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10 text-left">
                           <Th>Timestamp</Th>
                           <Th>Country</Th>
+                          <Th>Country Name</Th>
                           <Th>IP</Th>
                           <Th>Action</Th>
                           <Th>Details</Th>
@@ -2045,7 +2060,7 @@ function Admin() {
                         {filteredLogs.length === 0 && (
                           <tr>
                             <td
-                              colSpan={5}
+                              colSpan={6}
                               className="py-10 text-center text-muted-foreground text-sm"
                             >
                               No logs yet.
@@ -2062,6 +2077,9 @@ function Admin() {
                             </Td>
                             <Td className="font-mono text-[11px] text-muted-foreground whitespace-nowrap">
                               {l.country ?? "—"}
+                            </Td>
+                            <Td className="text-[11px] text-muted-foreground whitespace-nowrap">
+                              {l.countryName ?? getCountryNameFromCode(l.country)}
                             </Td>
                             <Td className="font-mono text-[11px] text-muted-foreground whitespace-nowrap">
                               {l.ip ?? "—"}

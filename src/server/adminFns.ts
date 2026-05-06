@@ -29,6 +29,7 @@ export interface AdminLog {
   action: string;
   details: string;
   country?: string;
+  countryName?: string;
   ip?: string;
 }
 
@@ -46,6 +47,18 @@ const getClientCountry = (): string => {
     headers.get("x-country-code") ??
     "Unknown"
   );
+};
+
+const getCountryName = (countryCode: string): string => {
+  if (!countryCode || countryCode === "Unknown") return "Unknown";
+
+  try {
+    return (
+      new Intl.DisplayNames(["en"], { type: "region" }).of(countryCode.toUpperCase()) ?? countryCode
+    );
+  } catch {
+    return countryCode;
+  }
 };
 
 const getClientIp = (): string => {
@@ -67,12 +80,14 @@ export const addAdminLogFn = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => addLogSchema.parse(data))
   .handler(async ({ data }) => {
     const db = await getDb();
+    const country = getClientCountry();
     const entry: AdminLog = {
       logId: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
       action: data.action,
       details: data.details,
-      country: getClientCountry(),
+      country,
+      countryName: getCountryName(country),
       ip: getClientIp(),
     };
     await db.collection("admin_logs").insertOne(entry);

@@ -1795,9 +1795,7 @@ function Admin() {
                                         <Td className="font-bold text-gradient-energy">
                                           {u.total}
                                         </Td>
-                                        <Td className="text-center">
-                                          {u.completedAll3Today}
-                                        </Td>
+                                        <Td className="text-center">{u.completedAll3Today}</Td>
                                         <Td>
                                           <CategoryBadge cat={u.category} />
                                         </Td>
@@ -2322,7 +2320,7 @@ function KpiCard({
           >
             <CircleHelp className="w-3.5 h-3.5" />
           </span>
-          <div className="pointer-events-none absolute right-0 top-6 z-[80] hidden w-56 max-w-[calc(100%-0.5rem)] rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
+          <div className="pointer-events-none absolute right-0 top-6 z-[80] hidden w-64 max-w-[calc(100vw-2rem)] whitespace-normal rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
             {info}
           </div>
         </div>

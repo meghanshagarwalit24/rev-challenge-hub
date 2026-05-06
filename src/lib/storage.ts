@@ -291,15 +291,21 @@ export const saveUserRemote = async (u: UserRecord): Promise<void> => {
     console.warn("Local save failed; continuing with remote save attempt", e);
   }
 
+  let remoteError: unknown = null;
   try {
     const { saveUserFn } = await import("@/server/userFns");
     await saveUserFn({ data: withDate });
   } catch (e) {
+    remoteError = e;
     console.warn("Remote save failed; user was saved locally", e);
   } finally {
     if (typeof window !== "undefined") {
       localStorage.removeItem(RUN_COMPLETED_AT_KEY);
     }
+  }
+
+  if (remoteError) {
+    throw remoteError;
   }
 };
 

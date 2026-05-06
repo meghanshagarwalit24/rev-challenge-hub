@@ -109,17 +109,17 @@ function RootComponent() {
     // Keep GA4 page views in sync for SPA navigations.
     if (typeof w.gtag === "function") {
       w.gtag("event", "page_view", {
-        page_path: `${location.pathname}${location.search}`,
+        page_path: `${location.pathname}${location.searchStr}`,
         page_title: document.title,
       });
     } else if (Array.isArray(w.dataLayer)) {
       w.dataLayer.push({
         event: "page_view",
-        page_path: `${location.pathname}${location.search}`,
+        page_path: `${location.pathname}${location.searchStr}`,
         page_title: document.title,
       });
     }
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.searchStr]);
 
   useEffect(() => {
     // Persist referral code from URL so it can be auto-filled later in the signup popup

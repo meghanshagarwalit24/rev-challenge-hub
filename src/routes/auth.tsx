@@ -28,7 +28,8 @@ function Auth() {
   const [consent, setConsent] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
-  const [existingUser, setExistingUser] = useState<Awaited<ReturnType<typeof findUserByContactRemote>>>(null);
+  const [existingUser, setExistingUser] =
+    useState<Awaited<ReturnType<typeof findUserByContactRemote>>>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -94,12 +95,17 @@ function Auth() {
     const total = computeTotal(scores);
     const cat = categorize(total);
     const normalizedContact = normalizeUaePhone(contact.trim());
-    const existing = findUserByContact(normalizedContact);
+    const existing =
+      existingUser ??
+      (await findUserByContactRemote(normalizedContact)) ??
+      findUserByContact(normalizedContact);
     const payload = {
+      ...existing,
       ...getPersistedUtmParams(),
       userId: existing?.userId ?? generateUserId(),
       contact: normalizedContact,
       name: existing?.name,
+      email: existing?.email,
       address: existing?.address,
       scores,
       total,
@@ -109,13 +115,14 @@ function Auth() {
       referredBy: referredBy.trim().toUpperCase() || existing?.referredBy,
       referCount: existing?.referCount ?? 0,
     };
-    // Persist local login state immediately so `/profile` always opens after OTP verification.
-    saveUser(payload);
-    await goToProfile();
     try {
       await saveUserRemote(payload);
+      await goToProfile();
     } catch (e) {
       console.warn("Save encountered an issue after OTP verification", e);
+      // Keep local login state as a last resort so the user can still reach their profile.
+      saveUser(payload);
+      await goToProfile();
     } finally {
       setLoading(false);
     }
@@ -166,24 +173,24 @@ function Auth() {
                   </p>
                 </div>
                 {!existingUser && (
-                <div>
-                  <label className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Referred by{" "}
-                    <span className="text-muted-foreground/60 normal-case font-normal">
-                      (optional)
-                    </span>
-                  </label>
-                  <input
-                    value={referredBy}
-                    onChange={(e) => setReferredBy(e.target.value)}
-                    placeholder="RVT-AB12CD34"
-                    className="mt-2 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
-                  />
-                  <p className="mt-1.5 text-[11px] text-muted-foreground">
-                    Enter your friend's User ID who referred you — they'll get more chances to win!
-                    🏆
-                  </p>
-                </div>
+                  <div>
+                    <label className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Referred by{" "}
+                      <span className="text-muted-foreground/60 normal-case font-normal">
+                        (optional)
+                      </span>
+                    </label>
+                    <input
+                      value={referredBy}
+                      onChange={(e) => setReferredBy(e.target.value)}
+                      placeholder="RVT-AB12CD34"
+                      className="mt-2 w-full bg-background/60 border border-border rounded-2xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+                    />
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">
+                      Enter your friend's User ID who referred you — they'll get more chances to
+                      win! 🏆
+                    </p>
+                  </div>
                 )}
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input

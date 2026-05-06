@@ -236,21 +236,26 @@ export const saveUser = (u: UserRecord) => {
 
 /** Persist user to MongoDB (server) AND update localStorage cache. */
 export const saveUserRemote = async (u: UserRecord): Promise<void> => {
-  // Merge today's date into playDates
-  const today = todayDateString();
   const existingLocal = findUserByContact(u.contact);
-  const priorDates = existingLocal?.playDates ?? u.playDates ?? [];
-  const mergedDates = priorDates.includes(today) ? priorDates : [...priorDates, today];
+  const priorDates = [...new Set([...(existingLocal?.playDates ?? []), ...(u.playDates ?? [])])];
 
   const completeRun =
     u.scores.reflex !== null && u.scores.memory !== null && u.scores.balance !== null;
 
-  const priorAttempts = existingLocal?.playAttempts ?? u.playAttempts ?? [];
+  const priorAttempts = dedupeAttempts([
+    ...(existingLocal?.playAttempts ?? []),
+    ...(u.playAttempts ?? []),
+  ]);
   const completedAtFromStorage =
     typeof window !== "undefined" ? localStorage.getItem(RUN_COMPLETED_AT_KEY) : null;
   const shouldAppendAttempt = completeRun && !!completedAtFromStorage;
   const completedAt = completedAtFromStorage || toLocalDateTimeString(new Date());
   const completedDate = completedAt.slice(0, 10);
+  const mergedDates = shouldAppendAttempt
+    ? priorDates.includes(completedDate)
+      ? priorDates
+      : [...priorDates, completedDate]
+    : priorDates;
   const nextAttempts = shouldAppendAttempt
     ? [
         ...priorAttempts,
@@ -265,7 +270,7 @@ export const saveUserRemote = async (u: UserRecord): Promise<void> => {
     : priorAttempts;
   const dedupedAttempts = dedupeAttempts(nextAttempts);
 
-  const targetDate = shouldAppendAttempt ? completedDate : today;
+  const targetDate = shouldAppendAttempt ? completedDate : todayDateString();
   const bestAttemptForDate = getBestAttemptForDate(dedupedAttempts, targetDate);
 
   const withDate: UserRecord = {

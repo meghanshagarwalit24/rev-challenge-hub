@@ -786,7 +786,10 @@ function Admin() {
     if (!logSearch) return logs;
     const q = logSearch.toLowerCase();
     return logs.filter(
-      (l) => l.action.toLowerCase().includes(q) || l.details.toLowerCase().includes(q),
+      (l) =>
+        l.action.toLowerCase().includes(q) ||
+        l.details.toLowerCase().includes(q) ||
+        (l.country ?? "").toLowerCase().includes(q),
     );
   }, [logs, logSearch]);
 
@@ -1997,10 +2000,11 @@ function Admin() {
                   </div>
 
                   <div className="bg-gradient-card border border-border rounded-2xl overflow-x-auto shadow-card">
-                    <table className="w-full text-sm min-w-[480px]">
+                    <table className="w-full text-sm min-w-[640px]">
                       <thead>
                         <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/10 text-left">
                           <Th>Timestamp</Th>
+                          <Th>Country</Th>
                           <Th>Action</Th>
                           <Th>Details</Th>
                         </tr>
@@ -2009,7 +2013,7 @@ function Admin() {
                         {filteredLogs.length === 0 && (
                           <tr>
                             <td
-                              colSpan={3}
+                              colSpan={4}
                               className="py-10 text-center text-muted-foreground text-sm"
                             >
                               No logs yet.
@@ -2023,6 +2027,9 @@ function Admin() {
                           >
                             <Td className="text-[11px] text-muted-foreground whitespace-nowrap">
                               {new Date(l.timestamp).toLocaleString()}
+                            </Td>
+                            <Td className="font-mono text-[11px] text-muted-foreground whitespace-nowrap">
+                              {l.country ?? "—"}
                             </Td>
                             <Td>
                               <span className="font-mono text-[11px] bg-accent/10 text-accent px-2 py-0.5 rounded">
@@ -2315,7 +2322,7 @@ function KpiCard({
           >
             <CircleHelp className="w-3.5 h-3.5" />
           </span>
-          <div className="pointer-events-none absolute left-0 top-6 z-[80] hidden w-56 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
+          <div className="pointer-events-none absolute right-0 top-6 z-[80] hidden w-56 max-w-[calc(100%-0.5rem)] rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
             {info}
           </div>
         </div>

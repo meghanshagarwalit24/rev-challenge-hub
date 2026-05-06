@@ -415,10 +415,10 @@ function Profile() {
           <p className="text-xs text-muted-foreground mt-1">
             Your saved attempts grouped by play date and final percentage.
           </p>
-          <div className="mt-4 overflow-x-auto">
+          <div className="mt-4 max-h-80 overflow-auto rounded-2xl border border-border/50">
             <table className="w-full text-sm min-w-[420px]">
               <thead>
-                <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
+                <tr className="sticky top-0 bg-card/95 text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border backdrop-blur">
                   <th className="py-2 pr-3">Date</th>
                   <th className="py-2 pr-3">Time (UAE)</th>
                   <th className="py-2 pr-3">Final %</th>

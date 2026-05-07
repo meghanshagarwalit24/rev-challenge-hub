@@ -230,6 +230,8 @@ async function downloadDailyWinnersImage(
   });
   if (!templateImage) return;
 
+  await document.fonts.load('600 16px Duplit');
+
   const canvas = document.createElement("canvas");
   canvas.width = templateImage.width;
   canvas.height = templateImage.height;
@@ -260,15 +262,15 @@ async function downloadDailyWinnersImage(
     if (!slot) return;
 
     const displayName = winner.name?.trim() || winner.contact;
-    const nameX = slot.x * scaleX;
-    const nameY = slot.y * scaleY;
     const maxTextWidth = 280 * scaleX;
+    const nameX = slot.x * scaleX - maxTextWidth / 2;
+    const nameY = slot.y * scaleY;
 
-    ctx.textAlign = "center";
+    ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#461901";
 
-    const fontSize = Math.round(30 * Math.min(scaleX, scaleY));
+    const fontSize = Math.round(35 * Math.min(scaleX, scaleY));
     let textToDraw = displayName;
     const ellipsis = "...";
 
@@ -2157,7 +2159,7 @@ function Admin() {
                             }
                             className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                           >
-                            <option value="winner">Show daily winner</option>
+                            <option value="winner">Show previous day's winners</option>
                             <option value="text">Show custom text</option>
                             <option value="leaderboard">Show daily leaderboard</option>
                           </select>

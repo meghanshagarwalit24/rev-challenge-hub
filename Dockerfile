@@ -25,5 +25,6 @@ RUN npm ci --omit=dev --legacy-peer-deps --ignore-scripts
 COPY --from=builder /app/node_modules/canvas ./node_modules/canvas
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
+COPY scripts/ ./scripts/
 EXPOSE 3000
 CMD ["pm2-runtime", "start", "dist/server/server.js", "-i", "2"]

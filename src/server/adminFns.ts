@@ -4,7 +4,7 @@ import { z } from "zod";
 import { getDb } from "./db";
 import type { UserRecord } from "@/lib/storage";
 import tls from "node:tls";
-import { createCanvas, loadImage } from "canvas";
+import { createCanvas, loadImage, registerFont } from "canvas";
 import { readFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -256,6 +256,13 @@ async function getTemplatePath(): Promise<string> {
 async function generateWinnersPng(
   winners: Array<{ name: string; score: number; contact?: string }>,
 ): Promise<Buffer> {
+  const __dir = dirname(fileURLToPath(import.meta.url));
+  const fontCandidate = join(__dir, "../../public/fonts/Duplet-Semibold-BF642a34066f658.otf");
+  const fontPath = await readFile(fontCandidate).then(() => fontCandidate).catch(() =>
+    join(process.cwd(), "public/fonts/Duplet-Semibold-BF642a34066f658.otf")
+  );
+  registerFont(fontPath, { family: "Duplet", weight: "600" });
+
   const templatePath = await getTemplatePath();
   const templateData = await readFile(templatePath);
   const img = await loadImage(templateData);
@@ -272,16 +279,16 @@ async function generateWinnersPng(
     if (!slot) return;
 
     const displayName = winner.name?.trim() || winner.contact || "";
-    const nameX = slot.x * scaleX;
-    const nameY = slot.y * scaleY;
     const maxTextWidth = 280 * scaleX;
-    const fontSize = Math.round(30 * Math.min(scaleX, scaleY));
+    const nameX = slot.x * scaleX - maxTextWidth / 2;
+    const nameY = slot.y * scaleY;
+    const fontSize = Math.round(35 * Math.min(scaleX, scaleY));
     const ellipsis = "...";
 
-    ctx.textAlign = "center";
+    ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#461901";
-    ctx.font = `600 ${fontSize}px sans-serif`;
+    ctx.font = `600 ${fontSize}px Duplet, sans-serif`;
 
     let textToDraw = displayName;
     if (ctx.measureText(textToDraw).width > maxTextWidth) {
@@ -475,4 +482,25 @@ export const lockDailyTopTenAndNotifyFn = createServerFn({ method: "POST" }).han
     ),
   );
   return { ok: true, lockDate, winners: ranked.length, mailed: true, adminEmails };
+});
+
+export const getPreviousDayWinnersFn = createServerFn({ method: "GET" }).handler(async () => {
+  const db = await getDb();
+  const yesterday = formatUaeDate(new Date(Date.now() - 24 * 60 * 60 * 1000));
+
+  const users = await db
+    .collection<UserRecord>("users")
+    .find({ winnerLockDates: yesterday })
+    .toArray();
+
+  const ranked = users
+    .map((u) => {
+      const best = (u.playAttempts ?? [])
+        .filter((a) => a.date === yesterday)
+        .reduce<number>((m, a) => Math.max(m, a.total), 0);
+      return { name: u.name || u.contact || "Player", score: best };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  return { date: yesterday, winners: ranked };
 });

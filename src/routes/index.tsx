@@ -35,19 +35,25 @@ function Landing() {
           setAnnouncements(texts.length ? texts : [defaultAnnouncement]);
           return;
         }
-        getDailyLeaderboard().then((entries) => {
-          if (settings.homeAnnouncementMode === "leaderboard") {
-            const leaderboardTexts = entries
-              .slice(0, 5)
-              .map((entry, index) => `🏅 #${index + 1} ${entry.name} — ${entry.total} pts`);
-            setAnnouncements(leaderboardTexts.length ? leaderboardTexts : [defaultAnnouncement]);
+        if (settings.homeAnnouncementMode === "leaderboard") {
+            getDailyLeaderboard().then((entries) => {
+              const leaderboardTexts = entries
+                .slice(0, 10)
+                .map((entry, index) => `🏅 #${index + 1} ${entry.name} — ${entry.total} pts`);
+              setAnnouncements(leaderboardTexts.length ? leaderboardTexts : [defaultAnnouncement]);
+            });
             return;
           }
-          const winner = entries[0];
-          if (winner) {
-            setAnnouncements([`🏆 Today's Winner: ${winner.name} with ${winner.total} points!`]);
-          }
-        });
+          import("@/server/adminFns").then((mod) => mod.getPreviousDayWinnersFn()).then(({ date, winners }) => {
+            if (!winners.length) {
+              setAnnouncements([defaultAnnouncement]);
+              return;
+            }
+            const texts = winners.map(
+              (w, i) => `🏆 #${i + 1} Winner (${date}): ${w.name} — ${w.score} pts`
+            );
+            setAnnouncements(texts);
+          }).catch(() => setAnnouncements([defaultAnnouncement]));
       })
       .catch(() => null);
 

@@ -82,7 +82,9 @@ function Result() {
             url: shareUrl,
           });
           return;
-        } catch {}
+        } catch (e: any) {
+          if (e?.name === "AbortError") return;
+        }
       }
 
       const user = getUser();
@@ -93,6 +95,8 @@ function Result() {
         tier: cat.tier,
       });
       const file = new File([blob], "revital-energy-score.png", { type: "image/png" });
+
+      // Try native share sheet with image (works on iOS Safari and Android Chrome)
       if (navAny.canShare && navAny.canShare({ files: [file] }) && navAny.share) {
         try {
           await navAny.share({
@@ -102,10 +106,12 @@ function Result() {
             url: shareUrl,
           });
           return;
-        } catch {}
+        } catch (e: any) {
+          if (e?.name === "AbortError") return;
+        }
       }
 
-      // Some browsers/apps do not allow file sharing, but still support native text/url sharing.
+      // Some browsers support native sharing but not file sharing
       if (navAny.share) {
         try {
           await navAny.share({
@@ -115,9 +121,12 @@ function Result() {
           });
           showShareNotice("Shared link. Image sharing is limited on this browser/app.");
           return;
-        } catch {}
+        } catch (e: any) {
+          if (e?.name === "AbortError") return;
+        }
       }
 
+      // Desktop fallback: download image + copy caption
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -128,10 +137,10 @@ function Result() {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       try { await navigator.clipboard.writeText(`${shareText} ${shareUrl}`); } catch {}
       if (openInstagram) {
-        showShareNotice("Image downloaded and caption + link copied. Add them in Instagram story/post.");
+        showShareNotice("Image downloaded and caption copied — add them to your Instagram story/post.");
         window.open("https://www.instagram.com/", "_blank");
       } else {
-        showShareNotice("Image downloaded and caption + link copied.");
+        showShareNotice("Image downloaded and caption copied.");
       }
     } catch (e) {
       console.error(e);

@@ -774,9 +774,11 @@ function Admin() {
 
   // ── Consistent players ──────────────────────────────────────────────────────
   const streaks = useMemo(() => {
-    const todayMs = Date.now();
+    // Use start of UAE day to match the server-side global leaderboard formula exactly
+    const uaeToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date());
+    const todayMs = new Date(uaeToday + "T00:00:00+04:00").getTime();
     const campaignStartMs = settings.campaignStartDate
-      ? new Date(settings.campaignStartDate + "T00:00:00").getTime()
+      ? new Date(settings.campaignStartDate + "T00:00:00+04:00").getTime()
       : users.reduce<number>((min, u) => {
           const t = u.createdAt ? new Date(u.createdAt).getTime() : Infinity;
           return t < min ? t : min;
@@ -808,10 +810,11 @@ function Admin() {
 
     return [...users]
       .map((u) => ({ ...u, streak: calcStreak(u.playDates ?? []), globalScore: computeGlobalScore(u) }))
+      .filter((u) => u.globalScore > 0)
       .sort((a, b) => {
-        const playDaysDiff = (b.playDates?.length ?? 0) - (a.playDates?.length ?? 0);
-        if (playDaysDiff !== 0) return playDaysDiff;
         if (b.globalScore !== a.globalScore) return b.globalScore - a.globalScore;
+        if ((b.playDates?.length ?? 0) !== (a.playDates?.length ?? 0))
+          return (b.playDates?.length ?? 0) - (a.playDates?.length ?? 0);
         return b.streak - a.streak;
       });
   }, [users, settings.campaignStartDate]);
@@ -997,7 +1000,7 @@ function Admin() {
       addLog("DATEWISE_EXPORT_PDF", `Exported ${rows.length - 1} date-wise rows as PDF`);
       return;
     }
-    downloadCsv("datewise-users.csv", rows);
+    exportCsv(rows, `datewise-users-${stamp}.csv`);
     addLog("DATEWISE_EXPORT_CSV", `Exported ${rows.length - 1} date-wise rows as CSV`);
   };
 

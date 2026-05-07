@@ -454,6 +454,7 @@ function Admin() {
     otpDefaultChannel: "sms",
     otpRegionProfile: "INDIA",
     leaderboardAdminEmail: "",
+    campaignStartDate: "",
   });
   const [savedFlash, setSavedFlash] = useState(false);
   const [leaderboardEmailSending, setLeaderboardEmailSending] = useState(false);
@@ -772,18 +773,48 @@ function Admin() {
   }, [dateWisePage, dateWiseTotalPages]);
 
   // ── Consistent players ──────────────────────────────────────────────────────
-  const streaks = useMemo(
-    () =>
-      [...users]
-        .map((u) => ({ ...u, streak: calcStreak(u.playDates ?? []) }))
-        .sort((a, b) => {
-          const playDaysDiff = (b.playDates?.length ?? 0) - (a.playDates?.length ?? 0);
-          if (playDaysDiff !== 0) return playDaysDiff;
-          if (b.total !== a.total) return b.total - a.total;
-          return b.streak - a.streak;
-        }),
-    [users],
-  );
+  const streaks = useMemo(() => {
+    const todayMs = Date.now();
+    const campaignStartMs = settings.campaignStartDate
+      ? new Date(settings.campaignStartDate + "T00:00:00").getTime()
+      : users.reduce<number>((min, u) => {
+          const t = u.createdAt ? new Date(u.createdAt).getTime() : Infinity;
+          return t < min ? t : min;
+        }, todayMs);
+    const totalCampaignDays = Math.max(1, Math.round((todayMs - campaignStartMs) / 86_400_000) + 1);
+
+    const computeGlobalScore = (u: UserRecord): number => {
+      const attempts = u.playAttempts ?? [];
+      const uniqueDates = [...new Set(attempts.map((a) => a.date))];
+      const activeDays = uniqueDates.length;
+      if (activeDays === 0) return 0;
+      const dailyBests = uniqueDates.map((date) =>
+        attempts
+          .filter((a) => a.date === date)
+          .reduce((best, cur) => {
+            const curSum = (cur.scores.reflex ?? 0) + (cur.scores.memory ?? 0) + (cur.scores.balance ?? 0);
+            const bestSum = (best.scores.reflex ?? 0) + (best.scores.memory ?? 0) + (best.scores.balance ?? 0);
+            return curSum > bestSum ? cur : best;
+          })
+      );
+      const sumDailyBest = dailyBests.reduce(
+        (s, a) => s + (a.scores.reflex ?? 0) + (a.scores.memory ?? 0) + (a.scores.balance ?? 0), 0
+      );
+      const performanceScore = sumDailyBest / activeDays;
+      const consistencyMultiplier = 1 + (activeDays / totalCampaignDays) * 0.2;
+      const referralScore = Math.min(u.referCount ?? 0, 20) * 50;
+      return Math.round(performanceScore * consistencyMultiplier * 0.8 + referralScore * 0.2);
+    };
+
+    return [...users]
+      .map((u) => ({ ...u, streak: calcStreak(u.playDates ?? []), globalScore: computeGlobalScore(u) }))
+      .sort((a, b) => {
+        const playDaysDiff = (b.playDates?.length ?? 0) - (a.playDates?.length ?? 0);
+        if (playDaysDiff !== 0) return playDaysDiff;
+        if (b.globalScore !== a.globalScore) return b.globalScore - a.globalScore;
+        return b.streak - a.streak;
+      });
+  }, [users, settings.campaignStartDate]);
 
   // ── Logs filtered ───────────────────────────────────────────────────────────
   const filteredLogs = useMemo(() => {
@@ -1968,8 +1999,8 @@ function Admin() {
                           </Th>
                           <Th>
                             <span className="inline-flex items-center gap-1">
-                              Score
-                              <InfoHint text="Displayed score is the user's best total score used for ranking context." />
+                              Global Score
+                              <InfoHint text="Weighted composite score: (avg daily best × consistency multiplier × 0.8) + (referrals × 50 × 0.2). Same formula as the global leaderboard." />
                             </span>
                           </Th>
                         </tr>
@@ -1995,7 +2026,7 @@ function Admin() {
                             <Td className="font-mono text-[11px]">{u.contact}</Td>
                             <Td>{u.name || "—"}</Td>
                             <Td className="text-muted-foreground">{(u.playDates ?? []).length}</Td>
-                            <Td className="font-bold text-gradient-energy">{u.total}</Td>
+                            <Td className="font-bold text-gradient-energy">{u.globalScore}</Td>
                           </tr>
                         ))}
                       </tbody>
@@ -2295,6 +2326,15 @@ function Admin() {
                           placeholder="admin1@company.com, admin2@company.com"
                           hint="Use comma-separated emails. At 11:59:59 PM UAE time, top 10 winners will be mailed to all."
                         />
+                        <SettingsField
+                          label="Campaign start date"
+                          value={settings.campaignStartDate}
+                          onChange={(v) =>
+                            setSettings((prev) => ({ ...prev, campaignStartDate: v }))
+                          }
+                          placeholder="YYYY-MM-DD"
+                          hint="Used for global leaderboard consistency multiplier. If blank, auto-detected from earliest user."
+                        />
                       </div>
                       <div className="flex flex-wrap items-center gap-3">
                         <button
@@ -2350,11 +2390,23 @@ function KpiCard({
   info: string;
   onClick?: () => void;
 }) {
+  const iconRef = useRef<HTMLSpanElement>(null);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+
+  const handleMouseEnter = () => {
+    if (iconRef.current) setAnchorRect(iconRef.current.getBoundingClientRect());
+  };
+  const handleMouseLeave = () => setAnchorRect(null);
+
+  const tooltipLeft = anchorRect
+    ? Math.min(Math.max(8, anchorRect.left + anchorRect.width / 2 - 128), window.innerWidth - 264)
+    : 0;
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`relative w-full text-left overflow-visible bg-gradient-card border border-border rounded-2xl p-3 shadow-card hover:z-30 ${
+      className={`relative w-full text-left bg-gradient-card border border-border rounded-2xl p-3 shadow-card hover:z-30 ${
         onClick
           ? "cursor-pointer hover:border-accent/60 hover:shadow-[0_8px_28px_rgba(243,116,33,0.22)] transition-all"
           : ""
@@ -2362,17 +2414,23 @@ function KpiCard({
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{title}</p>
-        <div className="relative group/info">
+        <span
+          ref={iconRef}
+          className="text-muted-foreground/80 hover:text-accent transition-colors cursor-help mt-0.5 inline-flex"
+          aria-label={info}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          <CircleHelp className="w-3.5 h-3.5" />
+        </span>
+        {anchorRect && (
           <span
-            className="text-muted-foreground/80 hover:text-accent transition-colors cursor-help mt-0.5 inline-flex"
-            aria-label={info}
+            style={{ position: "fixed", top: anchorRect.bottom + 6, left: tooltipLeft, width: 256, zIndex: 9999 }}
+            className="pointer-events-none rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm whitespace-normal"
           >
-            <CircleHelp className="w-3.5 h-3.5" />
-          </span>
-          <div className="pointer-events-none absolute right-0 top-6 z-[80] hidden w-64 max-w-[calc(100vw-2rem)] whitespace-normal rounded-xl border border-border bg-background/95 p-2 text-[10px] font-medium leading-relaxed text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
             {info}
-          </div>
-        </div>
+          </span>
+        )}
       </div>
       <p className="text-lg font-black mt-1 text-gradient-energy">{value}</p>
     </button>
@@ -2384,17 +2442,42 @@ function Th({ children, className = "" }: { children?: React.ReactNode; classNam
 }
 
 function InfoHint({ text }: { text: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+
+  const handleMouseEnter = () => {
+    if (ref.current) setAnchorRect(ref.current.getBoundingClientRect());
+  };
+  const handleMouseLeave = () => setAnchorRect(null);
+
+  const tooltipLeft = anchorRect
+    ? Math.min(
+        Math.max(8, anchorRect.left + anchorRect.width / 2 - 112),
+        window.innerWidth - 232,
+      )
+    : 0;
+
   return (
-    <span className="relative group/info inline-flex items-center">
+    <span
+      ref={ref}
+      className="relative inline-flex items-center"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <span
         className="text-muted-foreground/80 hover:text-accent transition-colors cursor-help inline-flex"
         aria-label={text}
       >
         <CircleHelp className="w-3.5 h-3.5" />
       </span>
-      <span className="pointer-events-none absolute left-1/2 top-5 z-[80] hidden w-56 -translate-x-1/2 rounded-xl border border-border bg-background/95 p-2 text-[10px] normal-case font-medium leading-relaxed tracking-normal text-foreground shadow-lg backdrop-blur-sm group-hover/info:block">
-        {text}
-      </span>
+      {anchorRect && (
+        <span
+          style={{ position: "fixed", top: anchorRect.bottom + 6, left: tooltipLeft, width: 224, zIndex: 9999 }}
+          className="pointer-events-none rounded-xl border border-border bg-background/95 p-2 text-[10px] normal-case font-medium leading-relaxed tracking-normal text-foreground shadow-lg backdrop-blur-sm"
+        >
+          {text}
+        </span>
+      )}
     </span>
   );
 }

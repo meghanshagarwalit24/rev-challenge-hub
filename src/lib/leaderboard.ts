@@ -58,6 +58,12 @@ export const getDailyLeaderboard = async (): Promise<LeaderEntry[]> => {
 };
 
 export const getGlobalLeaderboard = async (): Promise<LeaderEntry[]> => {
-  const users = (await getAllUsersRemote()).map((u) => fromUser(u, "All-time"));
-  return [...users, ...SAMPLE_GLOBAL].sort((a, b) => b.total - a.total).slice(0, 10);
+  try {
+    const { getGlobalLeaderboardFn } = await import("@/server/adminFns");
+    const entries = await getGlobalLeaderboardFn();
+    if (entries.length > 0) return entries;
+  } catch {
+    // fall through to sample data
+  }
+  return SAMPLE_GLOBAL;
 };

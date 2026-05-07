@@ -125,6 +125,7 @@ export interface PlatformSettings {
   otpDefaultChannel: "sms" | "whatsapp" | "call" | "email";
   otpRegionProfile: string;
   leaderboardAdminEmail: string;
+  campaignStartDate: string; // YYYY-MM-DD
 }
 
 const settingsSchema = z.object({
@@ -142,6 +143,7 @@ const settingsSchema = z.object({
   otpDefaultChannel: z.enum(["sms", "whatsapp", "call", "email"]).default("sms"),
   otpRegionProfile: z.string().default("INDIA"),
   leaderboardAdminEmail: z.string().default(""),
+  campaignStartDate: z.string().default(""),
 });
 
 export const savePlatformSettingsFn = createServerFn({ method: "POST" })
@@ -183,6 +185,7 @@ export const getPlatformSettingsFn = createServerFn({ method: "GET" }).handler(a
       otpDefaultChannel: "sms",
       otpRegionProfile: "INDIA",
       leaderboardAdminEmail: "",
+      campaignStartDate: "",
     } as PlatformSettings;
   const { _id: _a, _key: _b, updatedAt: _c, ...rest } = doc as Record<string, unknown>;
 
@@ -214,6 +217,8 @@ export const getPlatformSettingsFn = createServerFn({ method: "GET" }).handler(a
     otpRegionProfile: typeof rest.otpRegionProfile === "string" ? rest.otpRegionProfile : "INDIA",
     leaderboardAdminEmail:
       typeof rest.leaderboardAdminEmail === "string" ? rest.leaderboardAdminEmail : "",
+    campaignStartDate:
+      typeof rest.campaignStartDate === "string" ? rest.campaignStartDate : "",
   } as PlatformSettings;
 });
 
@@ -482,6 +487,103 @@ export const lockDailyTopTenAndNotifyFn = createServerFn({ method: "POST" }).han
     ),
   );
   return { ok: true, lockDate, winners: ranked.length, mailed: true, adminEmails };
+});
+
+export const getGlobalLeaderboardFn = createServerFn({ method: "GET" }).handler(async () => {
+  const db = await getDb();
+  const [users, settingsDoc] = await Promise.all([
+    db.collection<UserRecord>("users").find({}).toArray(),
+    db.collection("platform_settings").findOne({ _key: "main" }),
+  ]);
+  const settings = (settingsDoc ?? {}) as Partial<PlatformSettings>;
+
+  // Total campaign days — from configured start date or earliest user createdAt
+  const today = formatUaeDate(new Date());
+  const todayMs = new Date(today + "T00:00:00+04:00").getTime();
+  let campaignStartMs: number;
+  if (settings.campaignStartDate) {
+    campaignStartMs = new Date(settings.campaignStartDate + "T00:00:00+04:00").getTime();
+  } else {
+    const earliest = users.reduce<string | null>((min, u) => {
+      if (!u.createdAt) return min;
+      return !min || u.createdAt < min ? u.createdAt : min;
+    }, null);
+    campaignStartMs = earliest ? new Date(earliest).getTime() : todayMs;
+  }
+  const totalCampaignDays = Math.max(1, Math.round((todayMs - campaignStartMs) / 86_400_000) + 1);
+
+  const mask = (c: string) => {
+    if (c.includes("@")) { const [a, b] = c.split("@"); return a.slice(0, 2) + "•••@" + b; }
+    if (c.length > 4) return c.slice(0, 3) + "•••" + c.slice(-2);
+    return c;
+  };
+
+  const scored = users
+    .map((u) => {
+      const attempts = u.playAttempts ?? [];
+      const uniqueDates = [...new Set(attempts.map((a) => a.date))];
+      const activeDays = uniqueDates.length;
+      if (activeDays === 0) return null;
+
+      // Best attempt per day — use sum of 3 game scores (max 4500/day per spec)
+      const dailyBests = uniqueDates.map((date) =>
+        attempts
+          .filter((a) => a.date === date)
+          .reduce((best, cur) => {
+            const curSum = (cur.scores.reflex ?? 0) + (cur.scores.memory ?? 0) + (cur.scores.balance ?? 0);
+            const bestSum = (best.scores.reflex ?? 0) + (best.scores.memory ?? 0) + (best.scores.balance ?? 0);
+            return curSum > bestSum ? cur : best;
+          })
+      );
+
+      const sumDailyBest = dailyBests.reduce(
+        (s, a) => s + (a.scores.reflex ?? 0) + (a.scores.memory ?? 0) + (a.scores.balance ?? 0), 0
+      );
+      const performanceScore = sumDailyBest / activeDays;
+      const consistencyMultiplier = 1 + (activeDays / totalCampaignDays) * 0.2;
+      const adjustedPerformance = performanceScore * consistencyMultiplier;
+
+      const validReferrals = Math.min(u.referCount ?? 0, 20);
+      const referralScore = validReferrals * 50;
+
+      const finalScore = adjustedPerformance * 0.8 + referralScore * 0.2;
+
+      // Tiebreaker data
+      const avgReflex = dailyBests.reduce((s, a) => s + (a.scores.reflex ?? 0), 0) / activeDays;
+      const avgMemory = dailyBests.reduce((s, a) => s + (a.scores.memory ?? 0), 0) / activeDays;
+      const avgBalance = dailyBests.reduce((s, a) => s + (a.scores.balance ?? 0), 0) / activeDays;
+      const earliestPlayedAt = attempts.reduce(
+        (min, a) => (a.playedAt < min ? a.playedAt : min),
+        attempts[0]?.playedAt ?? ""
+      );
+
+      return {
+        name: u.name || "Player",
+        contact: mask(u.contact),
+        total: Math.round(finalScore),
+        category: u.category,
+        when: "All-time",
+        _activeDays: activeDays,
+        _avgReflex: avgReflex,
+        _avgMemory: avgMemory,
+        _avgBalance: avgBalance,
+        _referCount: u.referCount ?? 0,
+        _earliestPlayedAt: earliestPlayedAt,
+      };
+    })
+    .filter((u): u is NonNullable<typeof u> => u !== null);
+
+  scored.sort((a, b) => {
+    if (b.total !== a.total) return b.total - a.total;
+    if (b._activeDays !== a._activeDays) return b._activeDays - a._activeDays;
+    if (b._avgReflex !== a._avgReflex) return b._avgReflex - a._avgReflex;
+    if (b._avgMemory !== a._avgMemory) return b._avgMemory - a._avgMemory;
+    if (b._avgBalance !== a._avgBalance) return b._avgBalance - a._avgBalance;
+    if (b._referCount !== a._referCount) return b._referCount - a._referCount;
+    return a._earliestPlayedAt.localeCompare(b._earliestPlayedAt);
+  });
+
+  return scored.slice(0, 10).map(({ _activeDays: _, _avgReflex: _r, _avgMemory: _m, _avgBalance: _b, _referCount: _rc, _earliestPlayedAt: _e, ...entry }) => entry);
 });
 
 export const getPreviousDayWinnersFn = createServerFn({ method: "GET" }).handler(async () => {

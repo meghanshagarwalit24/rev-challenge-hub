@@ -118,12 +118,19 @@ export interface PlatformSettings {
   recaptchaSecret: string;
   homeAnnouncementMode: "winner" | "text" | "leaderboard";
   homeAnnouncementTexts: string[];
-  otpProvider: string;
+  otpProvider: "twilio" | "infobip";
+  // Twilio fields
   otpAccountSid: string;
   otpAuthToken: string;
   otpVerifyServiceSid: string;
   otpDefaultChannel: "sms" | "whatsapp" | "call" | "email";
   otpRegionProfile: string;
+  // Infobip fields
+  infobipApiKey: string;
+  infobipBaseUrl: string;
+  infobipApplicationId: string;
+  infobipMessageId: string;
+  infobipSender: string;
   leaderboardAdminEmail: string;
   campaignStartDate: string; // YYYY-MM-DD
 }
@@ -136,12 +143,17 @@ const settingsSchema = z.object({
   recaptchaSecret: z.string(),
   homeAnnouncementMode: z.enum(["winner", "text", "leaderboard"]).default("winner"),
   homeAnnouncementTexts: z.array(z.string()).length(5),
-  otpProvider: z.string().default("twilio"),
+  otpProvider: z.enum(["twilio", "infobip"]).default("twilio"),
   otpAccountSid: z.string().default(""),
   otpAuthToken: z.string().default(""),
   otpVerifyServiceSid: z.string().default(""),
   otpDefaultChannel: z.enum(["sms", "whatsapp", "call", "email"]).default("sms"),
   otpRegionProfile: z.string().default("INDIA"),
+  infobipApiKey: z.string().default(""),
+  infobipBaseUrl: z.string().default(""),
+  infobipApplicationId: z.string().default(""),
+  infobipMessageId: z.string().default(""),
+  infobipSender: z.string().default(""),
   leaderboardAdminEmail: z.string().default(""),
   campaignStartDate: z.string().default(""),
 });
@@ -184,6 +196,11 @@ export const getPlatformSettingsFn = createServerFn({ method: "GET" }).handler(a
       otpVerifyServiceSid: "",
       otpDefaultChannel: "sms",
       otpRegionProfile: "INDIA",
+      infobipApiKey: "",
+      infobipBaseUrl: "",
+      infobipApplicationId: "",
+      infobipMessageId: "",
+      infobipSender: "",
       leaderboardAdminEmail: "",
       campaignStartDate: "",
     } as PlatformSettings;
@@ -205,16 +222,24 @@ export const getPlatformSettingsFn = createServerFn({ method: "GET" }).handler(a
       ? rest.otpDefaultChannel
       : "sms";
 
+  const otpProvider =
+    rest.otpProvider === "infobip" ? "infobip" : "twilio";
+
   return {
     ...(rest as Omit<PlatformSettings, "homeAnnouncementTexts">),
     homeAnnouncementTexts: storedTexts,
-    otpProvider: typeof rest.otpProvider === "string" ? rest.otpProvider : "twilio",
+    otpProvider,
     otpAccountSid: typeof rest.otpAccountSid === "string" ? rest.otpAccountSid : "",
     otpAuthToken: typeof rest.otpAuthToken === "string" ? rest.otpAuthToken : "",
     otpVerifyServiceSid:
       typeof rest.otpVerifyServiceSid === "string" ? rest.otpVerifyServiceSid : "",
     otpDefaultChannel,
     otpRegionProfile: typeof rest.otpRegionProfile === "string" ? rest.otpRegionProfile : "INDIA",
+    infobipApiKey: typeof rest.infobipApiKey === "string" ? rest.infobipApiKey : "",
+    infobipBaseUrl: typeof rest.infobipBaseUrl === "string" ? rest.infobipBaseUrl : "",
+    infobipApplicationId: typeof rest.infobipApplicationId === "string" ? rest.infobipApplicationId : "",
+    infobipMessageId: typeof rest.infobipMessageId === "string" ? rest.infobipMessageId : "",
+    infobipSender: typeof rest.infobipSender === "string" ? rest.infobipSender : "",
     leaderboardAdminEmail:
       typeof rest.leaderboardAdminEmail === "string" ? rest.leaderboardAdminEmail : "",
     campaignStartDate:

@@ -188,6 +188,7 @@ async function main() {
 
     const users = await db.collection("users").find({}).toArray();
     const ranked = users
+      .filter((u) => !u.winnerLockDates || u.winnerLockDates.length === 0) // never re-select a past winner
       .map((u) => {
         const best = (u.playAttempts ?? [])
           .filter((a) => a.date === lockDate)

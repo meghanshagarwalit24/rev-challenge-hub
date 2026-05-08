@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { SignupGate } from "@/components/SignupGate";
 import { categorize, computeTotal, getCurrentScores, getUser, isLoggedIn, resetScores, saveUserRemote, totalToPercentage, type GameScores } from "@/lib/storage";
-import { buildShareCard } from "@/lib/shareCard";
+import { buildShareCard, buildShareCardFromTemplate } from "@/lib/shareCard";
 import { trackEvent } from "@/lib/analytics";
 
 export const Route = createFileRoute("/result")({
@@ -72,23 +72,8 @@ function Result() {
     try {
       const navAny = navigator as any;
 
-      // Generic "Share" should prioritize link/text so apps like WhatsApp
-      // keep a tappable URL preview instead of sending only the image asset.
-      if (!openInstagram && navAny.share) {
-        try {
-          await navAny.share({
-            title: "Revital Energy Challenge",
-            text: `${shareText} ${shareUrl}`,
-            url: shareUrl,
-          });
-          return;
-        } catch (e: any) {
-          if (e?.name === "AbortError") return;
-        }
-      }
-
       const user = getUser();
-      const blob = await buildShareCard({
+      const blob = await buildShareCardFromTemplate({
         name: user?.name,
         total,
         category: cat.label,

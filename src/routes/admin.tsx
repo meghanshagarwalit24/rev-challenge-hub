@@ -190,23 +190,43 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
       completedAll3Today: isComplete(u.scores) ? 1 : 0,
     });
   }
+  // Build a map of userId → locked winner dates from the DB (source of truth).
+  const lockedWinnersByDate = new Map<string, Set<string>>();
+  // Track all users who have ever won so the live fallback also excludes them.
+  const everWonUserIds = new Set<string>();
+  for (const u of users) {
+    if (u.winnerLockDates && u.winnerLockDates.length > 0) {
+      everWonUserIds.add(u.userId);
+      for (const d of u.winnerLockDates) {
+        if (!lockedWinnersByDate.has(d)) lockedWinnersByDate.set(d, new Set());
+        lockedWinnersByDate.get(d)!.add(u.userId);
+      }
+    }
+  }
+
   const sortedEntries = [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
-  const priorWinnerIds = new Set<string>();
   const withWinners = sortedEntries.map(([date, userList]) => {
     const sortedUsers = [...userList].sort((a, b) => b.total - a.total);
-    const winners = [...userList]
-      .filter((u) => !priorWinnerIds.has(u.userId))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 10)
-      .map((u) => ({
-        userId: u.userId,
-        contact: u.contact,
-        name: u.name,
-        total: u.total,
-        scores: u.scores,
-      }));
+    const lockedIds = lockedWinnersByDate.get(date);
+    const winners = (
+      lockedIds && lockedIds.size > 0
+        // Use the DB-locked winners for this date (cron already selected them).
+        ? [...userList]
+            .filter((u) => lockedIds.has(u.userId))
+            .sort((a, b) => b.total - a.total)
+        // Fallback: date not yet locked — exclude anyone who has ever won before.
+        : [...userList]
+            .filter((u) => !everWonUserIds.has(u.userId))
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 10)
+    ).map((u) => ({
+      userId: u.userId,
+      contact: u.contact,
+      name: u.name,
+      total: u.total,
+      scores: u.scores,
+    }));
 
-    winners.forEach((winner) => priorWinnerIds.add(winner.userId));
     return { date, users: sortedUsers, winners };
   });
 
@@ -453,6 +473,11 @@ function Admin() {
     otpVerifyServiceSid: "",
     otpDefaultChannel: "sms",
     otpRegionProfile: "INDIA",
+    infobipApiKey: "",
+    infobipBaseUrl: "",
+    infobipApplicationId: "",
+    infobipMessageId: "",
+    infobipSender: "",
     leaderboardAdminEmail: "",
     campaignStartDate: "",
   });
@@ -2226,7 +2251,7 @@ function Admin() {
                       </div>
                     </SettingsSection>
 
-                    <SettingsSection title="OTP Service (Twilio)">
+                    <SettingsSection title="OTP Service">
                       {!otpSettingsUnlocked ? (
                         <div className="space-y-3">
                           <SettingsField
@@ -2248,72 +2273,141 @@ function Admin() {
                           </button>
                         </div>
                       ) : (
-                        <div className="space-y-3">
-                          <SettingsField
-                            label="Provider"
-                            value={settings.otpProvider}
-                            onChange={(v) => setSettings((prev) => ({ ...prev, otpProvider: v }))}
-                            placeholder="twilio"
-                          />
-                          <div className="grid md:grid-cols-2 gap-3">
-                            <SettingsField
-                              label="Account SID"
-                              value={settings.otpAccountSid}
-                              onChange={(v) =>
-                                setSettings((prev) => ({ ...prev, otpAccountSid: v }))
+                        <div className="space-y-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                              Provider
+                            </label>
+                            <select
+                              value={settings.otpProvider}
+                              onChange={(e) =>
+                                setSettings((prev) => ({
+                                  ...prev,
+                                  otpProvider: e.target.value as "twilio" | "infobip",
+                                }))
                               }
-                              placeholder="ACxxxxxxxx"
-                            />
-                            <SettingsField
-                              label="Verify Service SID"
-                              value={settings.otpVerifyServiceSid}
-                              onChange={(v) =>
-                                setSettings((prev) => ({ ...prev, otpVerifyServiceSid: v }))
-                              }
-                              placeholder="VAxxxxxxxx"
-                            />
+                              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                            >
+                              <option value="twilio">Twilio</option>
+                              <option value="infobip">Infobip</option>
+                            </select>
                           </div>
-                          <SettingsField
-                            label="Auth Token"
-                            value={settings.otpAuthToken}
-                            onChange={(v) => setSettings((prev) => ({ ...prev, otpAuthToken: v }))}
-                            placeholder="Twilio auth token"
-                            isSecret
-                          />
-                          <div className="grid md:grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                              <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-                                Default Channel
-                              </label>
-                              <select
-                                value={settings.otpDefaultChannel}
-                                onChange={(e) =>
-                                  setSettings((prev) => ({
-                                    ...prev,
-                                    otpDefaultChannel: e.target.value as
-                                      | "sms"
-                                      | "whatsapp"
-                                      | "call"
-                                      | "email",
-                                  }))
+
+                          {settings.otpProvider === "twilio" && (
+                            <div className="space-y-3">
+                              <div className="grid md:grid-cols-2 gap-3">
+                                <SettingsField
+                                  label="Account SID"
+                                  value={settings.otpAccountSid}
+                                  onChange={(v) =>
+                                    setSettings((prev) => ({ ...prev, otpAccountSid: v }))
+                                  }
+                                  placeholder="ACxxxxxxxx"
+                                />
+                                <SettingsField
+                                  label="Verify Service SID"
+                                  value={settings.otpVerifyServiceSid}
+                                  onChange={(v) =>
+                                    setSettings((prev) => ({ ...prev, otpVerifyServiceSid: v }))
+                                  }
+                                  placeholder="VAxxxxxxxx"
+                                />
+                              </div>
+                              <SettingsField
+                                label="Auth Token"
+                                value={settings.otpAuthToken}
+                                onChange={(v) =>
+                                  setSettings((prev) => ({ ...prev, otpAuthToken: v }))
                                 }
-                                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                              >
-                                <option value="sms">SMS</option>
-                                <option value="whatsapp">WhatsApp</option>
-                                <option value="call">Voice call</option>
-                                <option value="email">Email</option>
-                              </select>
+                                placeholder="Twilio auth token"
+                                isSecret
+                              />
+                              <div className="grid md:grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                                    Default Channel
+                                  </label>
+                                  <select
+                                    value={settings.otpDefaultChannel}
+                                    onChange={(e) =>
+                                      setSettings((prev) => ({
+                                        ...prev,
+                                        otpDefaultChannel: e.target.value as
+                                          | "sms"
+                                          | "whatsapp"
+                                          | "call"
+                                          | "email",
+                                      }))
+                                    }
+                                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                  >
+                                    <option value="sms">SMS</option>
+                                    <option value="whatsapp">WhatsApp</option>
+                                    <option value="call">Voice call</option>
+                                    <option value="email">Email</option>
+                                  </select>
+                                </div>
+                                <SettingsField
+                                  label="Region Profile"
+                                  value={settings.otpRegionProfile}
+                                  onChange={(v) =>
+                                    setSettings((prev) => ({ ...prev, otpRegionProfile: v }))
+                                  }
+                                  placeholder="INDIA / UAE"
+                                />
+                              </div>
                             </div>
-                            <SettingsField
-                              label="Region Profile"
-                              value={settings.otpRegionProfile}
-                              onChange={(v) =>
-                                setSettings((prev) => ({ ...prev, otpRegionProfile: v }))
-                              }
-                              placeholder="INDIA / UAE"
-                            />
-                          </div>
+                          )}
+
+                          {settings.otpProvider === "infobip" && (
+                            <div className="space-y-3">
+                              <div className="grid md:grid-cols-2 gap-3">
+                                <SettingsField
+                                  label="API Key"
+                                  value={settings.infobipApiKey}
+                                  onChange={(v) =>
+                                    setSettings((prev) => ({ ...prev, infobipApiKey: v }))
+                                  }
+                                  placeholder="Infobip API key"
+                                  isSecret
+                                />
+                                <SettingsField
+                                  label="Base URL"
+                                  value={settings.infobipBaseUrl}
+                                  onChange={(v) =>
+                                    setSettings((prev) => ({ ...prev, infobipBaseUrl: v }))
+                                  }
+                                  placeholder="xxxxx.api.infobip.com"
+                                />
+                              </div>
+                              <div className="grid md:grid-cols-2 gap-3">
+                                <SettingsField
+                                  label="Application ID"
+                                  value={settings.infobipApplicationId}
+                                  onChange={(v) =>
+                                    setSettings((prev) => ({ ...prev, infobipApplicationId: v }))
+                                  }
+                                  placeholder="2FA Application ID"
+                                />
+                                <SettingsField
+                                  label="Message ID"
+                                  value={settings.infobipMessageId}
+                                  onChange={(v) =>
+                                    setSettings((prev) => ({ ...prev, infobipMessageId: v }))
+                                  }
+                                  placeholder="2FA Message template ID"
+                                />
+                              </div>
+                              <SettingsField
+                                label="Sender"
+                                value={settings.infobipSender}
+                                onChange={(v) =>
+                                  setSettings((prev) => ({ ...prev, infobipSender: v }))
+                                }
+                                placeholder="InfoSMS (optional — uses template default if blank)"
+                              />
+                            </div>
+                          )}
                         </div>
                       )}
                     </SettingsSection>

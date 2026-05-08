@@ -121,3 +121,69 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
 }
+
+// Generates a share card by stamping score, name, tier, and category onto the user template PNG.
+export async function buildShareCardFromTemplate(data: ShareCardData): Promise<Blob> {
+  // Load Duplit font into the browser font registry before drawing
+  const duplitFont = new FontFace(
+    "Duplit",
+    "url(/fonts/Duplet-Semibold-BF642a34066f658.otf)",
+    { weight: "600", style: "normal" }
+  );
+  await duplitFont.load();
+  document.fonts.add(duplitFont);
+
+  const template = await loadImage("/user-share-template.png");
+
+  const canvas = document.createElement("canvas");
+  canvas.width = template.width;
+  canvas.height = template.height;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(template, 0, 0);
+
+  // Scale factors in case template isn't exactly 1080×1920
+  const W = 1080, H = 1920;
+  const sx = canvas.width / W;
+  const sy = canvas.height / H;
+  const scale = Math.min(sx, sy);
+
+  const percentage = Math.max(0, Math.min(100, (data.total / 1500) * 100));
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  // Score — 203px, Duplit, #4D1002
+  ctx.fillStyle = "#4D1002";
+  ctx.font = `600 ${Math.round(203 * scale)}px Duplit, sans-serif`;
+  ctx.fillText(`${percentage.toFixed(2)}%`, 539 * sx, 745.5 * sy, 700 * sx);
+
+  // Name — Duplit Semibold Italic, 45px, #FFF2B0
+  if (data.name) {
+    ctx.fillStyle = "#FFF2B0";
+    ctx.font = `italic 600 ${Math.round(45 * scale)}px Duplit, sans-serif`;
+    ctx.fillText(truncateText(ctx, data.name, 200 * sx), 548.5 * sx, 906.5 * sy);
+  }
+
+  // Category (left) and Tier (right) — swapped, Duplit Semibold Italic, 58px, #A02509
+  ctx.fillStyle = "#A02509";
+  ctx.font = `italic 600 ${Math.round(58 * scale)}px Duplit, sans-serif`;
+
+  // Center category within the left box
+  ctx.textAlign = "center";
+  ctx.fillText(truncateText(ctx, data.category, 420 * sx), 429.5 * sx, 1034.5 * sy);
+
+  // Tier stays center-aligned in its right box
+  ctx.textAlign = "center";
+  ctx.fillText(truncateText(ctx, `Tier ${data.tier}`, 220 * sx), 767.5 * sx, 1034.5 * sy);
+
+  return new Promise<Blob>((resolve) =>
+    canvas.toBlob((b) => resolve(b!), "image/png", 0.95)
+  );
+}
+
+function truncateText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  let t = text;
+  while (t.length > 0 && ctx.measureText(t + "…").width > maxWidth) t = t.slice(0, -1);
+  return t ? t + "…" : "…";
+}

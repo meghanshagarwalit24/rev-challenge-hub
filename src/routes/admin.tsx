@@ -218,7 +218,7 @@ function groupByDate(users: UserRecord[]): DateWiseEntry[] {
         : [...userList]
             .filter((u) => !everWonUserIds.has(u.userId))
             .sort((a, b) => b.total - a.total)
-            .slice(0, 10)
+            .slice(0, 1)
     ).map((u) => ({
       userId: u.userId,
       contact: u.contact,
@@ -277,7 +277,7 @@ async function downloadDailyWinnersImage(
   const scaleX = canvas.width / templateWidth;
   const scaleY = canvas.height / templateHeight;
 
-  winners.slice(0, 10).forEach((winner, index) => {
+  winners.slice(0, 1).forEach((winner, index) => {
     const slot = nameSlots[index];
     if (!slot) return;
 
@@ -1056,7 +1056,7 @@ function Admin() {
         setLeaderboardEmailStatus(`No winners found for ${result.lockDate}. Email not sent.`);
       } else if (!result.mailed) {
         setLeaderboardEmailStatus(
-          `Locked ${result.winners} winners for ${result.lockDate}, but no admin email is configured.`,
+          `Locked ${result.winners} winner for ${result.lockDate}, but no admin email is configured.`,
         );
       } else {
         setLeaderboardEmailStatus(
@@ -1833,11 +1833,11 @@ function Admin() {
                               <div className="p-4 border-b border-border/50 bg-muted/10">
                                 <p className="text-xs text-muted-foreground">
                                   {isTodayUae
-                                    ? "Today's winners will be selected at 11:59:59 PM UAE time."
-                                    : "Top 10 winners are auto-selected daily by highest total score."}
+                                    ? "Today's winner will be selected at 11:59:59 PM UAE time."
+                                    : "The daily winner is auto-selected by highest total score."}
                                 </p>
                                 {!isTodayUae ? (
-                                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  <div className="mt-2 grid grid-cols-1 gap-2">
                                     {d.winners.map((winner, idx) => (
                                       <div
                                         key={`${d.date}-${winner.userId}-${idx}`}
@@ -1941,7 +1941,7 @@ function Admin() {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <SectionTitle>Daily Top 10 Winners (Date-wise)</SectionTitle>
+                  <SectionTitle>Daily Winner (Date-wise)</SectionTitle>
                   <p className="text-xs text-muted-foreground mt-1 mb-3">
                     Only selected winners are shown here, grouped by date.
                   </p>
@@ -1979,7 +1979,7 @@ function Admin() {
                           ) : null}
                         </div>
                         {d.date !== uaeToday ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <div className="grid grid-cols-1 gap-2">
                             {d.winners.map((winner, idx) => (
                               <div
                                 key={`${d.date}-${winner.userId}-${idx}`}
@@ -2421,7 +2421,7 @@ function Admin() {
                             setSettings((prev) => ({ ...prev, leaderboardAdminEmail: v }))
                           }
                           placeholder="admin1@company.com, admin2@company.com"
-                          hint="Use comma-separated emails. At 11:59:59 PM UAE time, top 10 winners will be mailed to all."
+                          hint="Use comma-separated emails. At 11:59:59 PM UAE time, the daily winner will be mailed to all."
                         />
                         <SettingsField
                           label="Campaign start date"
@@ -2449,7 +2449,7 @@ function Admin() {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        This locks the top 10 winners for the current Asia/Dubai date and sends the
+                        This locks the daily winner for the current Asia/Dubai date and sends the
                         email to the configured admin addresses.
                       </p>
                     </SettingsSection>

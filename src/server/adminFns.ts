@@ -304,7 +304,7 @@ async function generateWinnersPng(
   const scaleX = img.width / TEMPLATE_WIDTH;
   const scaleY = img.height / TEMPLATE_HEIGHT;
 
-  winners.slice(0, 10).forEach((winner, index) => {
+  winners.slice(0, 1).forEach((winner, index) => {
     const slot = NAME_SLOTS[index];
     if (!slot) return;
 
@@ -478,7 +478,7 @@ export const lockDailyTopTenAndNotifyFn = createServerFn({ method: "POST" }).han
     })
     .filter((u) => u.score >= 0)
     .sort((a, b) => b.score - a.score)
-    .slice(0, 10);
+    .slice(0, 1);
 
   if (!ranked.length) return { ok: true, lockDate, winners: 0, mailed: false };
 
@@ -494,18 +494,18 @@ export const lockDailyTopTenAndNotifyFn = createServerFn({ method: "POST" }).han
   if (!adminEmails.length) {
     return { ok: true, lockDate, winners: ranked.length, mailed: false };
   }
-  const subject = `Leaderboard locked for ${lockDate} (UAE)`;
-  const text = ranked.map((w, i) => `#${i + 1} ${w.name} — ${w.score}`).join("\n");
   const dayName = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Dubai",
     weekday: "long",
   }).format(new Date(`${lockDate}T12:00:00+04:00`));
-  const enrichedSubject = `Winners Locked: ${lockDate} (${dayName}) UAE`;
+  const enrichedSubject = `Winner Locked: ${lockDate} (${dayName}) UAE`;
+  const winner = ranked[0];
+  const text = `Daily Winner\n\n${winner.name} — Score: ${winner.score}`;
   const winnersPng = await generateWinnersPng(ranked);
   await Promise.all(
     adminEmails.map((email) =>
       sendViaGmailSmtp(email, enrichedSubject, text, {
-        filename: `revital-winners-${lockDate}.png`,
+        filename: `revital-winner-${lockDate}.png`,
         contentType: "image/png",
         content: winnersPng,
       }),

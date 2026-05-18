@@ -219,7 +219,7 @@ function RootComponent() {
         <Outlet />
       </div>
       {!isAdminRoute && <Footer />}
-      <CookieConsent />
+      {!isAdminRoute && <CookieConsent />}
     </div>
   );
 }

@@ -296,7 +296,7 @@ function Landing() {
               Who's <span className="text-gradient-energy">Topping the Charts?</span>
             </h2>
             <p className="mt-2 text-muted-foreground">
-              Daily prizes for the daily board. Eternal glory for the global one.
+              Daily prize for the daily board. Eternal glory for the global one.
             </p>
           </motion.div>
 

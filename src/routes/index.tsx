@@ -50,7 +50,7 @@ function Landing() {
               return;
             }
             const texts = winners.map(
-              (w, i) => `🏆 #${i + 1} Winner (${date}): ${w.name} — ${w.score} pts`
+              (w) => `🏆 Winner (${date}): ${w.name} — ${w.score} pts`
             );
             setAnnouncements(texts);
           }).catch(() => setAnnouncements([defaultAnnouncement]));
@@ -159,10 +159,10 @@ function Landing() {
                 <div className="text-5xl md:text-6xl leading-none">🏆</div>
                 <div>
                   <p className="text-2xl font-black uppercase leading-tight text-garnet">
-                    <span className="text-[var(--tiger)]">10 Winners</span> Everyday
+                    <span className="text-[var(--tiger)]">1 Winner</span> Everyday
                   </p>
                   <p className="mt-1 text-sm md:text-base text-garnet/80">
-                    Win daily rewards by topping the leaderboard.
+                    Top the daily leaderboard and win the daily reward.
                   </p>
                 </div>
               </div>

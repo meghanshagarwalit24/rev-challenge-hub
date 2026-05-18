@@ -7,7 +7,7 @@ export function CookieConsent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [show, setShow] = useState(false);
   useEffect(() => { if (!hasConsent()) setShow(true); }, []);
-  if (pathname.startsWith("/admin")) return null;
+  if (pathname.toLowerCase().startsWith("/admin")) return null;
 
   return (
     <AnimatePresence>

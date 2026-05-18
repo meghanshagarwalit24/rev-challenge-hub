@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 
 export function Footer() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  if (pathname.startsWith("/admin")) return null;
+  if (pathname.toLowerCase().startsWith("/admin")) return null;
 
   return (
     <footer className="mt-16 border-t border-[var(--garnet)]/10 bg-white/60">

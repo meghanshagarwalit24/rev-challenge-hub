@@ -92,7 +92,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isAdminRoute = pathname.startsWith("/admin");
+  const isAdminRoute = pathname.toLowerCase().startsWith("/admin");
 
   useEffect(() => {
     if (typeof window === "undefined") return;

@@ -215,7 +215,7 @@ function RootComponent() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="flex-1 pb-20 md:pb-0">
+      <div className={`flex-1 md:pb-0 ${isAdminRoute ? "" : "pb-20"}`}>
         <Outlet />
       </div>
       {!isAdminRoute && <Footer />}

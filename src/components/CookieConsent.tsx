@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { hasConsent, setConsent } from "@/lib/storage";
+import { useRouterState } from "@tanstack/react-router";
 
 export function CookieConsent() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [show, setShow] = useState(false);
   useEffect(() => { if (!hasConsent()) setShow(true); }, []);
+  if (pathname.startsWith("/admin")) return null;
 
   return (
     <AnimatePresence>

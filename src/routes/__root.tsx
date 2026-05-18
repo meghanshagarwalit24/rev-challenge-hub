@@ -1,4 +1,4 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts, useLocation } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import appCss from "../styles.css?url";
 import revitalLogo from "@/assets/revital-logo.png?url";
@@ -91,8 +91,8 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith("/admin");
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isAdminRoute = pathname.startsWith("/admin");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -109,17 +109,17 @@ function RootComponent() {
     // Keep GA4 page views in sync for SPA navigations.
     if (typeof w.gtag === "function") {
       w.gtag("event", "page_view", {
-        page_path: `${location.pathname}${location.searchStr}`,
+        page_path: window.location.pathname + window.location.search,
         page_title: document.title,
       });
     } else if (Array.isArray(w.dataLayer)) {
       w.dataLayer.push({
         event: "page_view",
-        page_path: `${location.pathname}${location.searchStr}`,
+        page_path: window.location.pathname + window.location.search,
         page_title: document.title,
       });
     }
-  }, [location.pathname, location.searchStr]);
+  }, [pathname]);
 
   useEffect(() => {
     // Persist referral code from URL so it can be auto-filled later in the signup popup

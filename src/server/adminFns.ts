@@ -462,13 +462,16 @@ export const lockDailyTopTenAndNotifyFn = createServerFn({ method: "POST" }).han
   const users = await db.collection<UserRecord>("users").find({}).toArray();
   const ranked = users
     .map((u) => {
-      const best = (u.playAttempts ?? [])
-        .filter((a) => a.date === lockDate)
-        .reduce<number>((m, a) => Math.max(m, a.total), -1);
-      return { userId: u.userId, name: u.name || u.contact, score: best };
+      const todayAttempts = (u.playAttempts ?? []).filter((a) => a.date === lockDate);
+      const best = todayAttempts.reduce<number>((m, a) => Math.max(m, a.total), -1);
+      // Earliest attempt that achieved the best score (tiebreaker)
+      const firstBestAt = todayAttempts
+        .filter((a) => a.total === best)
+        .reduce<string>((min, a) => (!min || a.playedAt < min ? a.playedAt : min), "");
+      return { userId: u.userId, name: u.name || u.contact, score: best, firstBestAt };
     })
     .filter((u) => u.score >= 0)
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => b.score - a.score || a.firstBestAt.localeCompare(b.firstBestAt))
     .slice(0, 1);
 
   if (!ranked.length) return { ok: true, lockDate, winners: 0, mailed: false };

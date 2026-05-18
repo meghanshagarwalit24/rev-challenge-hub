@@ -256,16 +256,7 @@ const GMAIL_APP_PASSWORD = (process.env.GMAIL_APP_PASSWORD || "zkve peto wnre mh
 );
 
 const NAME_SLOTS = [
-  { x: 321.5, y: 735.5 },
-  { x: 779.5, y: 735.5 },
-  { x: 321.5, y: 842.5 },
-  { x: 779.5, y: 842.5 },
-  { x: 321.5, y: 949.5 },
-  { x: 779.5, y: 949.5 },
-  { x: 321.5, y: 1056.5 },
-  { x: 779.5, y: 1056.5 },
-  { x: 321.5, y: 1163.5 },
-  { x: 779.5, y: 1163.5 },
+  { x: 537.5, y: 1128.5 },
 ];
 
 const TEMPLATE_WIDTH = 1080;
@@ -274,12 +265,12 @@ const TEMPLATE_HEIGHT = 1920;
 async function getTemplatePath(): Promise<string> {
   const __dir = dirname(fileURLToPath(import.meta.url));
   // dist/server/assets/adminFns-*.js → ../../public
-  const candidate = join(__dir, "../../public/winners-template.png");
+  const candidate = join(__dir, "../../public/winner-template.png");
   try {
     await readFile(candidate);
     return candidate;
   } catch {
-    return join(process.cwd(), "public/winners-template.png");
+    return join(process.cwd(), "public/winner-template.png");
   }
 }
 
@@ -309,15 +300,15 @@ async function generateWinnersPng(
     if (!slot) return;
 
     const displayName = winner.name?.trim() || winner.contact || "";
-    const maxTextWidth = 280 * scaleX;
-    const nameX = slot.x * scaleX - maxTextWidth / 2;
+    const maxTextWidth = 660 * scaleX;
+    const nameX = slot.x * scaleX;
     const nameY = slot.y * scaleY;
-    const fontSize = Math.round(35 * Math.min(scaleX, scaleY));
+    const fontSize = Math.round(96.03 * Math.min(scaleX, scaleY));
     const ellipsis = "...";
 
-    ctx.textAlign = "left";
+    ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillStyle = "#461901";
+    ctx.fillStyle = "#371812";
     ctx.font = `600 ${fontSize}px Duplet, sans-serif`;
 
     let textToDraw = displayName;

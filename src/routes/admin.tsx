@@ -243,7 +243,7 @@ async function downloadDailyWinnersImage(
     img.onload = () => resolve(img);
     img.onerror = () =>
       reject(new Error("Template image not found. Please add /public/winners-template.png"));
-    img.src = "/winners-template.png";
+    img.src = "/winner-template.png";
   }).catch((err) => {
     alert((err as Error).message);
     return null;
@@ -260,16 +260,7 @@ async function downloadDailyWinnersImage(
   ctx.drawImage(templateImage, 0, 0);
 
   const nameSlots = [
-    { x: 321.5, y: 735.5 }, // Rank 1 (Left)
-    { x: 779.5, y: 735.5 }, // Rank 2 (Right)
-    { x: 321.5, y: 842.5 }, // Rank 3 (Left)
-    { x: 779.5, y: 842.5 }, // Rank 4 (Right)
-    { x: 321.5, y: 949.5 }, // Rank 5 (Left)
-    { x: 779.5, y: 949.5 }, // Rank 6 (Right)
-    { x: 321.5, y: 1056.5 }, // Rank 7 (Left)
-    { x: 779.5, y: 1056.5 }, // Rank 8 (Right)
-    { x: 321.5, y: 1163.5 }, // Rank 9 (Left)
-    { x: 779.5, y: 1163.5 }, // Rank 10 (Right)
+    { x: 537.5, y: 1128.5 },
   ];
 
   const templateWidth = 1080;
@@ -282,15 +273,15 @@ async function downloadDailyWinnersImage(
     if (!slot) return;
 
     const displayName = winner.name?.trim() || winner.contact;
-    const maxTextWidth = 280 * scaleX;
-    const nameX = slot.x * scaleX - maxTextWidth / 2;
+    const maxTextWidth = 660 * scaleX;
+    const nameX = slot.x * scaleX;
     const nameY = slot.y * scaleY;
 
-    ctx.textAlign = "left";
+    ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillStyle = "#461901";
+    ctx.fillStyle = "#371812";
 
-    const fontSize = Math.round(35 * Math.min(scaleX, scaleY));
+    const fontSize = Math.round(96.03 * Math.min(scaleX, scaleY));
     let textToDraw = displayName;
     const ellipsis = "...";
 
@@ -312,7 +303,7 @@ async function downloadDailyWinnersImage(
   const dataUrl = canvas.toDataURL("image/png");
   const a = document.createElement("a");
   a.href = dataUrl;
-  a.download = `revital-daily-winners-${date}.png`;
+  a.download = `revital-daily-winner-${date}.png`;
   a.click();
 }
 

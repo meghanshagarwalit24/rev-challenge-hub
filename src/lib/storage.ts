@@ -48,8 +48,8 @@ export const getBestAttemptForDate = (attempts: PlayAttempt[], date: string): Pl
 
 export interface UserRecord {
   userId: string; // generated unique id
-  contact: string; // mobile number used for OTP login
-  email?: string; // optional profile email (no OTP verification)
+  contact: string; // mobile number used for login
+  email?: string; // optional profile email
   name?: string;
   address?: string;
   scores: GameScores;
@@ -297,7 +297,7 @@ export const saveUserRemote = async (u: UserRecord): Promise<void> => {
     category: bestAttemptForDate?.category ?? u.category,
   };
 
-  // Keep a local copy when possible so OTP verification is not blocked by transient server/db issues.
+  // Keep a local copy when possible so saving a score is not blocked by transient server/db issues.
   try {
     saveUser(withDate);
   } catch (e) {
@@ -385,9 +385,6 @@ export const hasConsent = () => localStorage.getItem(CONSENT_KEY) === "true";
 export const setConsent = (v: boolean) => localStorage.setItem(CONSENT_KEY, v ? "true" : "false");
 
 export const isLoggedIn = () => !!getUser();
-
-// Mock OTP — accept "123456"
-export const MOCK_OTP = "123456";
 
 // Sequential challenge progression: reflex → memory → balance
 export const CHALLENGE_ORDER: GameKey[] = ["reflex", "memory", "balance"];

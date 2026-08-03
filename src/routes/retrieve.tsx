@@ -2,16 +2,15 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Header } from "@/components/Header";
-import { findUserByContactRemote, MOCK_OTP, type UserRecord } from "@/lib/storage";
+import { findUserByContactRemote, type UserRecord } from "@/lib/storage";
 
 export const Route = createFileRoute("/retrieve")({
   component: Retrieve,
 });
 
 function Retrieve() {
-  const [step, setStep] = useState<"contact" | "otp" | "result">("contact");
+  const [step, setStep] = useState<"contact" | "result">("contact");
   const [contact, setContact] = useState("");
-  const [otp, setOtp] = useState("");
   const [user, setUser] = useState<UserRecord | null>(null);
   const [err, setErr] = useState("");
 
@@ -20,13 +19,7 @@ function Retrieve() {
     setErr("");
     const u = await findUserByContactRemote(contact.trim());
     if (!u) { setErr("No score found for this contact."); return; }
-    setStep("otp");
-  };
-
-  const verify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp !== MOCK_OTP) { setErr("Invalid code. Use 123456 (mock)."); return; }
-    setUser(await findUserByContactRemote(contact.trim()));
+    setUser(u);
     setStep("result");
   };
 
@@ -46,15 +39,6 @@ function Retrieve() {
                 <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Mobile or Email" className="w-full bg-background/60 border border-border rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring" autoFocus />
                 {err && <p className="text-sm text-destructive">{err}</p>}
                 <button className="w-full py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-[1.02] active:scale-[0.98] transition-transform">Continue</button>
-              </motion.form>
-            )}
-            {step === "otp" && (
-              <motion.form key="o" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onSubmit={verify} className="space-y-4">
-                <p className="text-sm text-muted-foreground">Enter the 6-digit code we sent.</p>
-                <input inputMode="numeric" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))} placeholder="• • • • • •" className="w-full text-center tracking-[0.5em] text-2xl font-black bg-background/60 border border-border rounded-2xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-ring" autoFocus />
-                <p className="text-[11px] text-muted-foreground/70 text-center">Mock — use <span className="font-mono text-accent">123456</span></p>
-                {err && <p className="text-sm text-destructive">{err}</p>}
-                <button className="w-full py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-[1.02] active:scale-[0.98] transition-transform">Verify</button>
               </motion.form>
             )}
             {step === "result" && user && (

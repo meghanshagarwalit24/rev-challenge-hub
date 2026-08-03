@@ -458,26 +458,12 @@ function Admin() {
       "",
       "",
     ],
-    otpProvider: "twilio",
-    otpAccountSid: "",
-    otpAuthToken: "",
-    otpVerifyServiceSid: "",
-    otpDefaultChannel: "sms",
-    otpRegionProfile: "INDIA",
-    infobipApiKey: "",
-    infobipBaseUrl: "",
-    infobipApplicationId: "",
-    infobipMessageId: "",
-    infobipSender: "",
     leaderboardAdminEmail: "",
     campaignStartDate: "",
   });
   const [savedFlash, setSavedFlash] = useState(false);
   const [leaderboardEmailSending, setLeaderboardEmailSending] = useState(false);
   const [leaderboardEmailStatus, setLeaderboardEmailStatus] = useState("");
-  const [otpSettingsUnlocked, setOtpSettingsUnlocked] = useState(false);
-  const [otpPasswordInput, setOtpPasswordInput] = useState("");
-  const [otpPasswordError, setOtpPasswordError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const topReferrersRef = useRef<HTMLDivElement | null>(null);
@@ -1061,23 +1047,6 @@ function Admin() {
       console.error("Leaderboard email error", error);
     } finally {
       setLeaderboardEmailSending(false);
-    }
-  };
-
-  const unlockOtpSettings = async () => {
-    try {
-      const { verifyOtpSettingsPasswordFn } = await import("@/server/adminFns");
-      const result = await verifyOtpSettingsPasswordFn({ data: { password: otpPasswordInput } });
-      if (result.ok) {
-        setOtpSettingsUnlocked(true);
-        setOtpPasswordError(false);
-        setOtpPasswordInput("");
-        await addLog("OTP_SETTINGS_UNLOCKED", "OTP settings section unlocked");
-      } else {
-        setOtpPasswordError(true);
-      }
-    } catch {
-      setOtpPasswordError(true);
     }
   };
 
@@ -2240,167 +2209,6 @@ function Admin() {
                           </div>
                         )}
                       </div>
-                    </SettingsSection>
-
-                    <SettingsSection title="OTP Service">
-                      {!otpSettingsUnlocked ? (
-                        <div className="space-y-3">
-                          <SettingsField
-                            label="Unlock password"
-                            value={otpPasswordInput}
-                            onChange={setOtpPasswordInput}
-                            placeholder="Enter OTP settings password"
-                            isSecret
-                          />
-                          {otpPasswordError && (
-                            <p className="text-xs text-red-500">Invalid OTP settings password.</p>
-                          )}
-                          <button
-                            type="button"
-                            className="px-4 py-2 rounded-full bg-muted text-foreground text-sm font-semibold border border-border"
-                            onClick={unlockOtpSettings}
-                          >
-                            Unlock OTP Settings
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <div className="space-y-1.5">
-                            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-                              Provider
-                            </label>
-                            <select
-                              value={settings.otpProvider}
-                              onChange={(e) =>
-                                setSettings((prev) => ({
-                                  ...prev,
-                                  otpProvider: e.target.value as "twilio" | "infobip",
-                                }))
-                              }
-                              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                            >
-                              <option value="twilio">Twilio</option>
-                              <option value="infobip">Infobip</option>
-                            </select>
-                          </div>
-
-                          {settings.otpProvider === "twilio" && (
-                            <div className="space-y-3">
-                              <div className="grid md:grid-cols-2 gap-3">
-                                <SettingsField
-                                  label="Account SID"
-                                  value={settings.otpAccountSid}
-                                  onChange={(v) =>
-                                    setSettings((prev) => ({ ...prev, otpAccountSid: v }))
-                                  }
-                                  placeholder="ACxxxxxxxx"
-                                />
-                                <SettingsField
-                                  label="Verify Service SID"
-                                  value={settings.otpVerifyServiceSid}
-                                  onChange={(v) =>
-                                    setSettings((prev) => ({ ...prev, otpVerifyServiceSid: v }))
-                                  }
-                                  placeholder="VAxxxxxxxx"
-                                />
-                              </div>
-                              <SettingsField
-                                label="Auth Token"
-                                value={settings.otpAuthToken}
-                                onChange={(v) =>
-                                  setSettings((prev) => ({ ...prev, otpAuthToken: v }))
-                                }
-                                placeholder="Twilio auth token"
-                                isSecret
-                              />
-                              <div className="grid md:grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-                                    Default Channel
-                                  </label>
-                                  <select
-                                    value={settings.otpDefaultChannel}
-                                    onChange={(e) =>
-                                      setSettings((prev) => ({
-                                        ...prev,
-                                        otpDefaultChannel: e.target.value as
-                                          | "sms"
-                                          | "whatsapp"
-                                          | "call"
-                                          | "email",
-                                      }))
-                                    }
-                                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                                  >
-                                    <option value="sms">SMS</option>
-                                    <option value="whatsapp">WhatsApp</option>
-                                    <option value="call">Voice call</option>
-                                    <option value="email">Email</option>
-                                  </select>
-                                </div>
-                                <SettingsField
-                                  label="Region Profile"
-                                  value={settings.otpRegionProfile}
-                                  onChange={(v) =>
-                                    setSettings((prev) => ({ ...prev, otpRegionProfile: v }))
-                                  }
-                                  placeholder="INDIA / UAE"
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {settings.otpProvider === "infobip" && (
-                            <div className="space-y-3">
-                              <div className="grid md:grid-cols-2 gap-3">
-                                <SettingsField
-                                  label="API Key"
-                                  value={settings.infobipApiKey}
-                                  onChange={(v) =>
-                                    setSettings((prev) => ({ ...prev, infobipApiKey: v }))
-                                  }
-                                  placeholder="Infobip API key"
-                                  isSecret
-                                />
-                                <SettingsField
-                                  label="Base URL"
-                                  value={settings.infobipBaseUrl}
-                                  onChange={(v) =>
-                                    setSettings((prev) => ({ ...prev, infobipBaseUrl: v }))
-                                  }
-                                  placeholder="xxxxx.api.infobip.com"
-                                />
-                              </div>
-                              <div className="grid md:grid-cols-2 gap-3">
-                                <SettingsField
-                                  label="Application ID"
-                                  value={settings.infobipApplicationId}
-                                  onChange={(v) =>
-                                    setSettings((prev) => ({ ...prev, infobipApplicationId: v }))
-                                  }
-                                  placeholder="2FA Application ID"
-                                />
-                                <SettingsField
-                                  label="Message ID"
-                                  value={settings.infobipMessageId}
-                                  onChange={(v) =>
-                                    setSettings((prev) => ({ ...prev, infobipMessageId: v }))
-                                  }
-                                  placeholder="2FA Message template ID"
-                                />
-                              </div>
-                              <SettingsField
-                                label="Sender"
-                                value={settings.infobipSender}
-                                onChange={(v) =>
-                                  setSettings((prev) => ({ ...prev, infobipSender: v }))
-                                }
-                                placeholder="InfoSMS (optional — uses template default if blank)"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </SettingsSection>
 
                     <SettingsSection title="Daily Leaderboard Lock Email (UAE)">

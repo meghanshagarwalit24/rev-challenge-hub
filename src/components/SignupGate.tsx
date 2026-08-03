@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   categorize,
   computeTotal,
@@ -8,7 +8,6 @@ import {
   generateUserId,
   getPersistedUtmParams,
   getCurrentScores,
-  MOCK_OTP,
   saveUser,
   saveUserRemote,
 } from "@/lib/storage";
@@ -18,8 +17,6 @@ import { executeRecaptcha } from "@/lib/recaptcha";
 interface SignupGateProps {
   onSuccess: () => void;
 }
-
-type Step = "contact" | "otp";
 
 const normalizeUaePhone = (value: string): string => {
   const raw = value.replace(/[^\d+]/g, "");
@@ -36,11 +33,9 @@ const isValidUaePhone = (value: string): boolean => {
 };
 
 export function SignupGate({ onSuccess }: SignupGateProps) {
-  const [step, setStep] = useState<Step>("contact");
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [referredBy, setReferredBy] = useState("");
-  const [otp, setOtp] = useState("");
   const [consent, setConsent] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
@@ -105,7 +100,7 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
     }
   };
 
-  const sendOtp = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
     if (!name.trim()) return setErr("Please enter your name");
@@ -113,7 +108,7 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
     if (!consent) return setErr("Please accept the consent to continue");
     setLoading(true);
     try {
-      const token = await executeRecaptcha("send_otp");
+      const token = await executeRecaptcha("save_score");
       if (token) {
         const { verifyCaptchaFn } = await import("@/server/userFns");
         const result = await verifyCaptchaFn({ data: { token } });
@@ -126,22 +121,7 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
     } catch {
       // Best-effort — never block the user if reCAPTCHA errors.
     }
-    trackEvent("otp_requested", { source: "result_gate" });
-    setTimeout(() => {
-      setLoading(false);
-      setStep("otp");
-    }, 600);
-  };
-
-  const verify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErr("");
-    const normalizedOtp = otp.replace(/\D/g, "").slice(0, 6);
-    if (normalizedOtp !== MOCK_OTP) {
-      setErr("Invalid code. Hint: 123456 (mock)");
-      return;
-    }
-    setLoading(true);
+    trackEvent("signup_started", { source: "result_gate" });
     await completeSignup(normalizeUaePhone(contact), name, referredBy || undefined);
   };
 
@@ -172,20 +152,16 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
             Unlock Your Score
           </h2>
           <p className="text-sm text-muted-foreground mt-2">
-            Verify your details to reveal your Energy Score and qualify for the global prize.
+            Enter your details to reveal your Energy Score and qualify for the global prize.
           </p>
         </div>
 
-        <AnimatePresence mode="wait">
-          {step === "contact" ? (
-            <motion.form
-              key="contact"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              onSubmit={sendOtp}
-              className="mt-5 space-y-3"
-            >
+        <motion.form
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          onSubmit={handleSubmit}
+          className="mt-5 space-y-3"
+        >
               <div>
                 <label className="text-xs uppercase tracking-wider text-muted-foreground">
                   Full Name
@@ -257,55 +233,9 @@ export function SignupGate({ onSuccess }: SignupGateProps) {
                 disabled={loading || !consent}
                 className="w-full py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-60"
               >
-                {loading ? "Sending..." : "Send OTP →"}
+                {loading ? "Saving..." : "Save & Reveal Score →"}
               </button>
-            </motion.form>
-          ) : (
-            <motion.form
-              key="otp"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              onSubmit={verify}
-              className="mt-5 space-y-4"
-            >
-              <p className="text-sm text-muted-foreground">
-                We sent a 6-digit code to{" "}
-                <span className="text-foreground font-medium">{contact}</span>
-              </p>
-              <input
-                autoFocus
-                inputMode="numeric"
-                maxLength={6}
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                placeholder="• • • • • •"
-                className="w-full text-center tracking-[0.5em] text-2xl font-black bg-background/60 border border-border rounded-2xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <p className="text-[11px] text-muted-foreground/70 text-center">
-                Mock mode — use code <span className="font-mono text-accent">123456</span>
-              </p>
-              {err && <p className="text-sm text-destructive">{err}</p>}
-              <button
-                disabled={loading}
-                className="w-full py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-60"
-              >
-                {loading ? "Saving..." : "Verify & Reveal Score →"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setStep("contact");
-                  setOtp("");
-                  setErr("");
-                }}
-                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                ← Change number
-              </button>
-            </motion.form>
-          )}
-        </AnimatePresence>
+        </motion.form>
       </motion.div>
     </motion.div>
   );

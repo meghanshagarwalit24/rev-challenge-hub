@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import {
@@ -10,7 +10,6 @@ import {
   generateUserId,
   getPersistedUtmParams,
   getCurrentScores,
-  MOCK_OTP,
   saveUser,
   saveUserRemote,
 } from "@/lib/storage";
@@ -23,10 +22,8 @@ export const Route = createFileRoute("/auth")({
 
 function Auth() {
   const nav = useNavigate();
-  const [step, setStep] = useState<"contact" | "otp">("contact");
   const [contact, setContact] = useState("");
   const [referredBy, setReferredBy] = useState("");
-  const [otp, setOtp] = useState("");
   const [consent, setConsent] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
@@ -67,7 +64,7 @@ function Auth() {
     }
   };
 
-  const sendOtp = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
     if (!isValidUaePhone(contact)) {
@@ -80,7 +77,7 @@ function Auth() {
     }
     setLoading(true);
     try {
-      const token = await executeRecaptcha("send_otp");
+      const token = await executeRecaptcha("save_score");
       if (token) {
         const { verifyCaptchaFn } = await import("@/server/userFns");
         const result = await verifyCaptchaFn({ data: { token } });
@@ -93,21 +90,6 @@ function Auth() {
     } catch {
       // Best-effort — never block the user if reCAPTCHA errors.
     }
-    trackEvent("otp_requested", { source: "auth_page" });
-    setTimeout(() => {
-      setLoading(false);
-      setStep("otp");
-    }, 600);
-  };
-
-  const verify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErr("");
-    if (otp !== MOCK_OTP) {
-      setErr("Invalid code. Hint: 123456 (mock)");
-      return;
-    }
-    setLoading(true);
     const scores = getCurrentScores();
     const total = computeTotal(scores);
     const cat = categorize(total);
@@ -134,10 +116,10 @@ function Auth() {
     };
     try {
       await saveUserRemote(payload);
-      trackEvent("otp_verified", { source: "auth_page", is_new_user: !existing });
+      trackEvent("score_saved", { source: "auth_page", is_new_user: !existing });
       await goToProfile();
     } catch (e) {
-      console.warn("Save encountered an issue after OTP verification", e);
+      console.warn("Save encountered an issue", e);
       // Keep local login state as a last resort so the user can still reach their profile.
       saveUser(payload);
       await goToProfile();
@@ -158,20 +140,16 @@ function Auth() {
           <h1 className="text-3xl md:text-4xl font-black">
             Save Your <span className="text-gradient-energy">Score</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-2">Verify to qualify for daily rewards</p>
+          <p className="text-sm text-muted-foreground mt-2">Enter your number to save your score</p>
         </motion.div>
 
         <div className="mt-8 bg-gradient-card border border-border rounded-3xl p-6 shadow-card">
-          <AnimatePresence mode="wait">
-            {step === "contact" ? (
-              <motion.form
-                key="contact"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                onSubmit={sendOtp}
-                className="space-y-4"
-              >
+          <motion.form
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            onSubmit={handleSubmit}
+            className="space-y-4"
+          >
                 <div>
                   <label className="text-xs uppercase tracking-wider text-muted-foreground">
                     UAE Mobile Number
@@ -187,7 +165,7 @@ function Auth() {
                     />
                   </div>
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
-                    Enter a UAE mobile number (e.g. +971501234567) — we'll send a one-time code.
+                    Enter a UAE mobile number (e.g. +971501234567).
                   </p>
                 </div>
                 {!existingUser && (
@@ -227,48 +205,9 @@ function Auth() {
                   disabled={loading || !consent}
                   className="w-full py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-60"
                 >
-                  {loading ? "Sending..." : "Send OTP"}
+                  {loading ? "Saving..." : "Save My Score"}
                 </button>
-              </motion.form>
-            ) : (
-              <motion.form
-                key="otp"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                onSubmit={verify}
-                className="space-y-4"
-              >
-                <p className="text-sm text-muted-foreground">
-                  We sent a 6-digit code to{" "}
-                  <span className="text-foreground font-medium">{contact}</span>
-                </p>
-                <input
-                  autoFocus
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                  placeholder="• • • • • •"
-                  className="w-full text-center tracking-[0.5em] text-2xl font-black bg-background/60 border border-border rounded-2xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                <p className="text-[11px] text-muted-foreground/70 text-center">
-                  Mock mode — use code <span className="font-mono text-accent">123456</span>
-                </p>
-                {err && <p className="text-sm text-destructive">{err}</p>}
-                <button className="w-full py-3 rounded-full bg-gradient-energy text-energy-foreground font-bold shadow-button hover:scale-[1.02] active:scale-[0.98] transition-transform">
-                  Verify & Save Score
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep("contact")}
-                  className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  ← Change number
-                </button>
-              </motion.form>
-            )}
-          </AnimatePresence>
+          </motion.form>
         </div>
 
         <Link

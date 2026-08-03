@@ -15,7 +15,7 @@ declare global {
 // conversion optimisation in Meta Ads Manager.
 const META_STANDARD: Record<string, string> = {
   signup_complete: "Lead",
-  otp_verified: "Lead",
+  score_saved: "Lead",
   score_revealed: "ViewContent",
 };
 

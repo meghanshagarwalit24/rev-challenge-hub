@@ -241,7 +241,7 @@ function Landing() {
                 step: "03",
                 emoji: "🏆",
                 title: "Claim Your Score",
-                desc: "Verify with OTP to save your score, climb the leaderboard, and compete for the daily prize.",
+                desc: "Enter your number to save your score, climb the leaderboard, and compete for the daily prize.",
               },
             ].map((item, i) => (
               <motion.div

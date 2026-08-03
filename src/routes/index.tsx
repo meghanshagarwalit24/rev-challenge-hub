@@ -184,7 +184,7 @@ function Landing() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
-            className="mt-8 max-[900px]:mt-5 grid grid-cols-3 gap-3 md:gap-6 max-w-2xl mx-auto"
+            className="mt-8 max-[900px]:mt-5 grid grid-cols-3 gap-2 sm:gap-3 md:gap-6 max-w-2xl mx-auto"
           >
             {[
               { n: "3", label: "Quick games" },
@@ -193,10 +193,10 @@ function Landing() {
             ].map((s) => (
               <div
                 key={s.label}
-                className="bg-white/90 border-2 border-[var(--garnet)]/10 rounded-2xl p-4 backdrop-blur shadow-card"
+                className="bg-white/90 border-2 border-[var(--garnet)]/10 rounded-2xl p-2 sm:p-4 backdrop-blur shadow-card min-w-0"
               >
-                <div className="text-2xl md:text-4xl font-black text-gradient-energy">{s.n}</div>
-                <div className="text-[11px] md:text-sm text-muted-foreground uppercase tracking-wider mt-1 font-semibold">
+                <div className="text-xl sm:text-2xl md:text-4xl font-black text-gradient-energy">{s.n}</div>
+                <div className="text-[9px] sm:text-[11px] md:text-sm text-muted-foreground uppercase tracking-wide sm:tracking-wider mt-1 font-semibold whitespace-nowrap sm:whitespace-normal">
                   {s.label}
                 </div>
               </div>
